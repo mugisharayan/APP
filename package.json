@@ -1,0 +1,32 @@
+{
+  "name": "hostel-booking-system",
+  "version": "1.0.0",
+  "description": "Hostel Booking System for Makerere University Students",
+  "scripts": {
+    "start": "cd client && npm start",
+    "dev": "cd client && npm run dev",
+    "build": "cd client && npm run build",
+    "lint": "cd client && npm run lint",
+    "preview": "cd client && npm run preview",
+    "install": "cd client && npm install"
+  },
+  "keywords": [
+    "hostel",
+    "booking",
+    "react",
+    "vite",
+    "makerere"
+  ],
+  "author": "",
+  "license": "ISC",
+  "private": true,
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "mongoose": "^8.19.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
