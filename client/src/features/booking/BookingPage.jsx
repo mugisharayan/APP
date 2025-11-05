@@ -87,27 +87,27 @@ const BookingPage = () => {
                 <h3>1. Personal Details</h3>
                 <div className="form-grid">
                   <div className="form-group">
-                    <label htmlFor="fullName">Full Name</label>
+                    <label htmlFor="fullName" aria-label="Full Name">Full Name</label>
                     <input type="text" id="fullName" name="fullName" placeholder="e.g., Jane Doe" required value={formData.fullName} onChange={handleInputChange} />
                   </div>
                   <div className="form-group">
-                    <label htmlFor="email">Email Address</label>
+                    <label htmlFor="email" aria-label="Email Address">Email Address</label>
                     <input type="email" id="email" name="email" placeholder="e.g., jane.doe@student.mak.ac.ug" required value={formData.email} onChange={handleInputChange} />
                   </div>
                   <div className="form-group">
-                    <label htmlFor="phone">Telephone Number</label>
+                    <label htmlFor="phone" aria-label="Telephone Number">Telephone Number</label>
                     <input type="tel" id="phone" name="phone" placeholder="e.g., 0771234567" required value={formData.phone} onChange={handleInputChange} />
                   </div>
                   <div className="form-group">
-                    <label htmlFor="gender">Gender</label>
+                    <label htmlFor="gender" aria-label="Gender">Gender</label>
                     <select id="gender" name="gender" required value={formData.gender} onChange={handleInputChange}>
-                      <option value="" disabled>Select your gender</option>
+                      <option value="" disabled aria-label="Select your gender">Select your gender</option>
                       <option value="male">Male</option>
                       <option value="female">Female</option>
                     </select>
                   </div>
                   <div className="form-group">
-                    <label htmlFor="dob">Date of Birth</label>
+                    <label htmlFor="dob" aria-label="Date of Birth">Date of Birth</label>
                     <input type="date" id="dob" name="dob" required value={formData.dob} onChange={handleInputChange} />
                   </div>
                 </div>
@@ -117,11 +117,11 @@ const BookingPage = () => {
                 <h3>2. Academic Information</h3>
                 <div className="form-grid">
                   <div className="form-group">
-                    <label htmlFor="course">Course / Program</label>
+                    <label htmlFor="course" aria-label="Course / Program">Course / Program</label>
                     <input type="text" id="course" name="course" placeholder="e.g., Bachelor of Computer Science" required value={formData.course} onChange={handleInputChange} />
                   </div>
                   <div className="form-group">
-                    <label htmlFor="yearOfStudy">Year of Study</label>
+                    <label htmlFor="yearOfStudy" aria-label="Year of Study">Year of Study</label>
                     <select id="yearOfStudy" name="yearOfStudy" required value={formData.yearOfStudy} onChange={handleInputChange}>
                       <option value="" disabled>Select your year</option>
                       <option value="1">Year 1</option>
@@ -132,12 +132,12 @@ const BookingPage = () => {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label htmlFor="studentNumber">Student Number</label>
+                    <label htmlFor="studentNumber" aria-label="Student Number">Student Number</label>
                     <input type="text" id="studentNumber" name="studentNumber" placeholder="e.g., 2100712345" required value={formData.studentNumber} onChange={handleInputChange} />
                   </div>
                 </div>
                 <div className="form-group" style={{ marginTop: '20px' }}>
-                  <label htmlFor="studentIdUpload">Upload University ID or Admission Letter</label>
+                  <label htmlFor="studentIdUpload" aria-label="Upload University ID or Admission Letter">Upload University ID or Admission Letter</label>
                   <div className="file-upload-wrapper">
                     <input type="file" id="studentIdUpload" name="studentIdUpload" className="file-input" required accept="image/*,.pdf" onChange={handleInputChange} />
                     <label htmlFor="studentIdUpload" className="file-upload-label">
@@ -152,24 +152,24 @@ const BookingPage = () => {
               <div className="form-section">
                 <h3>3. Contact & Emergency Details</h3>
                 <div className="form-group">
-                  <label htmlFor="residence">Place of Residence</label>
+                  <label htmlFor="residence" aria-label="Place of Residence">Place of Residence</label>
                   <input type="text" id="residence" name="residence" placeholder="e.g., Mbarara, Uganda" required value={formData.residence} onChange={handleInputChange} />
                 </div>
                 <div className="form-grid">
                   <div className="form-group">
-                    <label htmlFor="nextOfKinName">Next of Kin's Name</label>
+                    <label htmlFor="nextOfKinName" aria-label="Next of Kin's Name">Next of Kin's Name</label>
                     <input type="text" id="nextOfKinName" name="nextOfKinName" required value={formData.nextOfKinName} onChange={handleInputChange} />
                   </div>
                   <div className="form-group">
-                    <label htmlFor="nextOfKinContact">Next of Kin's Contact</label>
+                    <label htmlFor="nextOfKinContact" aria-label="Next of Kin's Contact">Next of Kin's Contact</label>
                     <input type="tel" id="nextOfKinContact" name="nextOfKinContact" required value={formData.nextOfKinContact} onChange={handleInputChange} />
                   </div>
                   <div className="form-group">
-                    <label htmlFor="guardianName">Parent/Guardian's Name</label>
+                    <label htmlFor="guardianName" aria-label="Parent/Guardian's Name">Parent/Guardian's Name</label>
                     <input type="text" id="guardianName" name="guardianName" required value={formData.guardianName} onChange={handleInputChange} />
                   </div>
                   <div className="form-group">
-                    <label htmlFor="guardianContact">Parent/Guardian's Contact</label>
+                    <label htmlFor="guardianContact" aria-label="Parent/Guardian's Contact">Parent/Guardian's Contact</label>
                     <input type="tel" id="guardianContact" name="guardianContact" required value={formData.guardianContact} onChange={handleInputChange} />
                   </div>
                 </div>
@@ -178,17 +178,17 @@ const BookingPage = () => {
               <div className="form-section">
                 <h3>4. Additional Information</h3>
                 <div className="form-group">
-                  <label htmlFor="notes">Additional Notes or Special Requests (Optional)</label>
+                  <label htmlFor="notes" aria-label="Additional Notes or Special Requests (Optional)">Additional Notes or Special Requests (Optional)</label>
                   <textarea id="notes" name="notes" rows="4" placeholder="e.g., I prefer a quiet room on a lower floor..." value={formData.notes} onChange={handleInputChange}></textarea>
                 </div>
                 <div className="form-group" style={{ marginTop: '20px' }}>
-                  <label htmlFor="healthIssues">Health Issues or Allergies (Optional)</label>
+                  <label htmlFor="healthIssues" aria-label="Health Issues or Allergies (Optional)">Health Issues or Allergies (Optional)</label>
                   <textarea id="healthIssues" name="healthIssues" rows="3" placeholder="e.g., Asthma, peanut allergy. This information is kept confidential." value={formData.healthIssues} onChange={handleInputChange}></textarea>
                 </div>
               </div>
               <div className="terms-agreement">
                 <input type="checkbox" id="terms" name="terms" required checked={termsAccepted} onChange={handleTermsChange} />
-                <label htmlFor="terms">I have read and agree to the <a href="#">Terms and Conditions</a> and the hostel's booking policy.</label>
+                <label htmlFor="terms" aria-label="I have read and agree to the Terms and Conditions and the hostel's booking policy.">I have read and agree to the <a href="#">Terms and Conditions</a> and the hostel's booking policy.</label>
               </div>
               <p className="summary-note">
                 By proceeding, you agree to our Terms of Service and the hostel's rules and regulations.

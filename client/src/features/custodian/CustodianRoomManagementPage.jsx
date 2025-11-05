@@ -168,7 +168,7 @@ const CustodianRoomManagementPage = () => {
                 <div className="room-modal-assign" id="roomModalAssignSection">
                   <h4>Assign New Student</h4>
                   <div className="form-group">
-                    <label htmlFor="newStudentGender">New Student's Gender</label>
+                    <label htmlFor="newStudentGender" aria-label="New Student's Gender">New Student's Gender</label>
                     <select id="newStudentGender">
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>

@@ -120,7 +120,7 @@ const PaymentPage = () => {
                 <div className="payment-form" id="mobile-money-form">
                   <h4>Enter Mobile Money Number</h4>
                   <div className="form-group">
-                    <label htmlFor="mm-phone">Phone Number</label>
+                    <label htmlFor="mm-phone" aria-label="Phone Number">Phone Number</label>
                     <input type="tel" id="mm-phone" placeholder="e.g., 0771234567" />
                   </div>
                   <p className="form-note">A payment prompt will be sent to this number.</p>
@@ -131,16 +131,16 @@ const PaymentPage = () => {
                 <div className="payment-form" id="credit-card-form">
                   <h4>Enter Card Details</h4>
                   <div className="form-group">
-                    <label htmlFor="card-number">Card Number</label>
+                    <label htmlFor="card-number" aria-label="Card Number">Card Number</label>
                     <input type="text" id="card-number" placeholder="0000 0000 0000 0000" />
                   </div>
                   <div className="form-grid">
                     <div className="form-group">
-                      <label htmlFor="card-expiry">Expiry Date</label>
+                      <label htmlFor="card-expiry" aria-label="Expiry Date">Expiry Date</label>
                       <input type="text" id="card-expiry" placeholder="MM / YY" />
                     </div>
                     <div className="form-group">
-                      <label htmlFor="card-cvc">CVC</label>
+                      <label htmlFor="card-cvc" aria-label="CVC">CVC</label>
                       <input type="text" id="card-cvc" placeholder="123" />
                     </div>
                   </div>
@@ -157,7 +157,7 @@ const PaymentPage = () => {
                     <li><strong>Account Number:</strong> 9030012345678</li>
                   </ul>
                   <div className="form-group" style={{ marginTop: '20px' }}>
-                    <label htmlFor="paymentProofUpload">Upload Payment Proof</label>
+                    <label htmlFor="paymentProofUpload" aria-label="Upload Payment Proof">Upload Payment Proof</label>
                     <div className="file-upload-wrapper">
                       <input type="file" id="paymentProofUpload" className="file-input" accept="image/*,.pdf" required onChange={handleFileUpload} />
                       <label htmlFor="paymentProofUpload" className="file-upload-label">

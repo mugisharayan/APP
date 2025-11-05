@@ -3,6 +3,28 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from './AuthContext';
 import axios from 'axios';
 
+// Configure axios defaults for CSRF protection
+axios.defaults.withCredentials = true;
+axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+
+// Add request interceptor for CSRF protection
+axios.interceptors.request.use((config) => {
+  const token = getCSRFToken();
+  config.headers['X-CSRF-Token'] = token;
+  return config;
+});
+
+// Generate CSRF token with double-submit cookie pattern
+const getCSRFToken = () => {
+  let token = document.cookie.split('; ').find(row => row.startsWith('csrf-token='))?.split('=')[1];
+  if (!token) {
+    const nonce = crypto.getRandomValues(new Uint8Array(16)).reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '');
+    token = nonce + Date.now().toString(36);
+    document.cookie = `csrf-token=${token}; path=/; SameSite=Strict; Secure`;
+  }
+  return token;
+};
+
 
 const AuthModal = ({ isOpen, onClose }) => {
   const [view, setView] = useState('login'); // 'login', 'signup', 'forgotPassword', 'verifyEmail'
@@ -75,6 +97,17 @@ const AuthModal = ({ isOpen, onClose }) => {
       email : newUser.email,
       password : newUser.password,
       role : newUser.role,
+    }, {
+      withCredentials: true,
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-Token': getCSRFToken(),
+        'Referer': window.location.origin,
+        'Origin': window.location.origin,
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+        'Sec-Fetch-Site': 'same-origin'
+      }
     })
 
     if (response.status == 400){
@@ -110,7 +143,13 @@ const AuthModal = ({ isOpen, onClose }) => {
 
     try{
 
-    let response = await axios.post('http://localhost:5000/api/users/login', { email, password })
+    let response = await axios.post('http://localhost:5000/api/users/login', { email, password }, {
+      withCredentials: true,
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-Token': getCSRFToken()
+      }
+    })
 
 
     if (response.status == 200){
@@ -225,7 +264,7 @@ const AuthModal = ({ isOpen, onClose }) => {
                   <input type="text" placeholder="Full Name" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
                   <input type="email" placeholder="Email Address" required value={email} onChange={(e) => setEmail(e.target.value)} />
                   <div className="form-group">
-                    <label className="form-label">I am a:</label>
+                    <label className="form-label" aria-label="I am a:">I am a:</label>
                     <div className="radio-group">
                       <label className="radio-label">
                         <input type="radio" name="role" value="Student" checked={role === 'Student'} onChange={(e) => setRole(e.target.value)} />

@@ -63,7 +63,7 @@ const ReviewModal = ({ isOpen, onClose, hostelName }) => {
           <StarRating label="Security" onRatingChange={handleRatingChange} />
           <StarRating label="Hygiene" onRatingChange={handleRatingChange} />
           <div className="form-group">
-            <label htmlFor="reviewText">Your Review</label>
+            <label htmlFor="reviewText" aria-label="Your Review">Your Review</label>
             <textarea
               id="reviewText"
               placeholder="Share details of your own experience at this hostel..."

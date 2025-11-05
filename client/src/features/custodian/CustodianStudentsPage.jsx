@@ -139,10 +139,10 @@ const CustodianStudentsPage = () => {
             <form id="addStudentForm" className="modal-form" onSubmit={handleAddStudent}>
               <div className="form-grid">
                 <div className="form-group"><label>Full Name</label><input type="text" name="fullName" required /></div>
-                <div className="form-group"><label>Student ID</label><input type="text" name="studentId" required /></div>
+                <div className="form-group"><label aria-label="Student ID">Student ID</label><input type="text" name="studentId" required /></div>
               </div>
-              <div className="form-group"><label>Email Address</label><input type="email" name="email" required /></div>
-              <div className="form-group"><label>Room Assignment</label><input type="text" name="roomAssignment" placeholder="e.g., A-101" /></div>
+              <div className="form-group"><label aria-label="Email Address">Email Address</label><input type="email" name="email" required /></div>
+              <div className="form-group"><label aria-label="Room Assignment">Room Assignment</label><input type="text" name="roomAssignment" placeholder="e.g., A-101" /></div>
               <div className="form-actions" style={{ marginTop: '20px' }}>
                 <button type="submit" className="btn primary full-width">Add Student</button>
               </div>

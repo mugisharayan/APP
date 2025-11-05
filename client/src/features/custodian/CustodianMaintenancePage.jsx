@@ -232,15 +232,15 @@ const CustodianMaintenancePage = () => {
             <h3>Create New Ticket</h3>
             <form className="modal-form" onSubmit={handleCreateTicket}>
               <div className="form-grid">
-                <div className="form-group"><label>Room Number</label><input type="text" name="roomNumber" placeholder="e.g., A-101" required /></div>
-                <div className="form-group"><label>Priority</label><select name="priority" required><option>Low</option><option>Medium</option><option>High</option></select></div>
+                <div className="form-group"><label aria-label="Room Number">Room Number</label><input type="text" name="roomNumber" placeholder="e.g., A-101" required /></div>
+                <div className="form-group"><label aria-label="Priority">Priority</label><select name="priority" required><option>Low</option><option>Medium</option><option>High</option></select></div>
               </div>
               <div className="form-group">
-                <label>Issue</label>
+                <label aria-label="Issue">Issue</label>
                 <input type="text" name="issue" placeholder="e.g., Leaking Pipe" required />
               </div>
               <div className="form-group">
-                <label>Description</label>
+                <label aria-label="Description">Description</label>
                 <textarea name="description" rows="3" placeholder="Provide a brief description of the issue."></textarea>
               </div>
               <div className="form-actions" style={{ marginTop: '20px' }}><button type="submit" className="btn primary full-width">Create Ticket</button></div>
@@ -258,14 +258,14 @@ const CustodianMaintenancePage = () => {
             <p className="muted">Change the status for ticket regarding "Room {activeTicket.room}: {activeTicket.issue}".</p>
             <form className="modal-form" onSubmit={handleUpdateStatus}>
               <div className="form-group">
-                <label htmlFor="ticketStatus">New Status</label>
+                <label htmlFor="ticketStatus" aria-label="New Status">New Status</label>
                 <select id="ticketStatus" name="ticketStatus" required>
                   <option value="in-progress">In Progress</option>
                   <option value="resolved">Resolved</option>
                 </select>
               </div>
               <div className="form-group">
-                <label htmlFor="statusNotes">Notes (Optional)</label>
+                <label htmlFor="statusNotes" aria-label="Notes (Optional)">Notes (Optional)</label>
                 <textarea id="statusNotes" name="statusNotes" rows="3" placeholder="e.g., Plumber has been contacted."></textarea>
               </div>
               <div className="form-actions" style={{ marginTop: '20px' }}>

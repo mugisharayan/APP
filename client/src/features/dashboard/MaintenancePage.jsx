@@ -93,7 +93,7 @@ const MaintenancePage = () => {
                 <form className="maintenance-request-form" onSubmit={handleSubmitRequest}>
                   <div className="form-grid">
                     <div className="form-group">
-                      <label htmlFor="issueCategory">Category</label>
+                      <label htmlFor="issueCategory" aria-label="Category">Category</label>
                       <select id="issueCategory" name="issueCategory" required>
                         <option value="plumbing">Plumbing</option>
                         <option value="electrical">Electrical</option>
@@ -103,16 +103,16 @@ const MaintenancePage = () => {
                       </select>
                     </div>
                     <div className="form-group">
-                      <label htmlFor="roomNumber">Room Number</label>
+                      <label htmlFor="roomNumber" aria-label="Room Number">Room Number</label>
                       <input type="text" id="roomNumber" name="roomNumber" placeholder="e.g., A-25" required />
                     </div>
                   </div>
                   <div className="form-group">
-                    <label htmlFor="issueDescription">Describe the Issue</label>
+                    <label htmlFor="issueDescription" aria-label="Describe the Issue">Describe the Issue</label>
                     <textarea id="issueDescription" name="issueDescription" rows="4" placeholder="Please provide as much detail as possible..." required></textarea>
                   </div>
                   <div className="form-group">
-                    <label htmlFor="issuePhoto">Upload a Photo (Optional)</label>
+                    <label htmlFor="issuePhoto" aria-label="Upload a Photo (Optional)">Upload a Photo (Optional)</label>
                     <div className="file-upload-wrapper">
                       <input type="file" id="issuePhoto" name="issuePhoto" className="file-input" accept="image/*" onChange={handleFileChange} />
                       <label htmlFor="issuePhoto" className="file-upload-label">

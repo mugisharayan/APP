@@ -37,12 +37,18 @@ const CustodianProfilePage = () => {
 
   const handleProfilePicChange = (e) => {
     if (e.target.files && e.target.files[0]) {
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        setProfileData(prev => ({ ...prev, profilePicture: event.target.result }));
-        // showToast('Profile picture updated!');
-      };
-      reader.readAsDataURL(e.target.files[0]);
+      const file = e.target.files[0];
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const result = event.target.result;
+          if (typeof result === 'string' && result.startsWith('data:image/')) {
+            setProfileData(prev => ({ ...prev, profilePicture: result }));
+            // showToast('Profile picture updated!');
+          }
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -84,6 +90,18 @@ const CustodianProfilePage = () => {
     });
   };
 
+  const handleEditProfile = () => {
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+  };
+
+  const handleProfilePicClick = () => {
+    document.getElementById('profilePicInput').click();
+  };
+
   const handleLogout = () => {
     setIsLogoutModalOpen(false);
     navigate('/');
@@ -106,7 +124,7 @@ const CustodianProfilePage = () => {
 
             <div className="profile-content-new">
               <div className="profile-banner-card">
-                <div className="profile-pic-banner-wrapper" onClick={() => document.getElementById('profilePicInput').click()}>
+                <div className="profile-pic-banner-wrapper" onClick={handleProfilePicClick}>
                   <img src={profileData.profilePicture} alt="Custodian profile" id="mainProfilePic" />
                   <div className="edit-overlay">Change</div>
                   <input type="file" id="profilePicInput" style={{ display: 'none' }} accept="image/*" onChange={handleProfilePicChange} />
@@ -116,7 +134,7 @@ const CustodianProfilePage = () => {
                     <div id="profile-view">
                       <div className="profile-main-info">
                         <h2>{profileData.fullName}</h2>
-                        <button className="btn-icon edit-profile-btn" onClick={() => setIsEditing(true)} title="Edit Profile"><i className="fas fa-pen"></i></button>
+                        <button className="btn-icon edit-profile-btn" onClick={handleEditProfile} title="Edit Profile"><i className="fas fa-pen"></i></button>
                       </div>
                       <p className="profile-role">{profileData.role}</p>
                       <div className="profile-contact-grid">
@@ -128,12 +146,12 @@ const CustodianProfilePage = () => {
                     </div>
                   ) : (
                     <form id="profile-edit-form" onSubmit={handleSaveProfile}>
-                      <div className="form-group"><label>Full Name</label><input type="text" id="editFullName" value={profileData.fullName} onChange={handleEditChange} /></div>
-                      <div className="form-group"><label>Email Address</label><input type="email" id="editEmail" value={profileData.email} onChange={handleEditChange} /></div>
+                      <div className="form-group"><label aria-label="Full Name">Full Name</label><input type="text" id="editFullName" value={profileData.fullName} onChange={handleEditChange} /></div>
+                      <div className="form-group"><label aria-label="Email Address">Email Address</label><input type="email" id="editEmail" value={profileData.email} onChange={handleEditChange} /></div>
                       <div className="form-group"><label>Role</label><input type="text" id="editRole" value={profileData.role} readOnly /></div>
                       <div className="form-actions" style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
                         <button type="submit" className="btn primary">Save Changes</button>
-                        <button type="button" className="btn outline" onClick={() => setIsEditing(false)}>Cancel</button>
+                        <button type="button" className="btn outline" onClick={handleCancelEdit}>Cancel</button>
                       </div>
                     </form>
                   )}
@@ -154,9 +172,9 @@ const CustodianProfilePage = () => {
                     <div className="security-section">
                       <div className="security-section-header"><h4>Change Password</h4><small className="muted">Last updated: 3 months ago</small></div>
                       <form id="password-change-form" onSubmit={handlePasswordChange}>
-                        <div className="form-group"><label htmlFor="currentPassword">Current Password</label><div className="password-wrapper"><input type="password" id="currentPassword" name="currentPassword" required /><i className="fas fa-eye-slash toggle-password" onClick={togglePasswordVisibility}></i></div></div>
-                        <div className="form-group"><label htmlFor="newPassword">New Password</label><div className="password-wrapper"><input type="password" id="newPassword" name="newPassword" required /><i className="fas fa-eye-slash toggle-password" onClick={togglePasswordVisibility}></i></div></div>
-                        <div className="form-group"><label htmlFor="confirmPassword">Confirm New Password</label><div className="password-wrapper"><input type="password" id="confirmPassword" name="confirmPassword" required /><i className="fas fa-eye-slash toggle-password" onClick={togglePasswordVisibility}></i></div></div>
+                        <div className="form-group"><label htmlFor="currentPassword" aria-label="Current Password">Current Password</label><div className="password-wrapper"><input type="password" id="currentPassword" name="currentPassword" required /><i className="fas fa-eye-slash toggle-password" onClick={togglePasswordVisibility}></i></div></div>
+                        <div className="form-group"><label htmlFor="newPassword" aria-label="New Password">New Password</label><div className="password-wrapper"><input type="password" id="newPassword" name="newPassword" required /><i className="fas fa-eye-slash toggle-password" onClick={togglePasswordVisibility}></i></div></div>
+                        <div className="form-group"><label htmlFor="confirmPassword" aria-label="Confirm New Password">Confirm New Password</label><div className="password-wrapper"><input type="password" id="confirmPassword" name="confirmPassword" required /><i className="fas fa-eye-slash toggle-password" onClick={togglePasswordVisibility}></i></div></div>
                         <button type="submit" className="btn primary" style={{ marginTop: '10px' }}>Update Password</button>
                       </form>
                     </div>

@@ -78,9 +78,9 @@ const CustodianPaymentManagementPage = () => {
               </div>
               {/* Filter Section */}
               <div className={`filter-section ${isFilterSectionVisible ? 'visible' : ''}`} id="filterSection">
-                <div className="form-group"><label>Status</label><select><option>All</option><option>Pending</option><option>Flagged</option></select></div>
-                <div className="form-group"><label>Payment Method</label><select><option>All</option><option>Mobile Money</option><option>Credit Card</option><option>Bank Transfer</option></select></div>
-                <div className="form-group"><label>Date Range</label><input type="date" /></div>
+                <div className="form-group"><label aria-label="Status">Status</label><select><option>All</option><option>Pending</option><option>Flagged</option></select></div>
+                <div className="form-group"><label aria-label="Payment Method">Payment Method</label><select><option>All</option><option>Mobile Money</option><option>Credit Card</option><option>Bank Transfer</option></select></div>
+                <div className="form-group"><label aria-label="Date Range">Date Range</label><input type="date" /></div>
               </div>
               <div className="payment-verification-grid">
                 {pendingPayments.length === 0 ? (

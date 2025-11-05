@@ -127,7 +127,7 @@ const CustodianRoomAssignmentPage = () => {
             </div>
             <form className="modal-form" onSubmit={handleConfirmAssignment}>
               <div className="form-group">
-                <label htmlFor="availableRooms">Select an Available Room</label>
+                <label htmlFor="availableRooms" aria-label="Select an Available Room">Select an Available Room</label>
                 <select id="availableRooms" required>
                   <option value="" disabled selected>Choose a room...</option>
                   <option value="A-101">A-101 (Single)</option>
