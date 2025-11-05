@@ -1,4 +1,4 @@
-const API_URL = '/api/users';
+import apiService from './api.service';
 
 /**
  * Logs in a user.
@@ -7,24 +7,9 @@ const API_URL = '/api/users';
  * @returns {Promise<any>}
  */
 const login = async (email, password) => {
-  const token = document.cookie.split('; ').find(row => row.startsWith('csrf-token='))?.split('=')[1] || Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
-  const response = await fetch(`${API_URL}/login`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Requested-With': 'XMLHttpRequest',
-      'X-CSRF-Token': token,
-    },
-    body: JSON.stringify({ email, password }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to login');
-  }
-
-  const user = await response.json();
+  const response = await apiService.auth.login(email, password);
+  const user = response.data;
+  
   if (user.token) {
     localStorage.setItem('user', JSON.stringify(user));
   }
@@ -32,10 +17,17 @@ const login = async (email, password) => {
 };
 
 /**
- * Logs out the current user by removing the user item from localStorage.
+ * Logs out the current user.
  */
-const logout = () => {
-  localStorage.removeItem('user');
+const logout = async () => {
+  try {
+    await apiService.auth.logout();
+  } catch (error) {
+    console.error('Logout error:', error);
+  } finally {
+    localStorage.removeItem('user');
+    localStorage.removeItem('auth');
+  }
 };
 
 /**
@@ -43,14 +35,25 @@ const logout = () => {
  * @returns {any | null}
  */
 const getCurrentUser = () => {
-  const userStr = localStorage.getItem('user');
+  const userStr = localStorage.getItem('user') || localStorage.getItem('auth');
   return userStr ? JSON.parse(userStr) : null;
+};
+
+/**
+ * Registers a new user.
+ * @param {object} userData
+ * @returns {Promise<any>}
+ */
+const register = async (userData) => {
+  const response = await apiService.auth.register(userData);
+  return response.data;
 };
 
 const authService = {
   login,
   logout,
   getCurrentUser,
+  register,
 };
 
 export default authService;

@@ -1,29 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from './AuthContext';
-import axios from 'axios';
-
-// Configure axios defaults for CSRF protection
-axios.defaults.withCredentials = true;
-axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-
-// Add request interceptor for CSRF protection
-axios.interceptors.request.use((config) => {
-  const token = getCSRFToken();
-  config.headers['X-CSRF-Token'] = token;
-  return config;
-});
-
-// Generate CSRF token with double-submit cookie pattern
-const getCSRFToken = () => {
-  let token = document.cookie.split('; ').find(row => row.startsWith('csrf-token='))?.split('=')[1];
-  if (!token) {
-    const nonce = crypto.getRandomValues(new Uint8Array(16)).reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '');
-    token = nonce + Date.now().toString(36);
-    document.cookie = `csrf-token=${token}; path=/; SameSite=Strict; Secure`;
-  }
-  return token;
-};
+import apiService from '../../service/api.service';
 
 
 const AuthModal = ({ isOpen, onClose }) => {
@@ -91,31 +69,23 @@ const AuthModal = ({ isOpen, onClose }) => {
       isVerified: false, // Add verification flag
     };
 
-    //Submit to the backend
-    let response = await axios.post('http://localhost:5000/api/users/register', {
-      name : newUser.fullName,
-      email : newUser.email,
-      password : newUser.password,
-      role : newUser.role,
-    }, {
-      withCredentials: true,
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-CSRF-Token': getCSRFToken(),
-        'Referer': window.location.origin,
-        'Origin': window.location.origin,
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache',
-        'Sec-Fetch-Site': 'same-origin'
+    try {
+      const response = await apiService.auth.register({
+        name: newUser.fullName,
+        email: newUser.email,
+        password: newUser.password,
+        role: newUser.role
+      });
+
+      showToast('Registration successful! Please verify your email.');
+      setView('verifyEmail');
+    } catch (error) {
+      if (error.response?.status === 400) {
+        showToast('User already exists', true);
+      } else {
+        showToast('Registration failed. Please try again.', true);
       }
-    })
-
-    if (response.status == 400){
-      alert("User already exists")
-    }
-
-    if (response.status == 200){
-      alert("User registered")
+      return;
     }
 
 
@@ -138,60 +108,29 @@ const AuthModal = ({ isOpen, onClose }) => {
     setView('verifyEmail'); // Switch to the verification view
   };
 
-  const handleLogin = async(e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
-    try{
+    try {
+      const response = await apiService.auth.login(email, password);
+      
+      localStorage.setItem('auth', JSON.stringify(response.data));
+      login(response.data);
+      showToast('Logged in successfully!');
+      onClose();
 
-    let response = await axios.post('http://localhost:5000/api/users/login', { email, password }, {
-      withCredentials: true,
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-CSRF-Token': getCSRFToken()
+      if (response.data.role === 'Custodian') {
+        navigate('/custodian-dashboard');
+      } else {
+        navigate('/dashboard');
       }
-    })
-
-
-    if (response.status == 200){
-      alert("Logged in")
-      localStorage.setItem('auth', response.data)
-      onClose()
-
-      if (response.data.role == "Custodian"){
-        navigate('/custodian-dashboard')
-      }else {
-        navigate("/student-dashboard")
-      }
-
-      // if (!user.isVerified) {
-      //   showToast('Please verify your email before logging in.', true);
-      //   setView('verifyEmail'); // Guide user to verification
-      //   return;
-      // }
-      // const userBookings = JSON.parse(localStorage.getItem('bookingHistory')) || [];
-      // login(user, userBookings);
-      // showToast('Logged in successfully!');
-      // // If the user is a custodian, redirect them to their dashboard
-      // if (user.role === 'custodian') {
-      //   navigate('/custodian-dashboard');
-      // }
-      // onClose();
-    }
-
-    }catch(err){
+    } catch (error) {
       showToast('Invalid email or password.', true);
     }
 
 
 
-    // const users = JSON.parse(localStorage.getItem('users')) || [];
-    // const user = users.find(u => u.email === email && u.password === password);
 
-    // if (user) {
-    
-    // } else {
-    //   showToast('Invalid email or password.', true);
-    // }
   };
 
   const handleForgotPassword = (e) => {
