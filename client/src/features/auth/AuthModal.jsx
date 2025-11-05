@@ -6,7 +6,7 @@ import apiService from '../../service/api.service';
 
 const AuthModal = ({ isOpen, onClose }) => {
   const [view, setView] = useState('login'); // 'login', 'signup', 'forgotPassword', 'verifyEmail'
-  const { login } = useContext(AuthContext);
+  const { login, loginWithUserData } = useContext(AuthContext);
   const navigate = useNavigate();
 
   // State for form inputs
@@ -45,67 +45,45 @@ const AuthModal = ({ isOpen, onClose }) => {
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    const users = JSON.parse(localStorage.getItem('users')) || [];
-    const userExists = users.some(user => user.email === email);
 
     if (!isPasswordValid) {
-      showToast('Please ensure your password meets all requirements.', true);
+      alert('Please ensure your password meets all requirements.');
       return;
     }
-
-    if (userExists) {
-      showToast('An account with this email already exists.', true);
-      return;
-    }
-
-    const newUser = {
-      fullName,
-      email,
-      password, // In a real app, this should be hashed!
-      profilePicture: '',
-      course: role === 'Custodian' ? 'Custodian' : 'Not set', // Set a default title for custodian
-      role: role, // Add the selected role
-      ...(role === 'Custodian' && { hostelInfo }), // Conditionally add hostel info
-      isVerified: false, // Add verification flag
-    };
 
     try {
       const response = await apiService.auth.register({
-        name: newUser.fullName,
-        email: newUser.email,
-        password: newUser.password,
-        role: newUser.role
+        name: fullName,
+        email: email,
+        password: password,
+        role: role
       });
 
-      showToast('Registration successful! Please verify your email.');
-      setView('verifyEmail');
-    } catch (error) {
-      if (error.response?.status === 400) {
-        showToast('User already exists', true);
-      } else {
-        showToast('Registration failed. Please try again.', true);
-      }
-      return;
-    }
-
-
-
-
-    // users.push(newUser);
-    // localStorage.setItem('users', JSON.stringify(users));
-
-    // Simulate sending a verification email
-    console.log(`
-      --- SIMULATED VERIFICATION EMAIL ---
-      To: ${email}
-      Subject: Verify Your BookMyHostel Account
+      // Auto-login after successful registration
+      localStorage.setItem('auth', JSON.stringify(response.data));
+      loginWithUserData(response.data);
       
-      Thank you for signing up! Please verify your email to activate your account.
-      In this demo, click the "Simulate Email Verification" button in the modal.
-      --- END OF SIMULATED EMAIL ---
-    `);
+      alert('Registration successful! Welcome!');
+      onClose();
 
-    setView('verifyEmail'); // Switch to the verification view
+      // Small delay to ensure auth state is updated
+      setTimeout(() => {
+        if (response.data.role === 'Custodian') {
+          console.log('Navigating to custodian dashboard');
+          navigate('/custodian-dashboard');
+        } else {
+          console.log('Navigating to student dashboard');
+          navigate('/dashboard');
+        }
+      }, 100);
+    } catch (error) {
+      console.error('Registration error:', error);
+      if (error.response?.status === 400) {
+        alert('User already exists');
+      } else {
+        alert('Registration failed: ' + (error.response?.data?.message || error.message));
+      }
+    }
   };
 
   const handleLogin = async (e) => {
@@ -115,22 +93,25 @@ const AuthModal = ({ isOpen, onClose }) => {
       const response = await apiService.auth.login(email, password);
       
       localStorage.setItem('auth', JSON.stringify(response.data));
-      login(response.data);
-      showToast('Logged in successfully!');
+      loginWithUserData(response.data);
+      
+      alert('Logged in successfully!');
       onClose();
 
-      if (response.data.role === 'Custodian') {
-        navigate('/custodian-dashboard');
-      } else {
-        navigate('/dashboard');
-      }
+      // Small delay to ensure auth state is updated
+      setTimeout(() => {
+        if (response.data.role === 'Custodian') {
+          console.log('Navigating to custodian dashboard');
+          navigate('/custodian-dashboard');
+        } else {
+          console.log('Navigating to student dashboard');
+          navigate('/dashboard');
+        }
+      }, 100);
     } catch (error) {
-      showToast('Invalid email or password.', true);
+      console.error('Login error:', error);
+      alert('Login failed: ' + (error.response?.data?.message || 'Invalid email or password'));
     }
-
-
-
-
   };
 
   const handleForgotPassword = (e) => {
@@ -140,21 +121,7 @@ const AuthModal = ({ isOpen, onClose }) => {
     onClose();
   };
 
-  // This function simulates the user clicking a link in their email
-  const handleSimulateVerification = () => {
-    const users = JSON.parse(localStorage.getItem('users')) || [];
-    const userIndex = users.findIndex(u => u.email === email);
 
-    if (userIndex > -1) {
-      users[userIndex].isVerified = true;
-      localStorage.setItem('users', JSON.stringify(users));
-      showToast('Email verified successfully! You can now log in.');
-      setView('login');
-    } else {
-      showToast('Could not find user to verify. Please sign up again.', true);
-      setView('signup');
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -251,18 +218,7 @@ const AuthModal = ({ isOpen, onClose }) => {
                 <p className="form-switcher">Remember your password? <a href="#" onClick={(e) => handleFormSwitch(e, 'login')}>Back to Login</a></p>
               </div>
             )}
-            {/* Verify Email View */}
-            {view === 'verifyEmail' && (
-              <div id="verifyEmailView" key="verify">
-                <h3>Check Your Email</h3>
-                <p className="muted">We've sent a verification link to <strong>{email}</strong>. Please check your inbox to activate your account.</p>
-                <p className="form-note">For this demo, a "verification email" was logged to the console. Click the button below to simulate verifying.</p>
-                <button className="btn primary full-width" onClick={handleSimulateVerification}>Simulate Email Verification</button>
-                <p className="form-switcher">
-                  <a href="#" onClick={(e) => handleFormSwitch(e, 'login')}>Back to Login</a>
-                </p>
-              </div>
-            )}
+
           </div>
         </div>
       </div>

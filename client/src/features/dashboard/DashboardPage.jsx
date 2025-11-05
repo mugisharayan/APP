@@ -45,8 +45,9 @@ const DashboardPage = ({ onOpenReviewModal }) => {
     navigate('/');
   };
 
-  const latestBooking = bookingHistory[0];
-  const pastBookingsForReview = bookingHistory.filter((booking, index) => {
+  const bookings = bookingHistory || [];
+  const latestBooking = bookings[0];
+  const pastBookingsForReview = bookings.filter((booking, index) => {
     return index > 0 || (index === 0 && booking.status === 'Cancelled');
   });
 
@@ -87,7 +88,7 @@ const DashboardPage = ({ onOpenReviewModal }) => {
                   <div className="stat-card">
                     <i className="fa-solid fa-file-invoice"></i>
                     <div>
-                      <h4 className="stat-number" id="statTotalBookings">{bookingHistory.length}</h4>
+                      <h4 className="stat-number" id="statTotalBookings">{bookings.length}</h4>
                       <p className="stat-label muted">Total Bookings</p>
                     </div>
                   </div>

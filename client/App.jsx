@@ -61,7 +61,7 @@ function App() {
           <Route path="/payment" element={<PaymentPage />} />
 
           {/* Protected Student Routes */}
-          <Route element={<ProtectedRoute allowedRoles={['student']} />}>
+          <Route element={<ProtectedRoute allowedRoles={['Student', 'student']} />}>
             <Route path="/dashboard" element={<DashboardPage onOpenReviewModal={(name) => { setReviewHostelName(name); setIsReviewModalOpen(true); }} />} />
             <Route path="/my-bookings" element={<MyBookingsPage onOpenReviewModal={(name) => { setReviewHostelName(name); setIsReviewModalOpen(true); }} />} />
             <Route path="/maintenance" element={<MaintenancePage />} />
@@ -69,7 +69,7 @@ function App() {
           </Route>
 
           {/* Protected Custodian Routes */}
-          <Route element={<ProtectedRoute allowedRoles={['custodian']} />}>
+          <Route element={<ProtectedRoute allowedRoles={['Custodian', 'custodian']} />}>
             <Route path="/custodian-dashboard" element={<CustodianDashboardPage />} />
             <Route path="/custodian-payment-management" element={<CustodianPaymentManagementPage />} />
             <Route path="/custodian-room-assignment" element={<CustodianRoomAssignmentPage />} />

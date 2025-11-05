@@ -32,7 +32,13 @@ const getUserProfile = asyncHandler(async (req, res) => {
  * @access  Public
  */
 const registerUser = asyncHandler(async (req, res) => {
+  console.log('Registration request:', req.body);
   const { name, email, password, role } = req.body;
+
+  if (!name || !email || !password || !role) {
+    res.status(400);
+    throw new Error('Please provide all required fields');
+  }
 
   const userExists = await User.findOne({ email });
 
@@ -53,6 +59,7 @@ const registerUser = asyncHandler(async (req, res) => {
       expiresIn: '30d',
     });
 
+    console.log('User registered successfully:', user.email);
     res.status(201).json({
       _id: user._id,
       name: user.name,
@@ -72,7 +79,13 @@ const registerUser = asyncHandler(async (req, res) => {
  * @access  Public
  */
 const loginUser = asyncHandler(async (req, res) => {
+  console.log('Login request:', req.body.email);
   const { email, password } = req.body;
+
+  if (!email || !password) {
+    res.status(400);
+    throw new Error('Please provide email and password');
+  }
 
   const user = await User.findOne({ email });
 
@@ -82,6 +95,7 @@ const loginUser = asyncHandler(async (req, res) => {
       expiresIn: '30d',
     });
 
+    console.log('User logged in successfully:', user.email);
     res.status(200).json({
       _id: user._id,
       name: user.name,
@@ -90,6 +104,7 @@ const loginUser = asyncHandler(async (req, res) => {
       token: token,
     });
   } else {
+    console.log('Login failed for:', email);
     res.status(401).json({ message: 'Invalid email or password' });
   }
 });

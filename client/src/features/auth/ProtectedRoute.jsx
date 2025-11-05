@@ -5,21 +5,22 @@ import { AuthContext } from './AuthContext';
 const ProtectedRoute = ({ allowedRoles }) => {
   const { isAuthenticated, userProfile } = useContext(AuthContext);
 
+  console.log('ProtectedRoute check:', { isAuthenticated, userRole: userProfile?.role, allowedRoles });
+
   if (!isAuthenticated) {
-    // If not authenticated, redirect to the home page.
-    // The AuthModal can be triggered from there.
+    console.log('Not authenticated, redirecting to home');
     return <Navigate to="/" replace />;
   }
 
   const userRole = userProfile?.role;
 
   if (allowedRoles && !allowedRoles.includes(userRole)) {
-    // If the user's role is not allowed, redirect them to their default dashboard.
-    const redirectPath = userRole === 'custodian' ? '/custodian-dashboard' : '/dashboard';
+    console.log('Role not allowed, redirecting to default dashboard');
+    const redirectPath = userRole === 'Custodian' ? '/custodian-dashboard' : '/dashboard';
     return <Navigate to={redirectPath} replace />;
   }
 
-  // If authenticated and role is allowed, render the child routes.
+  console.log('Access granted to protected route');
   return <Outlet />;
 };
 

@@ -12,23 +12,22 @@ export const AuthProvider = ({ children }) => {
 
   // On initial load, check localStorage for existing session
   useEffect(() => {
-    const checkLoggedIn = async () => {
-      const user = authService.getCurrentUser();
-      if (user && user.token) {
+    const checkLoggedIn = () => {
+      const authData = localStorage.getItem('auth');
+      if (authData) {
         try {
-          // Verify token by fetching profile
-          const data = await userService.getUserProfile();
-          setUserProfile(data);
-          setIsAuthenticated(true);
-
-          // Load favorites from localStorage
-          const storedFavorites = JSON.parse(localStorage.getItem('bookMyHostelFavorites')) || [];
-          setFavorites(storedFavorites);
+          const userData = JSON.parse(authData);
+          if (userData.token) {
+            setUserProfile(userData);
+            setIsAuthenticated(true);
+            
+            // Load favorites from localStorage
+            const storedFavorites = JSON.parse(localStorage.getItem('bookMyHostelFavorites')) || [];
+            setFavorites(storedFavorites);
+          }
         } catch (error) {
-          console.error("Session validation failed", error);
-          authService.logout(); // Clear invalid session
-          setIsAuthenticated(false);
-          setUserProfile(null);
+          console.error('Invalid auth data:', error);
+          localStorage.removeItem('auth');
         }
       }
       setLoading(false);
@@ -47,8 +46,17 @@ export const AuthProvider = ({ children }) => {
     return userData;
   };
 
+  const loginWithUserData = (userData) => {
+    setUserProfile(userData);
+    setIsAuthenticated(true);
+    // Load favorites from localStorage on login
+    const storedFavorites = JSON.parse(localStorage.getItem('bookMyHostelFavorites')) || [];
+    setFavorites(storedFavorites);
+  };
+
   const logout = () => {
-    authService.logout();
+    localStorage.removeItem('auth');
+    localStorage.removeItem('user');
     setUserProfile(null);
     setIsAuthenticated(false);
     setFavorites([]);
@@ -79,11 +87,14 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     loading,
     login,
+    loginWithUserData,
     logout,
     favorites,
     toggleFavorite,
     isFavorited,
     setUserProfile, // Exposing for profile updates
+    setIsAuthenticated, // Exposing for direct auth state updates
+    bookingHistory: [], // Initialize empty booking history
   };
 
   return (

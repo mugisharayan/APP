@@ -4,22 +4,17 @@ const API_BASE_URL = 'http://localhost:5000/api';
 
 // Configure axios defaults
 axios.defaults.withCredentials = true;
-axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+axios.defaults.headers.common['Content-Type'] = 'application/json';
 
-// CSRF token management
-const getCSRFToken = () => {
-  let token = document.cookie.split('; ').find(row => row.startsWith('csrf-token='))?.split('=')[1];
-  if (!token) {
-    const nonce = crypto.getRandomValues(new Uint8Array(16)).reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '');
-    token = nonce + Date.now().toString(36);
-    document.cookie = `csrf-token=${token}; path=/; SameSite=Strict; Secure`;
-  }
-  return token;
-};
-
-// Request interceptor for CSRF protection
+// Add auth token to requests
 axios.interceptors.request.use((config) => {
-  config.headers['X-CSRF-Token'] = getCSRFToken();
+  const auth = localStorage.getItem('auth');
+  if (auth) {
+    const userData = JSON.parse(auth);
+    if (userData.token) {
+      config.headers.Authorization = `Bearer ${userData.token}`;
+    }
+  }
   return config;
 });
 
