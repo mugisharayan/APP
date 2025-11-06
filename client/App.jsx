@@ -39,6 +39,7 @@ import CustodianMaintenancePage from './src/features/custodian/CustodianMaintena
 function App() {
   // State for modals (these would typically be managed by a context or Redux in a larger app)
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authRedirectTo, setAuthRedirectTo] = useState(null);
   const [isFavoritesOverlayOpen, setIsFavoritesOverlayOpen] = useState(false);
   const [isDashboardChoiceModalOpen, setIsDashboardChoiceModalOpen] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -47,7 +48,10 @@ function App() {
   return (
     <>
       <Header
-        onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onOpenAuthModal={(redirectTo = null) => {
+          setAuthRedirectTo(redirectTo);
+          setIsAuthModalOpen(true);
+        }}
         onOpenFavorites={() => setIsFavoritesOverlayOpen(true)}
         onOpenDashboardChoice={() => setIsDashboardChoiceModalOpen(true)}
       />
@@ -56,7 +60,10 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/hostels" element={<HostelsPage />} />
-          <Route path="/hostel/:hostelId" element={<HostelDetailPage onOpenAuthModal={() => setIsAuthModalOpen(true)} />} />
+          <Route path="/hostel/:hostelId" element={<HostelDetailPage onOpenAuthModal={() => {
+            setAuthRedirectTo('booking');
+            setIsAuthModalOpen(true);
+          }} />} />
           <Route path="/booking" element={<BookingPage />} />
           <Route path="/payment" element={<PaymentPage />} />
 
@@ -88,7 +95,14 @@ function App() {
       <Footer />
 
       {/* Modals and Overlays */}
-      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setAuthRedirectTo(null);
+        }} 
+        redirectTo={authRedirectTo}
+      />
       <FavoritesOverlay isOpen={isFavoritesOverlayOpen} onClose={() => setIsFavoritesOverlayOpen(false)} />
       <DashboardChoiceModal isOpen={isDashboardChoiceModalOpen} onClose={() => setIsDashboardChoiceModalOpen(false)} />
       <ReviewModal isOpen={isReviewModalOpen} onClose={() => setIsReviewModalOpen(false)} hostelName={reviewHostelName} />

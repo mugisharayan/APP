@@ -25,9 +25,13 @@ const DashboardSidebar = ({ user, onLogout, role = 'student' }) => {
   return (
     <aside className={`dashboard-sidebar ${role === 'custodian' ? 'custodian-sidebar' : ''}`}>
       <div className="profile-summary">
-        <img src={user.profilePicture || `https://i.pravatar.cc/80?u=${user.email}`} alt={`${user.fullName} profile`} />
-        <h4>{user.fullName}</h4>
-        <p>{user.course || 'Custodian'}</p>
+        <img 
+          src={user.profilePicture || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Ccircle cx='40' cy='40' r='40' fill='%23f0f0f0'/%3E%3Cpath d='M40 24c-6 0-11 5-11 11s5 11 11 11 11-5 11-11-5-11-11-11zm0 48c-13 0-24-6-24-14 0-8 11-14 24-14s24 6 24 14c0 8-11 14-24 14z' fill='%23ccc'/%3E%3C/svg%3E"} 
+          alt={`${user.fullName} profile`} 
+          style={{border: '2px solid #00bfff', borderRadius: '50%'}}
+        />
+        <h4>{user.fullName || user.name}</h4>
+        <p>{user.name || user.fullName}</p>
       </div>
       <nav className="dashboard-nav">
         {links.map(link => <NavLink key={link.to} to={link.to} className="dashboard-link"><i className={`fa-solid ${link.icon}`}></i> {link.text}</NavLink>)}

@@ -34,6 +34,24 @@ const getHostelById = async (req, res) => {
 };
 
 /**
+ * @desc    Fetch single hostel by slug
+ * @route   GET /api/hostels/slug/:slug
+ * @access  Public
+ */
+const getHostelBySlug = async (req, res) => {
+  try {
+    const hostel = await Hostel.findOne({ slug: req.params.slug });
+    if (hostel) {
+      res.json(hostel);
+    } else {
+      res.status(404).json({ message: 'Hostel not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+/**
  * @desc    Create a new review
  * @route   POST /api/hostels/:id/reviews
  * @access  Private
@@ -59,4 +77,4 @@ const createHostelReview = async (req, res) => {
   }
 };
 
-export { getHostels, getHostelById, createHostelReview };
+export { getHostels, getHostelById, getHostelBySlug, createHostelReview };

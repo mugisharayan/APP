@@ -41,13 +41,17 @@ const Header = ({ onOpenAuthModal, onOpenFavorites, onOpenDashboardChoice }) => 
                 )}
               </button>
               <Link to="/dashboard" className="user-profile" style={{ textDecoration: 'none' }}>
-                <img src={userProfile.profilePicture || `https://i.pravatar.cc/30?u=${userProfile.email}`} alt="User profile" />
+                <img 
+                  src={userProfile.profilePicture || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3E%3Ccircle cx='15' cy='15' r='15' fill='%23f0f0f0'/%3E%3Cpath d='M15 9c-2 0-4 2-4 4s2 4 4 4 4-2 4-4-2-4-4-4zm0 18c-5 0-9-2-9-5 0-3 4-5 9-5s9 2 9 5c0 3-4 5-9 5z' fill='%23ccc'/%3E%3C/svg%3E"} 
+                  alt="User profile" 
+                  style={{border: '1px solid #00bfff', borderRadius: '50%'}}
+                />
               </Link>
               <button className="icon-btn" onClick={logout} aria-label="Logout"><i className="fa-solid fa-right-from-bracket"></i></button>
             </>
           ) : (
             <>
-              <button className="icon-btn" onClick={onOpenAuthModal} aria-label="Login or Sign up"><i className="fa-solid fa-user"></i></button>
+              <button className="icon-btn" onClick={() => onOpenAuthModal('hostels')} aria-label="Login or Sign up"><i className="fa-solid fa-user"></i></button>
               <button className="icon-btn" onClick={onOpenFavorites} aria-label="View your wishlist" style={{ position: 'relative' }}>
                 <i className="fa-regular fa-heart"></i>
                 {favorites.length > 0 && (

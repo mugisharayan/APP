@@ -67,8 +67,8 @@ const DashboardPage = ({ onOpenReviewModal }) => {
             {/* Dashboard Home Panel */}
             <div id="dashboard-home" className="dashboard-panel active">
               <div className="dashboard-header">
-                <h2>Dashboard</h2>
-                <p className="muted" id="welcomeMessage">Here's a quick overview of your student dashboard.</p>
+                <h2>Welcome, {userProfile?.name || 'Student'}!</h2>
+                <p className="muted" id="welcomeMessage">Here's a quick overview of your {userProfile?.role?.toLowerCase() || 'student'} dashboard.</p>
               </div>
 
               <div className="dashboard-section">
