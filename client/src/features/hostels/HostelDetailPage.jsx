@@ -1,17 +1,33 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import hostelData from '../../data/hostels';
+import { apiService } from '../../service/api.service';
 import { AuthContext } from '../auth/AuthContext';
 
 const HostelDetailPage = ({ onOpenAuthModal }) => {
   const { hostelId } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useContext(AuthContext);
-  const hostel = hostelData[hostelId];
-
+  
+  const [hostel, setHostel] = useState(null);
+  const [dataSource, setDataSource] = useState('local');
   const [isFavorited, setIsFavorited] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+
+  useEffect(() => {
+    const loadHostel = async () => {
+      try {
+        const response = await apiService.get(`/hostels/${hostelId}`);
+        setHostel(response.data);
+        setDataSource('mongodb');
+      } catch (err) {
+        setHostel(hostelData[hostelId]);
+        setDataSource('local');
+      }
+    };
+    loadHostel();
+  }, [hostelId]);
 
   useEffect(() => {
     if (hostel) {
@@ -118,6 +134,8 @@ const HostelDetailPage = ({ onOpenAuthModal }) => {
                 <span><i className="fa-solid fa-star"></i> 4.0 (125 reviews)</span>
                 <span className="separator-dot">·</span>
                 <span><i className="fa-solid fa-map-marker-alt"></i> {hostel.location}, Makerere</span>
+                <span className="separator-dot">·</span>
+                <small>{dataSource === 'mongodb' ? '🟢 Live' : '🟡 Local'}</small>
               </div>
             </div>
             <div className="new-header-actions">

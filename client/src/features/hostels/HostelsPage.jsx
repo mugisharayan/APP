@@ -1,10 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import HostelCard from './HostelCard';
 import hostelData from '../../data/hostels';
+import { apiService } from '../../service/api.service';
 import '../../styles/hostel-card.css';
 import '../../styles/redesigned-hostels.css';
 
 const HostelsPage = () => {
+  const [hostels, setHostels] = useState([]);
+  const [dataSource, setDataSource] = useState('local');
   const [filters, setFilters] = useState({
     searchTerm: '',
     location: 'all',
@@ -13,6 +16,23 @@ const HostelsPage = () => {
     amenities: [],
   });
   const [visibleHostelCount, setVisibleHostelCount] = useState(12);
+
+  // Load data - try MongoDB first, fallback to local
+  useEffect(() => {
+    const loadHostels = async () => {
+      try {
+        const response = await apiService.get('/hostels');
+        const apiHostels = response.data.map(hostel => [hostel._id, hostel]);
+        setHostels(apiHostels);
+        setDataSource('mongodb');
+      } catch (err) {
+        const localHostels = Object.entries(hostelData);
+        setHostels(localHostels);
+        setDataSource('local');
+      }
+    };
+    loadHostels();
+  }, []);
 
   // Animation on scroll logic
   useEffect(() => {
@@ -54,7 +74,7 @@ const HostelsPage = () => {
   };
 
   const filteredHostels = useMemo(() => {
-    return Object.entries(hostelData).filter(([, hostel]) => {
+    return hostels.filter(([, hostel]) => {
       const lowestPrice = hostel.rooms.reduce((min, room) => (room.price < min ? room.price : min), Infinity);
       const nameMatch = hostel.name.toLowerCase().includes(filters.searchTerm.toLowerCase());
       const locationMatch = filters.location === 'all' || hostel.location.toLowerCase().replace(/ /g, '-') === filters.location;
@@ -142,6 +162,9 @@ const HostelsPage = () => {
             <div className="page-header">
               <h3>Find Your <span className="accent">Perfect Hostel</span></h3>
               <p className="muted">Search, filter, and compare all available hostels near Makerere University.</p>
+              <div className="data-source-indicator">
+                <small>Data source: {dataSource === 'mongodb' ? '🟢 Live Database' : '🟡 Local Data'}</small>
+              </div>
               <div className="search-wrapper">
                 <input type="search" className="sidebar-search" placeholder="Search by hostel name..." value={filters.searchTerm} onChange={handleSearchChange} />
                 <i className="fa-solid fa-magnifying-glass"></i>
