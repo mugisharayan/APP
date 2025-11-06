@@ -1,17 +1,43 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import hostelData from '../../data/hostels';
 import { AuthContext } from '../auth/AuthContext';
 
 const HostelDetailPage = ({ onOpenAuthModal }) => {
   const { hostelId } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useContext(AuthContext);
-  const hostel = hostelData[hostelId];
-
+  
+  const [hostel, setHostel] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isFavorited, setIsFavorited] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+
+  // Fetch hostel data from API
+  useEffect(() => {
+    const fetchHostel = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`http://localhost:5000/api/hostels/slug/${hostelId}`);
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error('Hostel not found');
+          }
+          throw new Error('Failed to fetch hostel');
+        }
+        const data = await response.json();
+        setHostel(data);
+      } catch (err) {
+        setError(err.message);
+        console.error('Error fetching hostel:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHostel();
+  }, [hostelId]);
 
   useEffect(() => {
     if (hostel) {
@@ -38,13 +64,30 @@ const HostelDetailPage = ({ onOpenAuthModal }) => {
     return () => observer.disconnect();
   }, []);
 
-  if (!hostel) {
+  if (loading) {
     return (
       <main className="hostel-detail-page new-design">
         <div className="container">
-          <h1>Hostel not found</h1>
-          <p>The hostel you are looking for does not exist or the link is incorrect.</p>
-          <Link to="/hostels" className="btn primary">Back to Hostels</Link>
+          <div style={{textAlign: 'center', padding: '50px'}}>
+            <i className="fa-solid fa-spinner fa-spin" style={{fontSize: '2rem', marginBottom: '20px'}}></i>
+            <h2>Loading Hostel Details...</h2>
+            <p>Please wait while we fetch the hostel information.</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (error || !hostel) {
+    return (
+      <main className="hostel-detail-page new-design">
+        <div className="container">
+          <div style={{textAlign: 'center', padding: '50px'}}>
+            <i className="fa-solid fa-exclamation-triangle" style={{fontSize: '2rem', marginBottom: '20px', color: '#e53935'}}></i>
+            <h1>{error || 'Hostel not found'}</h1>
+            <p>The hostel you are looking for does not exist or there was an error loading it.</p>
+            <Link to="/hostels" className="btn primary">Back to Hostels</Link>
+          </div>
         </div>
       </main>
     );
