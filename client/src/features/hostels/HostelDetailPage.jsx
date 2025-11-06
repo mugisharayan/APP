@@ -106,24 +106,25 @@ const HostelDetailPage = ({ onOpenAuthModal }) => {
   };
 
   return (
-    <main className="hostel-detail-page new-design">
-      <div className="container">
-        <header className="new-detail-header">
-          <div className="new-header-left">
-            <h1 data-hostel-id={hostelId}>{hostel.name}</h1>
-            <div className="meta-info">
-              <span><i className="fa-solid fa-star"></i> 4.0 (125 reviews)</span>
-              <span className="separator-dot">·</span>
-              <span><i className="fa-solid fa-map-marker-alt"></i> {hostel.location}, Makerere</span>
+    <>
+      <main className="hostel-detail-page new-design">
+        <div className="container">
+          <header className="new-detail-header">
+            <div className="new-header-left">
+              <h1 data-hostel-id={hostelId}>{hostel.name}</h1>
+              <div className="meta-info">
+                <span><i className="fa-solid fa-star"></i> 4.0 (125 reviews)</span>
+                <span className="separator-dot">·</span>
+                <span><i className="fa-solid fa-map-marker-alt"></i> {hostel.location}, Makerere</span>
+              </div>
             </div>
-          </div>
-          <div className="new-header-actions">
-            <button className={`btn outline small ${isFavorited ? 'active' : ''}`} onClick={handleToggleFavorite} id="detailFavoriteBtn">
-              <i className={isFavorited ? 'fa-solid fa-heart' : 'fa-regular fa-heart'}></i> {isFavorited ? 'Favorited' : 'Favorite'}
-            </button>
-            <Link to="/hostels" className="back-btn">Back to Hostels</Link>
-          </div>
-        </header>
+            <div className="new-header-actions">
+              <button className={`btn outline small ${isFavorited ? 'active' : ''}`} onClick={handleToggleFavorite} id="detailFavoriteBtn">
+                <i className={isFavorited ? 'fa-solid fa-heart' : 'fa-regular fa-heart'}></i> {isFavorited ? 'Favorited' : 'Favorite'}
+              </button>
+              <Link to="/hostels" className="back-btn">Back to Hostels</Link>
+            </div>
+          </header>
 
         <section className="hero-section animate-on-scroll">
           <div className="hero-image-placeholder" id="heroImage" onClick={() => openLightbox(0)}>
@@ -251,7 +252,8 @@ const HostelDetailPage = ({ onOpenAuthModal }) => {
             <a href={`tel:${hostel.contact}`} className="contact-btn" id="contactBtn">CONTACT {hostel.contact}</a>
           </div>
         </section>
-      </div>
+        </div>
+      </main>
 
       {/* IMAGE LIGHTBOX MODAL */}
       {isLightboxOpen && (
@@ -264,7 +266,7 @@ const HostelDetailPage = ({ onOpenAuthModal }) => {
           <button className="lightbox-nav-btn next" onClick={(e) => { e.stopPropagation(); showNextImage(); }}><i className="fa-solid fa-chevron-right"></i></button>
         </div>
       )}
-    </main>
+    </>
   );
 };
 

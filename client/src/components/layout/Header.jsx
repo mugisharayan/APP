@@ -28,7 +28,7 @@ const Header = ({ onOpenAuthModal, onOpenFavorites, onOpenDashboardChoice }) => 
           <NavLink to="/" onClick={toggleNav}>Home</NavLink>
           <NavLink to="/about" onClick={toggleNav}>About</NavLink>
           <NavLink to="/hostels" onClick={toggleNav}>Hostels</NavLink>
-          <a href="/#faq" onClick={toggleNav}>FAQs</a> {/* Anchor links still use href */}
+          <a href="/#faq" onClick={toggleNav}>FAQs</a>
           <a href="/#contact" onClick={toggleNav}>Contact</a>
         </nav>
         <div className="actions">

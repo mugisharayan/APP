@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import HostelCard from './HostelCard';
 import hostelData from '../../data/hostels';
+import '../../styles/hostel-card.css';
+import '../../styles/redesigned-hostels.css';
 
 const HostelsPage = () => {
   const [filters, setFilters] = useState({
@@ -73,9 +75,13 @@ const HostelsPage = () => {
   };
 
   return (
-    <main>
-      <div className="container">
-        <div className="products-page-layout">
+    <div className="hostels-page">
+
+      
+      {/* Main Content */}
+      <main className="main-content">
+        <div className="container">
+          <div className="products-page-layout">
           <aside className="products-sidebar">
             <div className="sidebar-section">
               <h3>Location</h3>
@@ -160,14 +166,21 @@ const HostelsPage = () => {
               </div>
               {filteredHostels.length > hostelsToDisplay.length && (
                 <div className="load-more-container">
-                  <button id="loadMoreBtn" className="btn primary" onClick={handleLoadMore}>Load More Hostels</button>
+                  <button className="modern-load-more-btn" onClick={handleLoadMore}>
+                    <span className="btn-text">Load More Hostels</span>
+                    <div className="btn-icon">
+                      <i className="fas fa-chevron-down"></i>
+                    </div>
+                    <div className="btn-count">{filteredHostels.length - hostelsToDisplay.length} more</div>
+                  </button>
                 </div>
               )}
             </section>
           </div>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 };
 
