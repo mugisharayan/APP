@@ -69,7 +69,7 @@ body{
 }
 .site-header.scrolled .logo {
   color: var(--primary-color);
-  text-shadow: none;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 .site-header.scrolled .main-nav a {
   color: var(--text-dark);
@@ -81,7 +81,10 @@ body{
   font-size: 32px;
   color: var(--primary-color);
   text-decoration: none;
-  text-shadow: 0 0 12px rgba(255, 255, 255, 0.8);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  position: relative;
+  display: block;
 }
 .main-nav a{margin:0 10px;color:#fff;text-decoration:none;font-weight:600}
 .actions{display:flex;align-items:center;gap:10px}
@@ -3945,4 +3948,168 @@ input[type=range]::-webkit-slider-thumb {
 /* React Beautiful DND styles */
 .ticket-list.is-dragging-over {
   background-color: #e6f0ff; /* A light blue to indicate a drop zone */
+}
+/* Loading and Error States */
+.loading-message, .error-message {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #666;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.loading-message i, .error-message i {
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
+  display: block;
+}
+
+.loading-message i {
+  color: #007bff;
+}
+
+.error-message i {
+  color: #dc3545;
+}
+
+.loading-message h4, .error-message h4 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.loading-message p, .error-message p {
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.error-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.error-actions .btn {
+  min-width: 120px;
+}
+
+@media (max-width: 768px) {
+  .loading-message, .error-message {
+    padding: 3rem 1rem;
+  }
+  
+  .loading-message i, .error-message i {
+    font-size: 2.5rem;
+  }
+  
+  .error-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+/* Loading state for featured hostels */
+.loading-featured {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  grid-column: 1 / -1;
+}
+
+.loading-featured p {
+  margin: 0;
+  font-style: italic;
+}
+/* Modern Price Filter Styles */
+.price-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.price-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.price-input-wrapper label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.price-input-wrapper input[type="number"] {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.price-input-wrapper input[type="number"]:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.price-value {
+  font-size: 0.9rem;
+  color: #666;
+  text-align: center;
+}
+/* Modern Amenities Filter Styles */
+.amenities-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.modern-amenity-btn {
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-radius: 20px;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #495057;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+}
+
+.modern-amenity-btn:hover {
+  background: #e9ecef;
+  border-color: #007bff;
+  color: #007bff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.15);
+}
+
+.modern-amenity-btn.active {
+  background: #007bff;
+  border-color: #007bff;
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.modern-amenity-btn.active:hover {
+  background: #0056b3;
+  border-color: #0056b3;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  .modern-amenity-btn {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+    min-height: 32px;
+  }
 }

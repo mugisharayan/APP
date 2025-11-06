@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import HostelCard from '../hostels/HostelCard';
-import hostelData from '../../data/hostels';
+import { apiService } from '../../service/api.service';
 import { useIntersectionObserver } from '../../hooks/useIntersectionObserver';
 
 const HomePage = () => {
@@ -18,6 +18,9 @@ const HomePage = () => {
 
   // State for contact form
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
+  
+  // State for featured hostels
+  const [featuredHostels, setFeaturedHostels] = useState([]);
 
   const handleContactChange = (e) => {
     const { name, value } = e.target;
@@ -86,8 +89,20 @@ const HomePage = () => {
 
   const goToTestimonial = (index) => setTestimonialIndex(index);
 
-  // Get featured hostels (first 4 from hostelData)
-  const featuredHostels = Object.entries(hostelData).slice(0, 4);
+  // Load featured hostels from MongoDB
+  useEffect(() => {
+    const loadFeaturedHostels = async () => {
+      try {
+        const response = await apiService.hostels.getAll();
+        const hostelsData = response.data.slice(0, 4).map(hostel => [hostel._id, hostel]);
+        setFeaturedHostels(hostelsData);
+      } catch (err) {
+        console.error('Failed to load featured hostels:', err);
+        setFeaturedHostels([]);
+      }
+    };
+    loadFeaturedHostels();
+  }, []);
 
   const handleContactSubmit = (e) => {
     e.preventDefault();
@@ -258,9 +273,15 @@ const HomePage = () => {
         <h3>Featured <span className="accent">Hostels</span></h3>
         <p className="muted">Check out some of the most popular hostels among students.</p>
         <div className="product-grid">
-          {featuredHostels.map(([id, hostel]) => (
-            <HostelCard key={id} hostelId={id} hostel={hostel} />
-          ))}
+          {featuredHostels.length > 0 ? (
+            featuredHostels.map(([id, hostel]) => (
+              <HostelCard key={id} hostelId={id} hostel={hostel} />
+            ))
+          ) : (
+            <div className="loading-featured">
+              <p>Loading featured hostels...</p>
+            </div>
+          )}
         </div>
       </section>
 

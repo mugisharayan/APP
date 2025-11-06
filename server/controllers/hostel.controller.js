@@ -11,6 +11,7 @@ const getHostels = async (req, res) => {
     const hostels = await Hostel.find({});
     res.json(hostels);
   } catch (error) {
+    console.error('Error fetching hostels:', error);
     res.status(500).json({ message: 'Server Error' });
   }
 };
@@ -29,6 +30,7 @@ const getHostelById = async (req, res) => {
       res.status(404).json({ message: 'Hostel not found' });
     }
   } catch (error) {
+    console.error('Error fetching hostel:', error);
     res.status(500).json({ message: 'Server Error' });
   }
 };
