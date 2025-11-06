@@ -1,12 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import HostelCard from './HostelCard';
+import hostelData from '../../data/hostels';
 import '../../styles/hostel-card.css';
 import '../../styles/redesigned-hostels.css';
 
 const HostelsPage = () => {
-  const [hostels, setHostels] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     searchTerm: '',
     location: 'all',
@@ -15,29 +13,6 @@ const HostelsPage = () => {
     amenities: [],
   });
   const [visibleHostelCount, setVisibleHostelCount] = useState(12);
-
-  // Fetch hostels from API
-  useEffect(() => {
-    const fetchHostels = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('http://localhost:5000/api/hostels');
-        if (!response.ok) throw new Error('Failed to fetch hostels');
-        const data = await response.json();
-        
-        // Convert to the format expected by the frontend
-        const hostelEntries = data.map(hostel => [hostel.slug, hostel]);
-        setHostels(hostelEntries);
-      } catch (err) {
-        setError(err.message);
-        console.error('Error fetching hostels:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchHostels();
-  }, []);
 
   // Animation on scroll logic
   useEffect(() => {
@@ -55,7 +30,7 @@ const HostelsPage = () => {
     });
 
     return () => observer.disconnect();
-  }, [hostels]);
+  }, []);
 
   const handleFilterChange = (e) => {
     const { id, value } = e.target;
@@ -79,7 +54,7 @@ const HostelsPage = () => {
   };
 
   const filteredHostels = useMemo(() => {
-    return hostels.filter(([, hostel]) => {
+    return Object.entries(hostelData).filter(([, hostel]) => {
       const lowestPrice = hostel.rooms.reduce((min, room) => (room.price < min ? room.price : min), Infinity);
       const nameMatch = hostel.name.toLowerCase().includes(filters.searchTerm.toLowerCase());
       const locationMatch = filters.location === 'all' || hostel.location.toLowerCase().replace(/ /g, '-') === filters.location;
@@ -87,11 +62,10 @@ const HostelsPage = () => {
       const amenitiesMatch = filters.amenities.every(filterAmenity =>
         hostel.amenities.some(hostelAmenity => hostelAmenity.name.toLowerCase().replace(/ /g, '-') === filterAmenity)
       );
-      // College filter logic would go here if data supported it
 
       return nameMatch && locationMatch && priceMatch && amenitiesMatch;
     });
-  }, [filters, hostels]);
+  }, [filters]);
 
   const hostelsToDisplay = filteredHostels.slice(0, visibleHostelCount);
 
@@ -176,23 +150,7 @@ const HostelsPage = () => {
 
             {/* HOSTELS GRID */}
             <section className="products" id="products">
-              {loading && (
-                <div className="no-results-message">
-                  <i className="fa-solid fa-spinner fa-spin"></i>
-                  <h4>Loading Hostels...</h4>
-                  <p>Please wait while we fetch the latest hostel data.</p>
-                </div>
-              )}
-              
-              {error && (
-                <div className="no-results-message">
-                  <i className="fa-solid fa-exclamation-triangle"></i>
-                  <h4>Error Loading Hostels</h4>
-                  <p>{error}</p>
-                </div>
-              )}
-              
-              {!loading && !error && hostelsToDisplay.length === 0 && (
+              {hostelsToDisplay.length === 0 && (
                 <div className="no-results-message" id="noResultsMessage">
                   <i className="fa-solid fa-search"></i>
                   <h4>No Hostels Found</h4>
@@ -200,13 +158,11 @@ const HostelsPage = () => {
                 </div>
               )}
 
-              {!loading && !error && (
-                <div className="product-grid">
-                  {hostelsToDisplay.map(([id, hostel]) => (
-                    <HostelCard key={id} hostelId={id} hostel={hostel} />
-                  ))}
-                </div>
-              )}
+              <div className="product-grid">
+                {hostelsToDisplay.map(([id, hostel]) => (
+                  <HostelCard key={id} hostelId={id} hostel={hostel} />
+                ))}
+              </div>
               {filteredHostels.length > hostelsToDisplay.length && (
                 <div className="load-more-container">
                   <button className="modern-load-more-btn" onClick={handleLoadMore}>
