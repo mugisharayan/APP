@@ -2,9 +2,10 @@ import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from './AuthContext';
 import apiService from '../../service/api.service';
+import '../../styles/password-input.css';
 
 
-const AuthModal = ({ isOpen, onClose }) => {
+const AuthModal = ({ isOpen, onClose, redirectTo = null }) => {
   const [view, setView] = useState('login'); // 'login', 'signup', 'forgotPassword', 'verifyEmail'
   const { login, loginWithUserData } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -12,6 +13,9 @@ const AuthModal = ({ isOpen, onClose }) => {
   // State for form inputs
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState('Student'); // Add role state, default to student
   const [hostelInfo, setHostelInfo] = useState({ hostelName: '', hostelContact: '' });
@@ -42,12 +46,18 @@ const AuthModal = ({ isOpen, onClose }) => {
   }, [password, view]);
 
   const isPasswordValid = Object.values(passwordValidations).every(Boolean);
+  const passwordsMatch = password === confirmPassword && confirmPassword !== '';
 
   const handleSignup = async (e) => {
     e.preventDefault();
 
     if (!isPasswordValid) {
       alert('Please ensure your password meets all requirements.');
+      return;
+    }
+
+    if (!passwordsMatch) {
+      alert('Passwords do not match.');
       return;
     }
 
@@ -72,8 +82,17 @@ const AuthModal = ({ isOpen, onClose }) => {
           console.log('Navigating to custodian dashboard');
           navigate('/custodian-dashboard');
         } else {
-          console.log('Navigating to student dashboard');
-          navigate('/dashboard');
+          // Handle different redirect scenarios for students
+          if (redirectTo === 'hostels') {
+            console.log('Navigating to hostels page');
+            navigate('/hostels');
+          } else if (redirectTo === 'booking') {
+            console.log('Navigating to booking page');
+            navigate('/booking');
+          } else {
+            console.log('Navigating to student dashboard');
+            navigate('/dashboard');
+          }
         }
       }, 100);
     } catch (error) {
@@ -130,6 +149,9 @@ const AuthModal = ({ isOpen, onClose }) => {
     setView(type);
     setEmail('');
     setPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
     setFullName('');
     setPasswordValidations({ length: false, uppercase: false, lowercase: false, number: false, specialChar: false });
     setHostelInfo({ hostelName: '', hostelContact: '' });
@@ -152,7 +174,12 @@ const AuthModal = ({ isOpen, onClose }) => {
                 <p className="muted">Login to access your account and bookings.</p>
                 <form onSubmit={handleLogin}>
                   <input type="email" placeholder="Email Address" required value={email} onChange={(e) => setEmail(e.target.value)} />
-                  <input type="password" placeholder="Password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <div className="password-input-wrapper">
+                    <input type={showPassword ? 'text' : 'password'} placeholder="Password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                    <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
+                      <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                    </button>
+                  </div>
                   <div className="form-link-right">
                     <a href="#" onClick={(e) => handleFormSwitch(e, 'forgotPassword')}>Forgot Password?</a>
                   </div>
@@ -190,7 +217,12 @@ const AuthModal = ({ isOpen, onClose }) => {
                     </div>
                   )}
                   <div className="form-group">
-                    <input type="password" placeholder="Create Password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                    <div className="password-input-wrapper">
+                      <input type={showPassword ? 'text' : 'password'} placeholder="Create Password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                      <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
+                        <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                      </button>
+                    </div>
                     <div className="password-strength-indicator">
                       <ul>
                         <li className={passwordValidations.length ? 'valid' : ''}><i className={`fas ${passwordValidations.length ? 'fa-check-circle' : 'fa-circle'}`}></i> At least 8 characters</li>
@@ -201,7 +233,25 @@ const AuthModal = ({ isOpen, onClose }) => {
                       </ul>
                     </div>
                   </div>
-                  <button type="submit" className="btn primary full-width" disabled={!isPasswordValid}>Create Account</button>
+                  <div className="form-group">
+                    <div className="password-input-wrapper">
+                      <input type={showConfirmPassword ? 'text' : 'password'} placeholder="Confirm Password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                      <button type="button" className="password-toggle" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                        <i className={`fas ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                      </button>
+                    </div>
+                    {confirmPassword && !passwordsMatch && (
+                      <div className="password-match-indicator">
+                        <span style={{color: 'red', fontSize: '12px'}}><i className="fas fa-times-circle"></i> Passwords do not match</span>
+                      </div>
+                    )}
+                    {confirmPassword && passwordsMatch && (
+                      <div className="password-match-indicator">
+                        <span style={{color: 'green', fontSize: '12px'}}><i className="fas fa-check-circle"></i> Passwords match</span>
+                      </div>
+                    )}
+                  </div>
+                  <button type="submit" className="btn primary full-width" disabled={!isPasswordValid || !passwordsMatch}>Create Account</button>
                 </form>
                 <p className="form-switcher">Already have an account? <a href="#" onClick={(e) => handleFormSwitch(e, 'login')}>Login</a></p>
               </div>

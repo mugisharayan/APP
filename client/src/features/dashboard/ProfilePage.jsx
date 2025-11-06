@@ -139,7 +139,12 @@ const ProfilePage = () => {
                   </div>
                   <div className="profile-card-content">
                     <div className="profile-pic-large-wrapper" id="changePicOverlay" onClick={handleProfilePicClick}>
-                      <img src={userProfile.profilePicture || "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"} alt="Student profile" id="mainProfilePic" />
+                      <img 
+                        src={userProfile.profilePicture || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Ccircle cx='75' cy='75' r='75' fill='%23f0f0f0'/%3E%3Cpath d='M75 45c-11 0-20 9-20 20s9 20 20 20 20-9 20-20-9-20-20-20zm0 90c-25 0-45-12-45-27 0-15 20-27 45-27s45 12 45 27c0 15-20 27-45 27z' fill='%23ccc'/%3E%3C/svg%3E"} 
+                        alt="Profile picture" 
+                        id="mainProfilePic" 
+                        style={{border: '3px solid #00bfff', borderRadius: '50%'}}
+                      />
                       <div className="edit-overlay">Change</div>
                       <input type="file" id="profilePicInput" style={{ display: 'none' }} accept="image/*" onChange={handleProfilePicChange} />
                     </div>

@@ -36,10 +36,6 @@ A modern web application for Makerere University students to browse, compare, an
 - **Litepicker** - Date range picker
 - **jsPDF + html2canvas** - PDF generation
 
-### Current Architecture
-- Frontend-only application (no backend yet)
-- localStorage for data persistence
-- Context API for state management
 ### Backend
 - **Node.js** - JavaScript runtime
 - **Express.js** - Web framework
@@ -48,10 +44,11 @@ A modern web application for Makerere University students to browse, compare, an
 - **JWT (JSON Web Tokens)** - For secure authentication
 
 ## Architecture
-- **Full-Stack Application** with a React frontend and a Node.js/Express backend.
-- **REST API** for communication between the client and server.
-- **MongoDB** for persistent data storage.
-- **React Context API** for frontend state management.
+- **Full-Stack Application** with a React frontend and a Node.js/Express backend
+- **REST API** for communication between the client and server
+- **MongoDB Atlas** for cloud database storage with 40+ hostel records
+- **React Context API** for frontend state management
+- **Mobile-first responsive design** for all devices
 - Feature-based code organization
 
 ## Project Structure
@@ -83,17 +80,64 @@ hostel-booking-system/
 │   │   ├── data/              # Static data
 │   │   │   └── hostels.js    # Hostel information (40+ hostels)
 │   │   │
+│   │   ├── service/           # API service layer
+│   │   │   ├── api.service.js # HTTP client configuration
+│   │   │   ├── auth.service.js# Authentication API calls
+│   │   │   └── user.service.js# User-related API calls
+│   │   │
+│   │   ├── styles/            # CSS stylesheets
+│   │   │   ├── style.css     # Main stylesheet
+│   │   │   └── mobile-fixes.css # Mobile responsiveness
+│   │   │
 │   │   ├── hooks/             # Custom React hooks
-│   │   └── assets/            # Static assets (CSS, images)
+│   │   └── assets/            # Static assets (images)
 │   │
 │   └── public/                # Public static files
+│
+├── server/                    # Backend API
+│   ├── controllers/           # Route handlers
+│   │   ├── hostel.controller.js
+│   │   ├── booking.controller.js
+│   │   ├── user.controller.js
+│   │   ├── payment.controller.js
+│   │   └── maintenance.controller.js
+│   │
+│   ├── models/                # MongoDB schemas
+│   │   ├── hostel.model.js
+│   │   ├── booking.model.js
+│   │   ├── user.model.js
+│   │   ├── payment.model.js
+│   │   └── review.model.js
+│   │
+│   ├── routes/                # API routes
+│   │   ├── hostel.routes.js
+│   │   ├── booking.routes.js
+│   │   ├── user.routes.js
+│   │   ├── payment.routes.js
+│   │   └── maintenance.routes.js
+│   │
+│   ├── middleware/            # Custom middleware
+│   │   ├── auth.middleware.js
+│   │   └── admin.middleware.js
+│   │
+│   ├── config/               # Configuration
+│   │   └── db.js            # MongoDB connection
+│   │
+│   ├── scripts/              # Database migration scripts
+│   │   ├── migrateHostels.js
+│   │   └── migrateAllHostels.js
+│   │
+│   ├── utils/                # Utility functions
+│   │   └── generateToken.js
+│   │
+│   ├── .env                  # Environment variables
+│   ├── package.json          # Server dependencies
+│   └── server.js             # Express server entry point
 │
 ├── package.json               # Root package (delegates to client/)
 ├── eslint.config.js          # ESLint configuration
 ├── README.md                 # This file
 └── CLAUDE.md                 # Developer guide for Claude Code
-
-# Future: server/ folder will be added for backend API
 ```
 
 ## Getting Started
@@ -101,46 +145,67 @@ hostel-booking-system/
 ### Prerequisites
 - **Node.js** (v18 or higher)
 - **npm** (comes with Node.js)
+- **MongoDB Atlas account** (for database)
 
 ### Installation
 
-#### Option 1: Install from Root (Recommended)
 ```bash
 # Clone the repository
 git clone <repository-url>
 cd hostel-booking-system
 
-# Install dependencies (automatically installs in client/)
+# Install client dependencies
+cd client
+npm install
+
+# Install server dependencies
+cd ../server
 npm install
 ```
 
-#### Option 2: Install from Client Directory
-```bash
-# Navigate to client folder
-cd client
+### Environment Setup
 
-# Install dependencies
-npm install
+1. Create `.env` file in the `server/` directory:
+```bash
+PORT=5000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret_key
 ```
 
-### Running the Development Server
-
-#### Option 1: From Root Directory
+2. **Database Setup:**
 ```bash
-npm start
-# or
+# Navigate to server directory
+cd server
+
+# Run migration to populate database with hostel data
+node scripts/migrateAllHostels.js
+```
+
+### Running the Application
+
+**Development Mode (Recommended):**
+```bash
+# Terminal 1: Start the backend server
+cd server
 npm run dev
-```
+# Server runs on http://localhost:5000
 
-#### Option 2: From Client Directory
-```bash
+# Terminal 2: Start the frontend
 cd client
-npm start
-# or
 npm run dev
+# Client runs on http://localhost:5173
 ```
 
-The application will start at **http://localhost:5173**
+**Production Mode:**
+```bash
+# Build the client
+cd client
+npm run build
+
+# Start the server
+cd ../server
+npm start
+```
 
 ### Available Commands
 
@@ -250,14 +315,21 @@ hostel-booking-system/
 └── server/        # Backend API (future)
 ```
 
+### Recent Updates
+- [x] **Full-Stack Implementation** - Added Node.js/Express backend with MongoDB
+- [x] **Database Integration** - 40+ hostels migrated to MongoDB Atlas
+- [x] **API Development** - RESTful API with authentication middleware
+- [x] **Mobile Responsiveness** - Optimized for iPhone, Samsung, and tablets
+- [x] **Data Migration Scripts** - Automated hostel data migration tools
+
 ### Todo
-- [ ] Add backend API (Node.js/Express or PHP/Laravel)
-- [ ] Replace localStorage with database
-- [ ] Implement real authentication & authorization
-- [ ] Add real payment gateway integration
-- [ ] Add email notifications
-- [ ] Implement search with filters on backend
+- [ ] Implement real authentication & authorization with JWT
+- [ ] Add real payment gateway integration (Stripe/PayPal)
+- [ ] Add email notifications for bookings
+- [ ] Implement advanced search with filters on backend
 - [ ] Add admin panel for system management
+- [ ] Add image upload functionality
+- [ ] Implement real-time notifications
 
 ## Contributing
 

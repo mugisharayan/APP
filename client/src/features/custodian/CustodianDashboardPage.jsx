@@ -1,18 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
+import { AuthContext } from '../auth/AuthContext';
 
 const CustodianDashboardPage = () => {
   const navigate = useNavigate();
+  const { userProfile, logout } = useContext(AuthContext);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [activityFilter, setActivityFilter] = useState('');
 
-  // Mock custodian user profile for the sidebar
+  // Use real user profile or fallback
   const custodianProfile = {
-    fullName: 'John K.',
-    course: 'Lead Custodian', // Using 'course' field for role display
-    profilePicture: 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+    fullName: userProfile?.name || 'Custodian',
+    course: userProfile?.role || 'Custodian',
+    profilePicture: userProfile?.profilePicture || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Ccircle cx='75' cy='75' r='75' fill='%23f0f0f0'/%3E%3Cpath d='M75 45c-11 0-20 9-20 20s9 20 20 20 20-9 20-20-9-20-20-20zm0 90c-25 0-45-12-45-27 0-15 20-27 45-27s45 12 45 27c0 15-20 27-45 27z' fill='%23ccc'/%3E%3C/svg%3E"
   };
 
   // Dummy data for activity feed
@@ -29,7 +31,7 @@ const CustodianDashboardPage = () => {
   );
 
   const handleLogout = () => {
-    // In a real app, this would call a logout function from context
+    logout();
     setIsLogoutModalOpen(false);
     navigate('/');
   };
@@ -50,14 +52,18 @@ const CustodianDashboardPage = () => {
             <div className="welcome-banner">
               <div className="banner-header">
                 <div>
-                  <h1>Welcome Back, John!</h1>
+                  <h1>Welcome Back, {userProfile?.name || 'Custodian'}!</h1>
                   <p>Here’s what’s happening with your hostels today.</p>
                 </div>
                 <div className="header-actions">
                   <button className="action-btn" title="Notifications"><i className="fas fa-bell"></i><span className="notification-badge">3</span></button>
                   <Link to="/custodian-profile" className="user-profile">
-                    <img src="https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" alt="User profile" />
-                    <span>John K.</span>
+                    <img 
+                      src={custodianProfile.profilePicture} 
+                      alt="User profile" 
+                      style={{border: '2px solid #00bfff', borderRadius: '50%'}}
+                    />
+                    <span>{userProfile?.name || 'Custodian'}</span>
                   </Link>
                 </div>
               </div>
