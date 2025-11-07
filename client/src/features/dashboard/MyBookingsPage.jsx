@@ -1,9 +1,12 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
-import { jsPDF } from 'jspdf'; // Assuming jspdf is installed
+import CancelBookingModal from '../../components/modals/CancelBookingModal';
 import { AuthContext } from '../auth/AuthContext';
 import DashboardSidebar from './DashboardSidebar';
+import bookingService from '../../service/booking.service';
+import dashboardService from '../../service/dashboard.service';
+import receiptService from '../../service/receipt.service';
 
 const MyBookingsPage = ({ onOpenReviewModal }) => {
   const navigate = useNavigate();
@@ -11,55 +14,75 @@ const MyBookingsPage = ({ onOpenReviewModal }) => {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [downloadingReceipt, setDownloadingReceipt] = useState(null);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [bookingToCancel, setBookingToCancel] = useState(null);
 
   useEffect(() => {
-    if (!userProfile) {
-      const storedProfile = JSON.parse(localStorage.getItem('userProfile'));
-      const storedBookings = JSON.parse(localStorage.getItem('bookingHistory'));
-      if (storedProfile && storedBookings) {
-        login(storedProfile, storedBookings);
-      } else {
+    const loadBookings = async () => {
+      if (!userProfile) {
         navigate('/');
+        return;
       }
-    }
-  }, [userProfile, navigate, login]);
+      
+      try {
+        const bookings = await bookingService.getMyBookings();
+        setBookingHistory(bookings);
+      } catch (error) {
+        setError('Failed to load bookings');
+        console.error('Bookings load error:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadBookings();
+  }, [userProfile, navigate, setBookingHistory]);
 
-  const handleCancelBooking = (index) => {
-    const updatedBookings = [...bookingHistory];
-    updatedBookings[index].status = 'Cancelled';
-    localStorage.setItem('bookingHistory', JSON.stringify(updatedBookings));
-    setBookingHistory(updatedBookings);
-    // showToast('Booking has been cancelled.');
+  const handleCancelBooking = async (reason) => {
+    try {
+      await bookingService.cancelBooking(bookingToCancel._id, reason);
+      
+      // Update local state
+      const updatedBookings = bookingHistory.map(booking => 
+        booking._id === bookingToCancel._id 
+          ? { ...booking, status: 'cancelled', cancellationReason: reason }
+          : booking
+      );
+      setBookingHistory(updatedBookings);
+    } catch (error) {
+      setError('Failed to cancel booking: ' + error.message);
+    }
   };
 
-  const generateReceipt = (booking, user) => {
-    const doc = new jsPDF();
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(22);
-    doc.text('Booking Receipt', 105, 20, { align: 'center' });
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.text('BookMyHostel', 105, 28, { align: 'center' });
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Booking Details', 20, 50);
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Hostel: ${booking.hostel}`, 20, 60);
-    doc.text(`Room Type: ${booking.room}`, 20, 68);
-    doc.text(`Booking Date: ${new Date(booking.bookingDate).toLocaleDateString('en-GB')}`, 20, 76);
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Billed To', 20, 96);
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Name: ${user.fullName}`, 20, 106);
-    doc.text(`Email: ${user.email}`, 20, 114);
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Total Amount Paid:', 20, 140);
-    doc.text(`UGX ${parseInt(booking.price).toLocaleString()}`, 190, 140, { align: 'right' });
-    doc.save(`Receipt-${booking.hostel.replace(/\s/g, '-')}.pdf`);
+  const openCancelModal = (booking) => {
+    setBookingToCancel(booking);
+    setCancelModalOpen(true);
+  };
+
+  const handleDownloadReceipt = async (booking, index) => {
+    setDownloadingReceipt(index);
+    try {
+      const receiptData = {
+        ...booking,
+        hostelName: dashboardService.getHostelName(booking),
+        roomName: dashboardService.getRoomName(booking),
+        price: dashboardService.getRoomPrice(booking),
+        studentName: userProfile?.fullName || userProfile?.name,
+        studentEmail: userProfile?.email,
+        studentPhone: userProfile?.phone,
+        transactionId: booking.transactionId || 'BMH' + Date.now()
+      };
+      
+      await receiptService.generateReceipt(receiptData);
+    } catch (error) {
+      console.error('Receipt download failed:', error);
+      alert('Failed to download receipt. Please try again.');
+    } finally {
+      setDownloadingReceipt(null);
+    }
   };
 
   const handleLogout = () => {
@@ -68,13 +91,34 @@ const MyBookingsPage = ({ onOpenReviewModal }) => {
     navigate('/');
   };
 
-  if (!userProfile) {
+  if (isLoading) {
     return (
       <main className="dashboard-page">
         <div className="container">
           <div className="dashboard-panel active" style={{ textAlign: 'center', padding: '50px' }}>
+            <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '48px', color: '#0ea5e9', marginBottom: '20px' }}></i>
             <h2>Loading Bookings...</h2>
             <p className="muted">Please wait while we fetch your data.</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+  
+  if (error) {
+    return (
+      <main className="dashboard-page">
+        <div className="container">
+          <div className="dashboard-panel active" style={{ textAlign: 'center', padding: '50px' }}>
+            <i className="fa-solid fa-exclamation-triangle" style={{ fontSize: '48px', color: '#ef4444', marginBottom: '20px' }}></i>
+            <h2>Error Loading Bookings</h2>
+            <p className="muted">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              style={{ padding: '10px 20px', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+            >
+              Retry
+            </button>
           </div>
         </div>
       </main>
@@ -112,27 +156,34 @@ const MyBookingsPage = ({ onOpenReviewModal }) => {
               
               {/* Booking Statistics */}
               <div className="stats-grid-modern" style={{marginBottom: '30px'}}>
-                <div className="stat-card-modern blue">
-                  <div className="stat-icon"><i className="fas fa-calendar-check"></i></div>
-                  <div className="stat-info">
-                    <h3>{bookingHistory.filter(b => b.status !== 'Cancelled').length}</h3>
-                    <p>Active Bookings</p>
-                  </div>
-                </div>
-                <div className="stat-card-modern green">
-                  <div className="stat-icon"><i className="fas fa-check-circle"></i></div>
-                  <div className="stat-info">
-                    <h3>{bookingHistory.length}</h3>
-                    <p>Total Bookings</p>
-                  </div>
-                </div>
-                <div className="stat-card-modern orange">
-                  <div className="stat-icon"><i className="fas fa-money-bill-wave"></i></div>
-                  <div className="stat-info">
-                    <h3>UGX {bookingHistory.reduce((sum, b) => sum + parseInt(b.price || 0), 0).toLocaleString()}</h3>
-                    <p>Total Spent</p>
-                  </div>
-                </div>
+                {(() => {
+                  const stats = dashboardService.calculateBookingStats(bookingHistory);
+                  return (
+                    <>
+                      <div className="stat-card-modern blue">
+                        <div className="stat-icon"><i className="fas fa-calendar-check"></i></div>
+                        <div className="stat-info">
+                          <h3>{stats.activeBookings}</h3>
+                          <p>Active Bookings</p>
+                        </div>
+                      </div>
+                      <div className="stat-card-modern green">
+                        <div className="stat-icon"><i className="fas fa-check-circle"></i></div>
+                        <div className="stat-info">
+                          <h3>{stats.totalBookings}</h3>
+                          <p>Total Bookings</p>
+                        </div>
+                      </div>
+                      <div className="stat-card-modern orange">
+                        <div className="stat-icon"><i className="fas fa-money-bill-wave"></i></div>
+                        <div className="stat-info">
+                          <h3>{dashboardService.formatCurrency(stats.totalSpent)}</h3>
+                          <p>Total Spent</p>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
 
               <div className="dashboard-header">
@@ -162,15 +213,23 @@ const MyBookingsPage = ({ onOpenReviewModal }) => {
                   </div>
                 ) : (
                   bookingHistory
-                    .filter(b => filterStatus === 'all' || b.status?.toLowerCase() === filterStatus)
-                    .filter(b => b.hostel.toLowerCase().includes(searchQuery.toLowerCase()) || b.room.toLowerCase().includes(searchQuery.toLowerCase()))
+                    .filter(b => filterStatus === 'all' || (b.status || 'confirmed').toLowerCase() === filterStatus)
+                    .filter(b => {
+                      const hostelName = dashboardService.getHostelName(b);
+                      const roomName = dashboardService.getRoomName(b);
+                      return hostelName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                             roomName.toLowerCase().includes(searchQuery.toLowerCase());
+                    })
                     .map((booking, index) => {
-                    const bookingDate = new Date(booking.bookingDate);
+                    const bookingDate = new Date(booking.createdAt || booking.bookingDate);
                     const formattedDate = bookingDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-                    const isCurrent = index === 0 && booking.status !== 'Cancelled';
-                    const statusClass = booking.status ? booking.status.toLowerCase() : 'completed';
-                    const statusText = booking.status || 'Completed';
+                    const isCurrent = index === 0 && (booking.status || 'confirmed') !== 'cancelled';
+                    const statusClass = (booking.status || 'confirmed').toLowerCase();
+                    const statusText = booking.status || 'Confirmed';
                     const semester = isCurrent ? 'Aug 2024 - Dec 2024' : 'Jan 2024 - May 2024';
+                    const hostelName = dashboardService.getHostelName(booking);
+                    const roomName = dashboardService.getRoomName(booking);
+                    const roomPrice = dashboardService.getRoomPrice(booking);
 
                     return (
                       <div className="booking-card-modern" key={index}>
@@ -179,10 +238,10 @@ const MyBookingsPage = ({ onOpenReviewModal }) => {
                           <span className={`status-badge-modern ${statusClass}`}>{statusText}</span>
                         </div>
                         <div className="booking-card-body">
-                          <h4>{booking.hostel}</h4>
+                          <h4>{hostelName}</h4>
                           <div className="booking-detail-row">
                             <i className="fas fa-door-open"></i>
-                            <span>{booking.room}</span>
+                            <span>{roomName}</span>
                           </div>
                           <div className="booking-detail-row">
                             <i className="fas fa-calendar"></i>
@@ -192,18 +251,26 @@ const MyBookingsPage = ({ onOpenReviewModal }) => {
                             <i className="fas fa-clock"></i>
                             <span>Booked on {formattedDate}</span>
                           </div>
-                          <div className="booking-price-tag">UGX {parseInt(booking.price).toLocaleString()}</div>
+                          <div className="booking-price-tag">UGX {parseInt(roomPrice).toLocaleString()}</div>
                         </div>
                         <div className="booking-card-actions">
-                          <button className="btn-action-modern download" onClick={() => generateReceipt(booking, userProfile)}>
-                            <i className="fas fa-download"></i> Receipt
+                          <button 
+                            className="btn-action-modern download" 
+                            onClick={() => handleDownloadReceipt(booking, index)}
+                            disabled={downloadingReceipt === index}
+                          >
+                            {downloadingReceipt === index ? (
+                              <><i className="fas fa-spinner fa-spin"></i> Generating...</>
+                            ) : (
+                              <><i className="fas fa-download"></i> Receipt</>
+                            )}
                           </button>
                           {isCurrent ? (
-                            <button className="btn-action-modern cancel" onClick={() => handleCancelBooking(index)}>
+                            <button className="btn-action-modern cancel" onClick={() => openCancelModal(booking)}>
                               <i className="fas fa-times"></i> Cancel
                             </button>
                           ) : (
-                            <button className="btn-action-modern review" onClick={() => onOpenReviewModal(booking.hostel)}>
+                            <button className="btn-action-modern review" onClick={() => onOpenReviewModal(hostelName)}>
                               <i className="fas fa-star"></i> Review
                             </button>
                           )}
@@ -222,6 +289,15 @@ const MyBookingsPage = ({ onOpenReviewModal }) => {
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
         onConfirm={handleLogout}
+      />
+      <CancelBookingModal
+        isOpen={cancelModalOpen}
+        onClose={() => setCancelModalOpen(false)}
+        onConfirm={handleCancelBooking}
+        bookingDetails={bookingToCancel ? {
+          hostel: dashboardService.getHostelName(bookingToCancel),
+          room: dashboardService.getRoomName(bookingToCancel)
+        } : null}
       />
     </>
   );

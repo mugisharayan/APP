@@ -36,6 +36,39 @@ const getUserProfile = async () => {
 
 const userService = {
   getUserProfile,
+  
+  // Save booking profile data
+  saveBookingProfile: async (bookingData) => {
+    const profileData = {
+      phone: bookingData.phone,
+      gender: bookingData.gender,
+      dateOfBirth: bookingData.dob,
+      yearOfStudy: bookingData.yearOfStudy,
+      studentNumber: bookingData.studentNumber,
+      residence: bookingData.residence,
+      nextOfKinName: bookingData.nextOfKinName,
+      nextOfKinContact: bookingData.nextOfKinContact,
+      guardianName: bookingData.guardianName,
+      guardianContact: bookingData.guardianContact,
+      profileCompleted: true
+    };
+    
+    const response = await fetch(`${API_URL}/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeader(),
+      },
+      body: JSON.stringify(profileData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to save profile');
+    }
+
+    return response.json();
+  }
 };
 
 export default userService;

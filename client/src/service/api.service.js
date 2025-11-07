@@ -73,7 +73,7 @@ const apiService = {
   // Booking endpoints
   bookings: {
     getAll: () => 
-      axios.get(`${API_BASE_URL}/bookings`),
+      axios.get(`${API_BASE_URL}/bookings/my-bookings`),
     
     getById: (id) => 
       axios.get(`${API_BASE_URL}/bookings/${id}`),
@@ -84,8 +84,8 @@ const apiService = {
     update: (id, bookingData) => 
       axios.put(`${API_BASE_URL}/bookings/${id}`, bookingData),
     
-    cancel: (id) => 
-      axios.delete(`${API_BASE_URL}/bookings/${id}`)
+    cancel: (id, reason) => 
+      axios.put(`${API_BASE_URL}/bookings/${id}/cancel`, { reason })
   },
 
   // Payment endpoints
@@ -94,7 +94,10 @@ const apiService = {
       axios.get(`${API_BASE_URL}/payments`),
     
     create: (paymentData) => 
-      axios.post(`${API_BASE_URL}/payments`, paymentData),
+      axios.post(`${API_BASE_URL}/payments/booking/${paymentData.bookingId}`, paymentData),
+    
+    getByTransaction: (transactionId) => 
+      axios.get(`${API_BASE_URL}/payments/transaction/${transactionId}`),
     
     update: (id, paymentData) => 
       axios.put(`${API_BASE_URL}/payments/${id}`, paymentData)
@@ -104,6 +107,9 @@ const apiService = {
   maintenance: {
     getAll: () => 
       axios.get(`${API_BASE_URL}/maintenance`),
+    
+    getMyRequests: () => 
+      axios.get(`${API_BASE_URL}/maintenance/my-requests`),
     
     create: (requestData) => 
       axios.post(`${API_BASE_URL}/maintenance`, requestData),

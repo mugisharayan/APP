@@ -7,8 +7,9 @@ export const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [favorites, setFavorites] = useState([]);
+  const [bookingHistory, setBookingHistory] = useState([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true); // To handle initial auth check
+  const [loading, setLoading] = useState(true);
 
   // On initial load, check localStorage for existing session
   useEffect(() => {
@@ -49,9 +50,13 @@ export const AuthProvider = ({ children }) => {
   const loginWithUserData = (userData) => {
     setUserProfile(userData);
     setIsAuthenticated(true);
-    // Load favorites from localStorage on login
+    localStorage.setItem('auth', JSON.stringify(userData));
+    
     const storedFavorites = JSON.parse(localStorage.getItem('bookMyHostelFavorites')) || [];
     setFavorites(storedFavorites);
+    
+    const storedBookings = JSON.parse(localStorage.getItem('bookingHistory')) || [];
+    setBookingHistory(storedBookings);
   };
 
   const logout = () => {
@@ -94,7 +99,8 @@ export const AuthProvider = ({ children }) => {
     isFavorited,
     setUserProfile, // Exposing for profile updates
     setIsAuthenticated, // Exposing for direct auth state updates
-    bookingHistory: [], // Initialize empty booking history
+    bookingHistory,
+    setBookingHistory
   };
 
   return (

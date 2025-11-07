@@ -63,10 +63,10 @@ const AuthModal = ({ isOpen, onClose, redirectTo = null }) => {
 
     try {
       const response = await apiService.auth.register({
-        name: fullName,
+        fullName: fullName,
         email: email,
         password: password,
-        role: role
+        role: role.toLowerCase()
       });
 
       // Auto-login after successful registration

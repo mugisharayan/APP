@@ -1,6 +1,8 @@
 import React, { useState, useContext } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../auth/AuthContext';
+import paymentService from '../../service/payment.service';
+import bookingService from '../../service/booking.service';
 
 const PaymentPage = () => {
   const [searchParams] = useSearchParams();
@@ -9,6 +11,12 @@ const PaymentPage = () => {
 
   const [paymentMethod, setPaymentMethod] = useState('mobile-money');
   const [fileName, setFileName] = useState('No file chosen');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [mobileMoneyPhone, setMobileMoneyPhone] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCVC, setCardCVC] = useState('');
 
   const hostel = searchParams.get('hostel');
   const room = searchParams.get('room');
@@ -34,33 +42,83 @@ const PaymentPage = () => {
     }
   };
 
-  const handleConfirmPayment = (e) => {
+  const handleConfirmPayment = async (e) => {
     e.preventDefault();
+    setError('');
+    setIsLoading(true);
 
-    if (paymentMethod === 'bank-transfer' && fileName === 'No file chosen') {
-      return;
+    try {
+      // Validate payment method fields
+      if (paymentMethod === 'mobile-money' && !mobileMoneyPhone) {
+        throw new Error('Please enter mobile money phone number');
+      }
+      if (paymentMethod === 'credit-card' && (!cardNumber || !cardExpiry || !cardCVC)) {
+        throw new Error('Please fill in all card details');
+      }
+      if (paymentMethod === 'bank-transfer' && fileName === 'No file chosen') {
+        throw new Error('Please upload payment proof');
+      }
+
+      // Process payment based on method
+      let paymentResult;
+      if (paymentMethod === 'mobile-money') {
+        paymentResult = await paymentService.processMobileMoneyPayment(mobileMoneyPhone, totalPrice, '1234');
+      } else if (paymentMethod === 'credit-card') {
+        const cardData = { cardNumber, expiry: cardExpiry, cvc: cardCVC };
+        paymentResult = await paymentService.processCreditCardPayment(cardData, totalPrice);
+      } else {
+        paymentResult = {
+          success: true,
+          transactionId: paymentService.generateTransactionId(),
+          message: 'Bank transfer recorded'
+        };
+      }
+
+      // Create booking and payment records
+      const bookingData = {
+        hostel,
+        room,
+        startDate: new Date(),
+        endDate: new Date(new Date().setMonth(new Date().getMonth() + 4))
+      };
+      
+      const createdBooking = await bookingService.createBooking(bookingData);
+      
+      await paymentService.createPayment(createdBooking._id, {
+        amount: totalPrice,
+        paymentMethod: paymentMethod === 'mobile-money' ? 'Mobile Money' : 
+                      paymentMethod === 'credit-card' ? 'Credit Card' : 'Bank Transfer',
+        transactionId: paymentResult.transactionId
+      });
+
+      const userProfile = {
+        fullName,
+        email,
+        phone,
+        course,
+        profilePicture: '',
+        role: 'student',
+        token: 'mock-token'
+      };
+
+      const newBooking = {
+        _id: createdBooking._id,
+        hostel,
+        room,
+        price,
+        bookingDate: new Date().toISOString(),
+        status: 'Confirmed',
+        paymentMethod,
+        transactionId: paymentResult.transactionId
+      };
+
+      login(userProfile, [newBooking]);
+      navigate('/dashboard');
+    } catch (error) {
+      setError(error.message || 'Payment failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-
-    const newBooking = {
-      hostel,
-      room,
-      price,
-      bookingDate: new Date().toISOString(),
-      status: 'Confirmed',
-      paymentMethod,
-    };
-
-    const userProfile = {
-      fullName,
-      email,
-      phone,
-      course,
-      profilePicture: '',
-      role: 'student',
-    };
-
-    login(userProfile, [newBooking]);
-    navigate('/dashboard');
   };
 
   return (
@@ -127,19 +185,49 @@ const PaymentPage = () => {
               </div>
             </div>
             
+            {error && (
+              <div style={{background: '#fee2e2', color: '#dc2626', padding: '12px', borderRadius: '8px', marginBottom: '20px', textAlign: 'center'}}>
+                <i className="fa-solid fa-exclamation-triangle"></i> {error}
+              </div>
+            )}
+            
             <div className="payment-form-modern">
               {paymentMethod === 'mobile-money' && (
                 <div className="form-content-modern">
-                  <input type="tel" placeholder="Enter phone number (e.g., 0771234567)" className="input-modern" />
+                  <input 
+                    type="tel" 
+                    placeholder="Enter phone number (e.g., 0771234567)" 
+                    className="input-modern" 
+                    value={mobileMoneyPhone}
+                    onChange={(e) => setMobileMoneyPhone(e.target.value)}
+                  />
                   <p className="hint-modern"><i className="fa-solid fa-info-circle"></i> A prompt will be sent to your phone</p>
                 </div>
               )}
               {paymentMethod === 'credit-card' && (
                 <div className="form-content-modern">
-                  <input type="text" placeholder="Card number" className="input-modern" />
+                  <input 
+                    type="text" 
+                    placeholder="Card number" 
+                    className="input-modern" 
+                    value={cardNumber}
+                    onChange={(e) => setCardNumber(e.target.value)}
+                  />
                   <div className="input-row-modern">
-                    <input type="text" placeholder="MM/YY" className="input-modern" />
-                    <input type="text" placeholder="CVC" className="input-modern" />
+                    <input 
+                      type="text" 
+                      placeholder="MM/YY" 
+                      className="input-modern" 
+                      value={cardExpiry}
+                      onChange={(e) => setCardExpiry(e.target.value)}
+                    />
+                    <input 
+                      type="text" 
+                      placeholder="CVC" 
+                      className="input-modern" 
+                      value={cardCVC}
+                      onChange={(e) => setCardCVC(e.target.value)}
+                    />
                   </div>
                 </div>
               )}
@@ -161,9 +249,12 @@ const PaymentPage = () => {
               )}
             </div>
 
-            <button className="pay-btn-modern" onClick={handleConfirmPayment}>
-              <i className="fa-solid fa-lock"></i>
-              <span>Complete Payment - UGX {totalPrice.toLocaleString()}</span>
+            <button className="pay-btn-modern" onClick={handleConfirmPayment} disabled={isLoading}>
+              {isLoading ? (
+                <><i className="fa-solid fa-spinner fa-spin"></i> Processing...</>
+              ) : (
+                <><i className="fa-solid fa-lock"></i> Complete Payment - UGX {totalPrice.toLocaleString()}</>
+              )}
             </button>
           </div>
         </div>

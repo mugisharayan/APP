@@ -1,12 +1,25 @@
 import React, { useState, useContext } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../auth/AuthContext';
+import bookingService from '../../service/booking.service';
+import paymentService from '../../service/payment.service';
+import authService from '../../service/auth.service';
+import hostelService from '../../service/hostel.service';
+import receiptService from '../../service/receipt.service';
+import userService from '../../service/user.service';
 import '../../styles/booking-page.css';
 
 const BookingPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { loginWithUserData } = useContext(AuthContext);
+  const { userProfile, loginWithUserData } = useContext(AuthContext);
+  
+  // Redirect to login if not authenticated
+  React.useEffect(() => {
+    if (!userProfile) {
+      navigate('/login?redirect=/booking?' + searchParams.toString());
+    }
+  }, [userProfile, navigate, searchParams]);
 
   const hostelName = searchParams.get('hostel');
   const roomName = searchParams.get('room');
@@ -15,23 +28,22 @@ const BookingPage = () => {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    gender: '',
-    dob: '',
-    course: '',
-    yearOfStudy: '',
-    studentNumber: '',
-    residence: '',
-    nextOfKinName: '',
-    nextOfKinContact: '',
-    guardianName: '',
-    guardianContact: '',
+    phone: userProfile?.phone || '',
+    gender: userProfile?.gender || '',
+    dob: userProfile?.dateOfBirth ? new Date(userProfile.dateOfBirth).toISOString().split('T')[0] : '',
+    course: userProfile?.course || '',
+    yearOfStudy: userProfile?.yearOfStudy || '',
+    studentNumber: userProfile?.studentNumber || '',
+    residence: userProfile?.residence || '',
+    nextOfKinName: userProfile?.nextOfKinName || '',
+    nextOfKinContact: userProfile?.nextOfKinContact || '',
+    guardianName: userProfile?.guardianName || '',
+    guardianContact: userProfile?.guardianContact || '',
     notes: '',
     healthIssues: '',
     studentIdUpload: null,
   });
+  const [showProfilePrompt, setShowProfilePrompt] = useState(!userProfile?.profileCompleted);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [fileName, setFileName] = useState('No file chosen');
   const [paymentMethod, setPaymentMethod] = useState('mobile-money');
@@ -44,6 +56,31 @@ const BookingPage = () => {
   const [pin, setPin] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [paymentResult, setPaymentResult] = useState(null);
+  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
+  
+  const processCreditCardPayment = async () => {
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      const cardData = {
+        cardNumber: cardNumber.replace(/\s/g, ''),
+        expiry: cardExpiry,
+        cvc: cardCVC
+      };
+      
+      const result = await paymentService.processCreditCardPayment(cardData, totalPrice);
+      sessionStorage.setItem('paymentResult', JSON.stringify(result));
+      setCurrentStep(3);
+    } catch (error) {
+      setError(error.message || 'Card payment failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   const price = parseInt(roomPrice || '0');
   const serviceFee = 5000;
@@ -52,6 +89,20 @@ const BookingPage = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, files } = e.target;
+    
+    // Validate input based on field type
+    if (type === 'tel' && value && !/^[0-9]*$/.test(value)) {
+      return; // Only allow numbers for phone fields
+    }
+    
+    if ((name === 'nextOfKinName' || name === 'guardianName') && value && !/^[A-Za-z\s]*$/.test(value)) {
+      return; // Only allow letters and spaces for names
+    }
+    
+    if (name === 'studentNumber' && value && !/^[0-9]*$/.test(value)) {
+      return; // Only allow numbers for student number
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: type === 'file' ? files[0] : value,
@@ -81,94 +132,204 @@ const BookingPage = () => {
     }
   };
 
-  const handleConfirmPayment = () => {
+  const handleConfirmPayment = async () => {
+    setError('');
+    
     // Validate payment method specific fields
     if (paymentMethod === 'mobile-money' && !mobileMoneyPhone) {
-      alert('Please enter your mobile money phone number');
+      setError('Please enter your mobile money phone number');
       return;
     }
     if (paymentMethod === 'credit-card' && (!cardNumber || !cardExpiry || !cardCVC)) {
-      alert('Please fill in all card details');
+      setError('Please fill in all card details');
       return;
     }
     if (paymentMethod === 'bank-transfer' && paymentFileName === 'No file chosen') {
-      alert('Please upload payment proof for bank transfer');
+      setError('Please upload payment proof for bank transfer');
       return;
     }
     
-    // Show PIN modal for mobile money
+    // Process different payment methods
     if (paymentMethod === 'mobile-money') {
       setShowPinModal(true);
-      return;
+    } else if (paymentMethod === 'credit-card') {
+      await processCreditCardPayment();
+    } else {
+      // Bank transfer - proceed directly
+      setCurrentStep(3);
     }
+  };
+  
+  const completeBooking = async () => {
+    setIsLoading(true);
+    setError('');
     
-    // Process other payment methods directly
-    completeBooking();
+    try {
+      // Check for existing active bookings
+      const activeBookings = await bookingService.checkActiveBookings();
+      if (activeBookings.length > 0) {
+        setError('You already have an active booking. Please cancel or wait for it to expire before booking again.');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Resolve hostel and room IDs
+      let hostelId, roomId;
+      
+      try {
+        const hostel = await hostelService.findHostelByName(hostelName);
+        if (hostel) {
+          hostelId = hostel._id;
+          const room = await hostelService.findRoomByName(hostelId, roomName);
+          roomId = room?._id;
+        }
+      } catch (resolveError) {
+        console.warn('Could not resolve hostel/room IDs, using names:', resolveError.message);
+      }
+      
+      // Create booking with IDs or fallback to names
+      const bookingData = {
+        hostel: hostelId || hostelName,
+        room: roomId || roomName,
+        startDate: new Date(),
+        endDate: new Date(new Date().setMonth(new Date().getMonth() + 4))
+      };
+      
+      const createdBooking = await bookingService.createBooking(bookingData);
+      
+      // Create payment
+      const paymentData = {
+        amount: totalPrice,
+        paymentMethod: paymentMethod === 'mobile-money' ? 'Mobile Money' : 
+                      paymentMethod === 'credit-card' ? 'Credit Card' : 'Bank Transfer',
+        transactionId: paymentService.generateTransactionId()
+      };
+      
+      await paymentService.createPayment(createdBooking._id, paymentData);
+      
+      // Get payment result from session
+      const storedPaymentResult = JSON.parse(sessionStorage.getItem('paymentResult') || '{}');
+      
+      // Store booking data for dashboard
+      const bookingForStorage = {
+        _id: createdBooking._id,
+        hostel: hostelName,
+        room: roomName,
+        price: price,
+        bookingDate: new Date().toISOString(),
+        status: 'Confirmed',
+        paymentMethod: paymentData.paymentMethod,
+        transactionId: storedPaymentResult.transactionId
+      };
+      
+      localStorage.setItem('bookingHistory', JSON.stringify([bookingForStorage]));
+      sessionStorage.removeItem('paymentResult');
+      
+      sessionStorage.removeItem('tempUser');
+      
+      navigate('/dashboard');
+    } catch (error) {
+      setError(error.message || 'Booking failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
   
-  const completeBooking = () => {
-    const newBooking = {
-      hostel: hostelName,
-      room: roomName,
-      price,
-      bookingDate: new Date().toISOString(),
-      status: 'Confirmed',
-      paymentMethod,
-      paymentDetails: paymentMethod === 'mobile-money' ? { phone: mobileMoneyPhone } : {},
-    };
-    const userData = {
-      fullName: formData.fullName,
-      email: formData.email,
-      phone: formData.phone,
-      course: formData.course,
-      profilePicture: '',
-      role: 'student',
-      token: 'mock-token',
-    };
-    localStorage.setItem('auth', JSON.stringify(userData));
-    localStorage.setItem('bookingHistory', JSON.stringify([newBooking]));
-    loginWithUserData(userData);
-    navigate('/dashboard');
+  const handleDownloadReceipt = async () => {
+    setDownloadingReceipt(true);
+    try {
+      const receiptData = {
+        hostelName: hostelName,
+        roomName: roomName,
+        price: price,
+        amount: totalPrice,
+        paymentMethod: paymentMethod === 'mobile-money' ? 'Mobile Money' : 
+                      paymentMethod === 'credit-card' ? 'Credit Card' : 'Bank Transfer',
+        studentName: userProfile?.fullName || userProfile?.name,
+        studentEmail: userProfile?.email,
+        studentPhone: userProfile?.phone || formData.phone,
+        bookingDate: new Date().toISOString(),
+        transactionId: JSON.parse(sessionStorage.getItem('paymentResult') || '{}').transactionId || 'BMH' + Date.now(),
+        startDate: new Date(),
+        endDate: new Date(new Date().setMonth(new Date().getMonth() + 4))
+      };
+      
+      await receiptService.generateReceipt(receiptData);
+    } catch (error) {
+      console.error('Receipt download failed:', error);
+      alert('Failed to download receipt. Please try again.');
+    } finally {
+      setDownloadingReceipt(false);
+    }
   };
-  
+
   const handlePinSubmit = async () => {
-    if (!pin || pin.length < 4) {
-      alert('Please enter a valid PIN');
+    if (!pin || pin.length !== 4) {
+      setError('Please enter a valid 4-digit PIN');
       return;
     }
     
     setIsProcessing(true);
     setPaymentStatus('Initiating payment...');
     
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setPaymentStatus('Sending request to ' + mobileMoneyPhone + '...');
-    
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setPaymentStatus('Verifying PIN...');
-    
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setPaymentStatus('Processing payment to ' + MERCHANT_NUMBER + '...');
-    
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setPaymentStatus('Payment successful! ✓');
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setIsProcessing(false);
-    setShowPinModal(false);
-    setPin('');
-    setPaymentStatus('');
-    
-    // Move to confirmation step
-    setCurrentStep(3);
+    try {
+      setPaymentStatus('Sending request to ' + mobileMoneyPhone + '...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setPaymentStatus('Verifying PIN...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setPaymentStatus('Processing payment to ' + MERCHANT_NUMBER + '...');
+      
+      // Process mobile money payment
+      const paymentResult = await paymentService.processMobileMoneyPayment(mobileMoneyPhone, totalPrice, pin);
+      
+      setPaymentStatus('Payment successful! ✓');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Store transaction details
+      sessionStorage.setItem('paymentResult', JSON.stringify(paymentResult));
+      
+      setIsProcessing(false);
+      setShowPinModal(false);
+      setPin('');
+      setPaymentStatus('');
+      
+      setCurrentStep(3);
+    } catch (error) {
+      setIsProcessing(false);
+      setPaymentStatus('');
+      setError(error.message || 'Payment failed. Please try again.');
+    }
   };
 
-  const handleProceedToPayment = (e) => {
+  const handleProceedToPayment = async (e) => {
     e.preventDefault();
     if (!termsAccepted) {
+      setError('Please accept the terms and conditions.');
       return;
     }
+    
+    if (!userProfile) {
+      setError('Please log in to continue with booking.');
+      return;
+    }
+    
+    // Validate required fields
+    if (!formData.phone || !formData.gender || !formData.dob || !formData.yearOfStudy || 
+        !formData.studentNumber || !formData.residence || !formData.nextOfKinName || 
+        !formData.nextOfKinContact || !formData.guardianName || !formData.guardianContact) {
+      setError('Please fill in all required fields.');
+      return;
+    }
+    
+    // Save profile data for future bookings
+    try {
+      await userService.saveBookingProfile(formData);
+    } catch (error) {
+      console.warn('Failed to save profile:', error.message);
+    }
+    
     setCurrentStep(2);
   };
 
@@ -222,6 +383,10 @@ const BookingPage = () => {
                   <h3>Booking Summary</h3>
                   <div className="summary-grid">
                     <div className="summary-item-inline">
+                      <small>Student</small>
+                      <span>{userProfile?.fullName || userProfile?.name || 'N/A'}</span>
+                    </div>
+                    <div className="summary-item-inline">
                       <small>Hostel</small>
                       <span>{hostelName || 'N/A'}</span>
                     </div>
@@ -241,6 +406,22 @@ const BookingPage = () => {
             
             {/* Form Below */}
             <div className="booking-form-col">
+            {error && (
+              <div className="error-message" style={{background: '#fee2e2', color: '#dc2626', padding: '12px', borderRadius: '8px', marginBottom: '20px', textAlign: 'center'}}>
+                <i className="fa-solid fa-exclamation-triangle"></i> {error}
+              </div>
+            )}
+            {showProfilePrompt && (
+              <div className="profile-prompt-card" style={{background: '#f0f9ff', border: '2px solid #0ea5e9', borderRadius: '12px', padding: '20px', marginBottom: '20px', textAlign: 'center'}}>
+                <i className="fa-solid fa-user-plus" style={{fontSize: '32px', color: '#0ea5e9', marginBottom: '12px'}}></i>
+                <h3 style={{color: '#1e293b', marginBottom: '8px'}}>Complete Your Profile</h3>
+                <p style={{color: '#64748b', marginBottom: '16px'}}>Save time on future bookings by completing your profile once</p>
+                <div style={{display: 'flex', gap: '12px', justifyContent: 'center'}}>
+                  <button type="button" onClick={() => setShowProfilePrompt(false)} style={{padding: '8px 16px', background: 'white', border: '2px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer'}}>Skip for Now</button>
+                  <button type="button" onClick={() => navigate('/profile')} style={{padding: '8px 16px', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer'}}>Complete Profile</button>
+                </div>
+              </div>
+            )}
             {currentStep === 1 && (
             <form className="booking-form" onSubmit={handleProceedToPayment}>
               <div className="form-sections-row">
@@ -248,16 +429,8 @@ const BookingPage = () => {
                 <h3><span className="section-number">1</span> Personal Details</h3>
                 <div className="form-grid">
                   <div className="form-group">
-                    <label htmlFor="fullName" aria-label="Full Name">Full Name</label>
-                    <input type="text" id="fullName" name="fullName" placeholder="e.g., Jane Doe" required value={formData.fullName} onChange={handleInputChange} />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="email" aria-label="Email Address">Email Address</label>
-                    <input type="email" id="email" name="email" placeholder="e.g., jane.doe@student.mak.ac.ug" required value={formData.email} onChange={handleInputChange} />
-                  </div>
-                  <div className="form-group">
                     <label htmlFor="phone" aria-label="Telephone Number">Telephone Number</label>
-                    <input type="tel" id="phone" name="phone" placeholder="e.g., 0771234567" required value={formData.phone} onChange={handleInputChange} />
+                    <input type="tel" id="phone" name="phone" placeholder="e.g., 0771234567" required value={formData.phone} onChange={handleInputChange} pattern="[0-9]{10}" />
                   </div>
                   <div className="form-group">
                     <label htmlFor="gender" aria-label="Gender">Gender</label>
@@ -293,7 +466,7 @@ const BookingPage = () => {
                   </div>
                   <div className="form-group">
                     <label htmlFor="studentNumber" aria-label="Student Number">Student Number</label>
-                    <input type="text" id="studentNumber" name="studentNumber" placeholder="e.g., 2100712345" required value={formData.studentNumber} onChange={handleInputChange} />
+                    <input type="text" id="studentNumber" name="studentNumber" placeholder="e.g., 2100712345" required value={formData.studentNumber} onChange={handleInputChange} pattern="[0-9]+" />
                   </div>
                 </div>
                 <div className="form-group" style={{ marginTop: '20px' }}>
@@ -320,19 +493,19 @@ const BookingPage = () => {
                 <div className="form-grid">
                   <div className="form-group">
                     <label htmlFor="nextOfKinName" aria-label="Next of Kin's Name">Next of Kin's Name</label>
-                    <input type="text" id="nextOfKinName" name="nextOfKinName" required value={formData.nextOfKinName} onChange={handleInputChange} />
+                    <input type="text" id="nextOfKinName" name="nextOfKinName" required value={formData.nextOfKinName} onChange={handleInputChange} pattern="[A-Za-z\s]+" />
                   </div>
                   <div className="form-group">
                     <label htmlFor="nextOfKinContact" aria-label="Next of Kin's Contact">Next of Kin's Contact</label>
-                    <input type="tel" id="nextOfKinContact" name="nextOfKinContact" required value={formData.nextOfKinContact} onChange={handleInputChange} />
+                    <input type="tel" id="nextOfKinContact" name="nextOfKinContact" required value={formData.nextOfKinContact} onChange={handleInputChange} pattern="[0-9]{10}" />
                   </div>
                   <div className="form-group">
                     <label htmlFor="guardianName" aria-label="Parent/Guardian's Name">Parent/Guardian's Name</label>
-                    <input type="text" id="guardianName" name="guardianName" required value={formData.guardianName} onChange={handleInputChange} />
+                    <input type="text" id="guardianName" name="guardianName" required value={formData.guardianName} onChange={handleInputChange} pattern="[A-Za-z\s]+" />
                   </div>
                   <div className="form-group">
                     <label htmlFor="guardianContact" aria-label="Parent/Guardian's Contact">Parent/Guardian's Contact</label>
-                    <input type="tel" id="guardianContact" name="guardianContact" required value={formData.guardianContact} onChange={handleInputChange} />
+                    <input type="tel" id="guardianContact" name="guardianContact" required value={formData.guardianContact} onChange={handleInputChange} pattern="[0-9]{10}" />
                   </div>
                 </div>
               </div>
@@ -349,6 +522,13 @@ const BookingPage = () => {
               </div>
               </div>
               
+              <div className="save-profile-section" style={{background: '#f8fafc', padding: '20px', borderRadius: '12px', marginBottom: '20px', border: '1px solid #e2e8f0'}}>
+                <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px'}}>
+                  <input type="checkbox" id="saveProfile" checked={true} onChange={() => {}} />
+                  <label htmlFor="saveProfile" style={{fontWeight: 600, color: '#1e293b'}}>Save this information to my profile</label>
+                </div>
+                <p style={{fontSize: '13px', color: '#64748b', margin: 0}}>This will make future bookings faster by auto-filling your details</p>
+              </div>
               <div className="terms-agreement">
                 <input type="checkbox" id="terms" name="terms" required checked={termsAccepted} onChange={handleTermsChange} />
                 <label htmlFor="terms" aria-label="I have read and agree to the Terms and Conditions and the hostel's booking policy.">I have read and agree to the <a href="#">Terms and Conditions</a> and the hostel's booking policy.</label>
@@ -357,7 +537,13 @@ const BookingPage = () => {
                 By proceeding, you agree to our Terms of Service and the hostel's rules and regulations.
               </p>
               <div style={{ textAlign: 'center' }}>
-                <button type="submit" className="btn primary book-btn" id="paymentBtn" disabled={!termsAccepted}>Proceed to Payment</button>
+                <button type="submit" className="btn primary book-btn" id="paymentBtn" disabled={!termsAccepted || isLoading}>
+                  {isLoading ? (
+                    <><i className="fa-solid fa-spinner fa-spin"></i> Processing...</>
+                  ) : (
+                    'Proceed to Payment'
+                  )}
+                </button>
               </div>
             </form>
             )}
@@ -394,12 +580,19 @@ const BookingPage = () => {
                     </div>
                     <div className="detail-row">
                       <span><i className="fa-solid fa-envelope"></i> Email</span>
-                      <strong>{formData.email}</strong>
+                      <strong>{userProfile?.email}</strong>
                     </div>
                   </div>
                 </div>
                 <div className="confirmation-actions">
-                  <button onClick={completeBooking} className="btn-dashboard">
+                  <button onClick={handleDownloadReceipt} className="btn-receipt" disabled={downloadingReceipt} style={{marginRight: '12px', background: '#10b981', borderColor: '#10b981'}}>
+                    {downloadingReceipt ? (
+                      <><i className="fa-solid fa-spinner fa-spin"></i> Generating...</>
+                    ) : (
+                      <><i className="fa-solid fa-download"></i> Download Receipt</>
+                    )}
+                  </button>
+                  <button onClick={() => navigate('/dashboard')} className="btn-dashboard">
                     <i className="fa-solid fa-gauge"></i> Go to Dashboard
                   </button>
                 </div>
@@ -467,8 +660,12 @@ const BookingPage = () => {
                       </>
                     )}
                   </div>
-                  <button className="pay-button-modern" onClick={handleConfirmPayment}>
-                    <i className="fa-solid fa-lock"></i> Pay UGX {totalPrice.toLocaleString()}
+                  <button className="pay-button-modern" onClick={handleConfirmPayment} disabled={isLoading}>
+                    {isLoading ? (
+                      <><i className="fa-solid fa-spinner fa-spin"></i> Processing...</>
+                    ) : (
+                      <><i className="fa-solid fa-lock"></i> Pay UGX {totalPrice.toLocaleString()}</>
+                    )}
                   </button>
                 </div>
               </div>

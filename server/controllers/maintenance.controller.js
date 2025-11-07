@@ -6,21 +6,31 @@ import MaintenanceRequest from '../models/maintenanceRequest.model.js';
  * @access  Private
  */
 const createMaintenanceRequest = async (req, res) => {
-  // Note: This requires authentication middleware (req.user)
-  const { hostel, description } = req.body;
+  const { category, roomNumber, description } = req.body;
 
   try {
     const request = new MaintenanceRequest({
       student: req.user._id,
-      hostel,
+      category,
+      roomNumber,
       description,
     });
 
     const createdRequest = await request.save();
     res.status(201).json(createdRequest);
   } catch (error) {
-    res.status(500).json({ message: 'Server Error' });
+    res.status(500).json({ message: 'Server Error', error: error.message });
   }
 };
 
-export { createMaintenanceRequest };
+const getMyMaintenanceRequests = async (req, res) => {
+  try {
+    const requests = await MaintenanceRequest.find({ student: req.user._id })
+      .sort({ createdAt: -1 });
+    res.json(requests);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+export { createMaintenanceRequest, getMyMaintenanceRequests };

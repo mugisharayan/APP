@@ -8,13 +8,11 @@ const bookingSchema = new mongoose.Schema(
       required: true,
     },
     hostel: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Hostel',
+      type: mongoose.Schema.Types.Mixed,
       required: true,
     },
     room: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Room',
+      type: mongoose.Schema.Types.Mixed,
       required: true,
     },
     startDate: {
@@ -29,6 +27,17 @@ const bookingSchema = new mongoose.Schema(
     payment: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Payment',
+    },
+    status: {
+      type: String,
+      enum: ['active', 'cancelled', 'completed'],
+      default: 'active',
+    },
+    cancellationReason: {
+      type: String,
+    },
+    cancelledAt: {
+      type: Date,
     },
   },
   { timestamps: true }

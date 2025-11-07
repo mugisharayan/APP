@@ -3,36 +3,87 @@ import { Link, useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import { AuthContext } from '../auth/AuthContext';
 import DashboardSidebar from './DashboardSidebar';
+import bookingService from '../../service/booking.service';
+import userService from '../../service/user.service';
+import dashboardService from '../../service/dashboard.service';
+import receiptService from '../../service/receipt.service';
 
 const DashboardPage = ({ onOpenReviewModal }) => {
   const navigate = useNavigate();
-  const { userProfile, bookingHistory, login, logout } = useContext(AuthContext);
+  const { userProfile, bookingHistory, login, logout, setBookingHistory } = useContext(AuthContext);
   const [maintenanceRequests, setMaintenanceRequests] = useState([]);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [downloadingReceipt, setDownloadingReceipt] = useState(null);
 
   useEffect(() => {
-    if (!userProfile) {
-      const storedProfile = JSON.parse(localStorage.getItem('userProfile'));
-      const storedBookings = JSON.parse(localStorage.getItem('bookingHistory'));
-      if (storedProfile && storedBookings) {
-        login(storedProfile, storedBookings);
-      } else {
-        navigate('/');
-        return;
+    const loadDashboardData = async () => {
+      if (!userProfile) {
+        const storedAuth = JSON.parse(localStorage.getItem('auth'));
+        if (storedAuth && storedAuth.token) {
+          try {
+            // Get fresh user profile from backend
+            const profile = await userService.getUserProfile();
+            login({ ...storedAuth, ...profile });
+          } catch (error) {
+            console.error('Failed to load user profile:', error);
+            navigate('/');
+            return;
+          }
+        } else {
+          navigate('/');
+          return;
+        }
       }
-    }
-    // Maintenance requests can still be loaded from localStorage for this component
-    const storedMaintenance = JSON.parse(localStorage.getItem('maintenanceRequests')) || [];
-    setMaintenanceRequests(storedMaintenance);
-  }, [userProfile, navigate, login]);
+      
+      try {
+        // Load bookings from backend
+        const bookings = await bookingService.getMyBookings();
+        setBookingHistory(bookings);
+        
+        // Load maintenance requests (still from localStorage for now)
+        const storedMaintenance = JSON.parse(localStorage.getItem('maintenanceRequests')) || [];
+        setMaintenanceRequests(storedMaintenance);
+      } catch (error) {
+        setError('Failed to load dashboard data');
+        console.error('Dashboard data error:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadDashboardData();
+  }, [userProfile, navigate, login, setBookingHistory]);
 
-  if (!userProfile) {
+  if (isLoading) {
     return (
       <main className="dashboard-page">
         <div className="container">
           <div className="dashboard-panel active" style={{ textAlign: 'center', padding: '50px' }}>
+            <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '48px', color: '#0ea5e9', marginBottom: '20px' }}></i>
             <h2>Loading Dashboard...</h2>
             <p className="muted">Please wait while we fetch your data.</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+  
+  if (error) {
+    return (
+      <main className="dashboard-page">
+        <div className="container">
+          <div className="dashboard-panel active" style={{ textAlign: 'center', padding: '50px' }}>
+            <i className="fa-solid fa-exclamation-triangle" style={{ fontSize: '48px', color: '#ef4444', marginBottom: '20px' }}></i>
+            <h2>Error Loading Dashboard</h2>
+            <p className="muted">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              style={{ padding: '10px 20px', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+            >
+              Retry
+            </button>
           </div>
         </div>
       </main>
@@ -45,10 +96,34 @@ const DashboardPage = ({ onOpenReviewModal }) => {
     navigate('/');
   };
 
+  const handleDownloadReceipt = async (booking) => {
+    setDownloadingReceipt(booking._id);
+    try {
+      const receiptData = {
+        ...booking,
+        hostelName: dashboardService.getHostelName(booking),
+        roomName: dashboardService.getRoomName(booking),
+        price: dashboardService.getRoomPrice(booking),
+        studentName: userProfile?.fullName || userProfile?.name,
+        studentEmail: userProfile?.email,
+        studentPhone: userProfile?.phone,
+        transactionId: booking.transactionId || 'BMH' + Date.now()
+      };
+      
+      await receiptService.generateReceipt(receiptData);
+    } catch (error) {
+      console.error('Receipt download failed:', error);
+      alert('Failed to download receipt. Please try again.');
+    } finally {
+      setDownloadingReceipt(null);
+    }
+  };
+
   const bookings = bookingHistory || [];
+  const stats = dashboardService.calculateBookingStats(bookings);
   const latestBooking = bookings[0];
   const pastBookingsForReview = bookings.filter((booking, index) => {
-    return index > 0 || (index === 0 && booking.status === 'Cancelled');
+    return index > 0 || (index === 0 && (booking.status || 'confirmed').toLowerCase() === 'cancelled');
   });
 
   return (
@@ -84,22 +159,22 @@ const DashboardPage = ({ onOpenReviewModal }) => {
                 <div className="stat-card-modern blue">
                   <div className="stat-icon"><i className="fa-solid fa-file-invoice"></i></div>
                   <div className="stat-info">
-                    <h3>{bookings.length}</h3>
+                    <h3>{stats.totalBookings}</h3>
                     <p>Total Bookings</p>
                   </div>
                 </div>
                 <div className="stat-card-modern green">
                   <div className="stat-icon"><i className="fa-solid fa-circle-check"></i></div>
                   <div className="stat-info">
-                    <h3>{bookings.filter(b => b.status === 'Confirmed').length}</h3>
+                    <h3>{stats.activeBookings}</h3>
                     <p>Active Bookings</p>
                   </div>
                 </div>
-                <div className="stat-card-modern orange">
-                  <div className="stat-icon"><i className="fa-solid fa-screwdriver-wrench"></i></div>
+                <div className="stat-card-modern purple">
+                  <div className="stat-icon"><i className="fa-solid fa-wallet"></i></div>
                   <div className="stat-info">
-                    <h3>{maintenanceRequests.length}</h3>
-                    <p>Maintenance Requests</p>
+                    <h3>{dashboardService.formatCurrency(stats.totalSpent)}</h3>
+                    <p>Total Spent</p>
                   </div>
                 </div>
               </div>
@@ -124,21 +199,21 @@ const DashboardPage = ({ onOpenReviewModal }) => {
                         <i className="fa-solid fa-building"></i>
                         <div>
                           <small>Hostel</small>
-                          <strong>{latestBooking.hostel}</strong>
+                          <strong>{dashboardService.getHostelName(latestBooking)}</strong>
                         </div>
                       </div>
                       <div className="info-item">
                         <i className="fa-solid fa-door-open"></i>
                         <div>
                           <small>Room</small>
-                          <strong>{latestBooking.room}</strong>
+                          <strong>{dashboardService.getRoomName(latestBooking)}</strong>
                         </div>
                       </div>
                       <div className="info-item">
                         <i className="fa-solid fa-calendar"></i>
                         <div>
                           <small>Booked On</small>
-                          <strong>{new Date(latestBooking.bookingDate).toLocaleDateString()}</strong>
+                          <strong>{new Date(latestBooking.createdAt || latestBooking.bookingDate).toLocaleDateString()}</strong>
                         </div>
                       </div>
                     </div>
@@ -190,19 +265,37 @@ const DashboardPage = ({ onOpenReviewModal }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {bookings.slice(0, 3).map((booking, index) => (
-                        <tr key={index}>
-                          <td>{booking.hostel}</td>
-                          <td>{booking.room}</td>
-                          <td>{new Date(booking.bookingDate).toLocaleDateString()}</td>
-                          <td>UGX {booking.price?.toLocaleString()}</td>
-                          <td><span className={`status-pill ${booking.status.toLowerCase()}`}>{booking.status}</span></td>
-                          <td>
-                            <button className="btn-icon-small" title="View Details"><i className="fa-solid fa-eye"></i></button>
-                            <button className="btn-icon-small" title="Download Receipt"><i className="fa-solid fa-download"></i></button>
-                          </td>
-                        </tr>
-                      ))}
+                      {bookings.slice(0, 3).map((booking, index) => {
+                        const hostelName = dashboardService.getHostelName(booking);
+                        const roomName = dashboardService.getRoomName(booking);
+                        const roomPrice = dashboardService.getRoomPrice(booking);
+                        const status = booking.status || 'Confirmed';
+                        
+                        return (
+                          <tr key={booking._id || index}>
+                            <td>{hostelName}</td>
+                            <td>{roomName}</td>
+                            <td>{new Date(booking.createdAt || booking.bookingDate).toLocaleDateString()}</td>
+                            <td>UGX {parseInt(roomPrice).toLocaleString()}</td>
+                            <td><span className={`status-pill ${status.toLowerCase()}`}>{status}</span></td>
+                            <td>
+                              <button className="btn-icon-small" title="View Details"><i className="fa-solid fa-eye"></i></button>
+                              <button 
+                                className="btn-icon-small" 
+                                title="Download Receipt"
+                                onClick={() => handleDownloadReceipt(booking)}
+                                disabled={downloadingReceipt === booking._id}
+                              >
+                                {downloadingReceipt === booking._id ? (
+                                  <i className="fa-solid fa-spinner fa-spin"></i>
+                                ) : (
+                                  <i className="fa-solid fa-download"></i>
+                                )}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

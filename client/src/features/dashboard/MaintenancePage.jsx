@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import { AuthContext } from '../auth/AuthContext';
 import DashboardSidebar from './DashboardSidebar';
+import maintenanceService from '../../service/maintenance.service';
 
 const MaintenancePage = () => {
   const navigate = useNavigate();
@@ -10,21 +11,30 @@ const MaintenancePage = () => {
   const [maintenanceRequests, setMaintenanceRequests] = useState([]);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [fileName, setFileName] = useState('No file chosen');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!userProfile) {
-      const storedProfile = JSON.parse(localStorage.getItem('userProfile'));
-      if (storedProfile) {
-        const storedBookings = JSON.parse(localStorage.getItem('bookingHistory')) || [];
-        login(storedProfile, storedBookings);
-      } else {
+    const loadMaintenanceRequests = async () => {
+      if (!userProfile) {
         navigate('/');
         return;
       }
-    }
-    const storedMaintenance = JSON.parse(localStorage.getItem('maintenanceRequests')) || [];
-    setMaintenanceRequests(storedMaintenance);
-  }, [userProfile, navigate, login]);
+      
+      try {
+        const requests = await maintenanceService.getMyMaintenanceRequests();
+        setMaintenanceRequests(requests);
+      } catch (error) {
+        setError('Failed to load maintenance requests');
+        console.error('Maintenance requests load error:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadMaintenanceRequests();
+  }, [userProfile, navigate]);
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -34,24 +44,28 @@ const MaintenancePage = () => {
     }
   };
 
-  const handleSubmitRequest = (e) => {
+  const handleSubmitRequest = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setError('');
+    
     const form = e.target;
-    const newRequest = {
-      date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+    const requestData = {
       category: form.issueCategory.value,
       roomNumber: form.roomNumber.value,
       description: form.issueDescription.value,
-      status: ['Submitted', 'In Progress', 'Resolved'][Math.floor(Math.random() * 3)], // For demo
-      // photo: fileName !== 'No file chosen' ? 'URL_TO_UPLOADED_PHOTO' : null, // In a real app, upload file
     };
 
-    const updatedRequests = [newRequest, ...maintenanceRequests];
-    localStorage.setItem('maintenanceRequests', JSON.stringify(updatedRequests));
-    setMaintenanceRequests(updatedRequests);
-    // showToast('Maintenance request submitted!');
-    form.reset();
-    setFileName('No file chosen');
+    try {
+      const newRequest = await maintenanceService.createMaintenanceRequest(requestData);
+      setMaintenanceRequests([newRequest, ...maintenanceRequests]);
+      form.reset();
+      setFileName('No file chosen');
+    } catch (error) {
+      setError(error.message || 'Failed to submit maintenance request');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleLogout = () => {
@@ -107,7 +121,7 @@ const MaintenancePage = () => {
                 <div className="stat-card-modern orange">
                   <div className="stat-icon"><i className="fas fa-tools"></i></div>
                   <div className="stat-info">
-                    <h3>{maintenanceRequests.filter(r => r.status === 'Submitted').length}</h3>
+                    <h3>{maintenanceRequests.filter(r => r.status === 'Pending').length}</h3>
                     <p>Pending</p>
                   </div>
                 </div>
@@ -132,6 +146,11 @@ const MaintenancePage = () => {
                   <h3><i className="fas fa-plus-circle"></i> Submit New Request</h3>
                   <p className="muted">Report any issues with your room or facilities</p>
                 </div>
+                {error && (
+                  <div className="error-message" style={{background: '#fee2e2', color: '#dc2626', padding: '12px', borderRadius: '8px', marginBottom: '20px'}}>
+                    <i className="fa-solid fa-exclamation-triangle"></i> {error}
+                  </div>
+                )}
                 <form className="maintenance-form-modern" onSubmit={handleSubmitRequest}>
                   <div className="form-grid">
                     <div className="form-group">
@@ -164,7 +183,13 @@ const MaintenancePage = () => {
                       <span className="file-name-display">{fileName}</span>
                     </div>
                   </div>
-                  <button type="submit" className="btn primary">Submit Request</button>
+                  <button type="submit" className="btn primary" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <><i className="fa-solid fa-spinner fa-spin"></i> Submitting...</>
+                    ) : (
+                      'Submit Request'
+                    )}
+                  </button>
                 </form>
               </div>
 
@@ -181,7 +206,7 @@ const MaintenancePage = () => {
                     </div>
                   ) : (
                     maintenanceRequests.map((req, index) => (
-                      <div className="maintenance-request-card" key={index}>
+                      <div className="maintenance-request-card" key={req._id || index}>
                         <div className="request-card-header">
                           <div className="request-icon">
                             <i className={`fas fa-${req.category === 'plumbing' ? 'faucet' : req.category === 'electrical' ? 'bolt' : req.category === 'furniture' ? 'couch' : req.category === 'internet' ? 'wifi' : 'wrench'}`}></i>
@@ -196,12 +221,12 @@ const MaintenancePage = () => {
                           </div>
                           <div className="request-detail-row">
                             <i className="fas fa-calendar"></i>
-                            <span>{req.date}</span>
+                            <span>{new Date(req.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                           </div>
                           <p className="request-description">{req.description}</p>
                         </div>
                         <div className="request-progress-bar">
-                          <div className="progress-step" style={{width: req.status === 'Submitted' ? '33%' : req.status === 'In Progress' ? '66%' : '100%'}}></div>
+                          <div className="progress-step" style={{width: req.status === 'Pending' ? '33%' : req.status === 'In Progress' ? '66%' : '100%'}}></div>
                         </div>
                       </div>
                     ))

@@ -7,9 +7,13 @@ const maintenanceRequestSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
-    hostel: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Hostel',
+    category: {
+      type: String,
+      required: true,
+      enum: ['plumbing', 'electrical', 'furniture', 'internet', 'other'],
+    },
+    roomNumber: {
+      type: String,
       required: true,
     },
     description: {

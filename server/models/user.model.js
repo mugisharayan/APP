@@ -19,9 +19,54 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    phone: {
+      type: String,
+    },
+    course: {
+      type: String,
+    },
+    // Booking profile fields
+    gender: {
+      type: String,
+      enum: ['male', 'female'],
+    },
+    dateOfBirth: {
+      type: Date,
+    },
+    yearOfStudy: {
+      type: String,
+    },
+    studentNumber: {
+      type: String,
+    },
+    residence: {
+      type: String,
+    },
+    nextOfKinName: String,
+    nextOfKinContact: String,
+    guardianName: String,
+    guardianContact: String,
+    profileCompleted: {
+      type: Boolean,
+      default: false
+    },
+    nextOfKin: {
+      name: String,
+      contact: String,
+    },
+    guardian: {
+      name: String,
+      contact: String,
+    },
+    notes: {
+      type: String,
+    },
+    healthIssues: {
+      type: String,
+    },
     role: {
       type: String,
-      enum: ['Student', 'Custodian'],
+      enum: ['student', 'custodian'],
       required: true,
     },
   },

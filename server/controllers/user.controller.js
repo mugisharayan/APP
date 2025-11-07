@@ -32,44 +32,63 @@ const getUserProfile = asyncHandler(async (req, res) => {
  * @access  Public
  */
 const registerUser = asyncHandler(async (req, res) => {
-  console.log('Registration request:', req.body);
-  const { name, email, password, role } = req.body;
+  const { fullName, name, email, phone, course, gender, dateOfBirth, yearOfStudy, studentNumber, residence, nextOfKin, guardian, notes, healthIssues, role, password } = req.body;
 
-  if (!name || !email || !password || !role) {
+  console.log('Registration attempt:', { email, name: name || fullName, role });
+
+  const userName = name || fullName;
+  if (!userName || !email || !role) {
     res.status(400);
     throw new Error('Please provide all required fields');
   }
 
-  const userExists = await User.findOne({ email });
-
+  const normalizedEmail = email.toLowerCase().trim();
+  console.log('Checking for existing user with email:', normalizedEmail);
+  
+  const userExists = await User.findOne({ email: normalizedEmail });
+  console.log('User exists check result:', !!userExists);
+  
   if (userExists) {
+    console.log('Found existing user:', userExists._id, userExists.email);
     res.status(400);
     throw new Error('User already exists');
   }
+  
+  console.log('No existing user found, proceeding with registration');
 
-  const user = await User.create({
-    name,
-    email,
-    password,
-    role,
-  });
-
-  if (user) {
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: '30d',
+  try {
+    const user = await User.create({
+      name: userName,
+      email: normalizedEmail,
+      password: password || 'defaultPassword123',
+      phone: phone || '',
+      role,
     });
+    
+    console.log('User created successfully:', user._id);
 
-    console.log('User registered successfully:', user.email);
-    res.status(201).json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      token,
-    });
-  } else {
-    res.status(400);
-    throw new Error('Invalid user data');
+    if (user) {
+      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+        expiresIn: '30d',
+      });
+
+      res.status(201).json({
+        _id: user._id,
+        fullName: user.name,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        token,
+      });
+    } else {
+      res.status(400);
+      throw new Error('Invalid user data');
+    }
+  } catch (createError) {
+    console.error('User creation error:', createError);
+    res.status(500);
+    throw new Error('Failed to create user: ' + createError.message);
   }
 });
 
@@ -87,7 +106,7 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new Error('Please provide email and password');
   }
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email: email.toLowerCase() });
 
   if (user && (await bcrypt.compare(password, user.password))) {
     // Generate JWT
@@ -99,6 +118,7 @@ const loginUser = asyncHandler(async (req, res) => {
     res.status(200).json({
       _id: user._id,
       name: user.name,
+      fullName: user.name,
       email: user.email,
       role: user.role,
       token: token,
@@ -133,9 +153,17 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   }
 });
 
+// Temporary debug endpoint - remove in production
+const debugUsers = asyncHandler(async (req, res) => {
+  const users = await User.find({}, 'email name createdAt');
+  console.log('All users in database:', users);
+  res.json(users);
+});
+
 export {
   registerUser,
   loginUser,
   getUserProfile,
   updateUserProfile,
+  debugUsers,
 };
