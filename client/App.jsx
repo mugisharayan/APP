@@ -4,6 +4,7 @@ import { Routes, Route } from 'react-router-dom';
 // Import layout components
 import Header from './src/components/layout/Header';
 import Footer from './src/components/layout/Footer';
+import BackToTop from './src/components/common/BackToTop';
 
 // Import modals and overlays
 import AuthModal from './src/features/auth/AuthModal';
@@ -108,6 +109,7 @@ function App() {
       <ReviewModal isOpen={isReviewModalOpen} onClose={() => setIsReviewModalOpen(false)} hostelName={reviewHostelName} />
 
       <ToastContainer />
+      <BackToTop />
     </>
   );
 }

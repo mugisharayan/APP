@@ -21,21 +21,48 @@ const AboutPage = () => {
 
   return (
     <main>
-      <section className="about-hero">
-        <div className="container">
-          <h1 className="animate-on-scroll">From a Student Project to Your Trusted Hostel Finder</h1>
-          <p className="lead animate-on-scroll" style={{ transitionDelay: '100ms' }}>Learn the story behind BookMyHostel and the team dedicated to simplifying your university journey.</p>
+      <section className="about-hero-modern">
+        <div className="floating-home-icons">
+          <i className="fa-solid fa-home floating-home-1"></i>
+          <i className="fa-solid fa-home floating-home-2"></i>
+          <i className="fa-solid fa-home floating-home-3"></i>
+          <i className="fa-solid fa-home floating-home-4"></i>
+          <i className="fa-solid fa-home floating-home-5"></i>
+          <i className="fa-solid fa-home floating-home-6"></i>
+        </div>
+        <div className="container about-hero-container">
+          <h1 className="about-hero-title">From a Student Project to Your Trusted <span className="about-animated">Hostel</span> Finder</h1>
+          <p className="about-hero-subtitle">Learn the story behind BookMyHostel and the team dedicated to simplifying your university journey.</p>
         </div>
       </section>
 
-      <section className="container about-content">
-        <div className="about-grid">
-          <div className="about-text animate-on-scroll">
+      <section className="about-fullwidth-section">
+        <div className="container about-content">
+        <div className="story-section-split animate-on-scroll">
+          <div className="story-left">
+            <div className="story-badge">
+              <i className="fa-solid fa-book-open"></i>
+              <span>Our Journey</span>
+            </div>
             <h3>Our Story</h3>
             <p>BookMyHostel was born from a shared frustration. As five students from the College of Computing and Information Sciences (CoCIS) at Makerere University, we experienced firsthand the chaotic and time-consuming process of finding suitable accommodation each semester. We knew there had to be a better way.</p>
             <p>What started as a final-year project quickly evolved into a passion-driven mission: to create a centralized, trustworthy, and easy-to-use platform for every student. We combined our skills in software development, user experience design, and project management to build the solution we wished we had.</p>
+            <div className="story-stats">
+              <div className="stat-item">
+                <h4>5</h4>
+                <p>Founders</p>
+              </div>
+              <div className="stat-item">
+                <h4>100+</h4>
+                <p>Hostels</p>
+              </div>
+              <div className="stat-item">
+                <h4>1000+</h4>
+                <p>Students</p>
+              </div>
+            </div>
           </div>
-          <div className="about-image animate-on-scroll" style={{ transitionDelay: '100ms' }}>
+          <div className="story-right">
             <img src="https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" alt="A group of students collaborating on a project" />
           </div>
         </div>
@@ -44,9 +71,10 @@ const AboutPage = () => {
           <h3>Our Mission</h3>
           <p>Our mission is to empower students by providing a seamless and transparent platform to discover, compare, and book university accommodation. We aim to eliminate the stress of hostel hunting, so students can focus on their academic and personal growth from day one.</p>
         </div>
+        </div>
       </section>
 
-      <section className="team-section">
+      <section className="team-section-modern">
         <div className="container">
           <h3 className="animate-on-scroll">Meet the Founders</h3>
           <p className="muted animate-on-scroll">The CoCIS students behind the platform.</p>
