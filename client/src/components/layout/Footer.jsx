@@ -6,7 +6,10 @@ const Footer = () => {
     <footer className="site-footer" id="contact">
       <div className="container footer-grid">
         <div className="animate-on-scroll">
-          <Link to="/" className="logo footer-logo">BookMyHostel</Link>
+          <Link to="/" className="logo footer-logo">
+            <i className="fa-solid fa-home"></i>
+            Book<span className="logo-highlight">My</span>Hostel
+          </Link>
           <p>Your trusted partner for finding student accommodation at Makerere University.</p>
           <div className="social-links">
             <a href="#" aria-label="Facebook"><i className="fab fa-facebook-f"></i></a>

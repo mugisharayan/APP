@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import HostelCard from './HostelCard';
 import { apiService } from '../../service/api.service';
 import '../../styles/hostel-card.css';
+import '../../styles/hostel-card-hover.css';
 import '../../styles/modern-hostels.css';
 
 const HostelsPage = () => {
@@ -145,33 +146,13 @@ const HostelsPage = () => {
     <div className="modern-hostels-page">
       {/* Hero Search Section */}
       <section className="hero-search-section">
-        <div className="animated-person">
-          <div className="person">
-            <div className="head"></div>
-            <div className="body">
-              <div className="arm left-arm"></div>
-              <div className="arm right-arm"></div>
-              <div className="book"></div>
-            </div>
-            <div className="legs">
-              <div className="leg left-leg"></div>
-              <div className="leg right-leg"></div>
-            </div>
-          </div>
-        </div>
-        <div className="animated-person-left">
-          <div className="person">
-            <div className="head"></div>
-            <div className="body">
-              <div className="arm left-arm"></div>
-              <div className="arm right-arm"></div>
-              <div className="book"></div>
-            </div>
-            <div className="legs">
-              <div className="leg left-leg"></div>
-              <div className="leg right-leg"></div>
-            </div>
-          </div>
+        <div className="floating-home-icons">
+          <i className="fa-solid fa-home floating-home-1"></i>
+          <i className="fa-solid fa-home floating-home-2"></i>
+          <i className="fa-solid fa-home floating-home-3"></i>
+          <i className="fa-solid fa-home floating-home-4"></i>
+          <i className="fa-solid fa-home floating-home-5"></i>
+          <i className="fa-solid fa-home floating-home-6"></i>
         </div>
         <div className="floating-elements">
           <div className="floating-hostel floating-hostel-1">
@@ -224,6 +205,8 @@ const HostelsPage = () => {
             </div>
             <input 
               type="search" 
+              id="hostelSearch"
+              name="hostelSearch"
               className="hero-search-input" 
               placeholder="Search hostels by name..." 
               value={filters.searchTerm} 
@@ -274,12 +257,13 @@ const HostelsPage = () => {
               <div className="modern-filter-section">
                 <h3 className="filter-title">Filter by Price</h3>
                 <div className="modern-price-filter">
-                  <input type="range" id="maxPrice" min="500000" max="2000000" step="100000" value={filters.maxPrice} onChange={handleFilterChange} className="modern-range" />
+                  <input type="range" id="maxPrice" name="maxPrice" min="500000" max="2000000" step="100000" value={filters.maxPrice} onChange={handleFilterChange} className="modern-range" />
                   <div className="modern-price-input-wrapper">
                     <label>Max Price (UGX):</label>
                     <input 
                       type="number" 
                       id="maxPriceInput" 
+                      name="maxPriceInput"
                       min="500000" 
                       max="2000000" 
                       step="100000" 

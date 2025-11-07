@@ -23,7 +23,10 @@ const Header = ({ onOpenAuthModal, onOpenFavorites, onOpenDashboardChoice }) => 
   return (
     <header className={`site-header ${isScrolled ? 'scrolled' : ''}`}>
       <div className="container header-inner">
-        <Link to="/" className="logo">BookMyHostel</Link>
+        <Link to="/" className="logo">
+          <i className="fa-solid fa-home"></i>
+          Book<span className="logo-highlight">My</span>Hostel
+        </Link>
         <nav className={`main-nav ${isNavActive ? 'active' : ''}`} id="mainNav">
           <NavLink to="/" onClick={toggleNav}>Home</NavLink>
           <NavLink to="/about" onClick={toggleNav}>About</NavLink>

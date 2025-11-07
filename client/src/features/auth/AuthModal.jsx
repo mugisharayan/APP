@@ -173,9 +173,9 @@ const AuthModal = ({ isOpen, onClose, redirectTo = null }) => {
                 <h3>Welcome Back</h3>
                 <p className="muted">Login to access your account and bookings.</p>
                 <form onSubmit={handleLogin}>
-                  <input type="email" placeholder="Email Address" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <input type="email" id="loginEmail" name="email" placeholder="Email Address" required value={email} onChange={(e) => setEmail(e.target.value)} />
                   <div className="password-input-wrapper">
-                    <input type={showPassword ? 'text' : 'password'} placeholder="Password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                    <input type={showPassword ? 'text' : 'password'} id="loginPassword" name="password" placeholder="Password" required value={password} onChange={(e) => setPassword(e.target.value)} />
                     <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
                       <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                     </button>
@@ -194,8 +194,8 @@ const AuthModal = ({ isOpen, onClose, redirectTo = null }) => {
                 <h3>Create an Account</h3>
                 <p className="muted">Join us to easily book and manage your hostel stays.</p>
                 <form onSubmit={handleSignup}>
-                  <input type="text" placeholder="Full Name" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
-                  <input type="email" placeholder="Email Address" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <input type="text" id="signupFullName" name="fullName" placeholder="Full Name" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                  <input type="email" id="signupEmail" name="email" placeholder="Email Address" required value={email} onChange={(e) => setEmail(e.target.value)} />
                   <div className="form-group">
                     <label className="form-label" aria-label="I am a:">I am a:</label>
                     <div className="radio-group">
@@ -212,13 +212,13 @@ const AuthModal = ({ isOpen, onClose, redirectTo = null }) => {
                   {role === 'Custodian' && (
                     <div className="custodian-fields-wrapper">
                       <div className="separator"><span>Hostel Information</span></div>
-                      <input type="text" name="hostelName" placeholder="Hostel Name" required value={hostelInfo.hostelName} onChange={(e) => setHostelInfo(p => ({...p, hostelName: e.target.value}))} />
-                      <input type="tel" name="hostelContact" placeholder="Hostel Contact Number" required value={hostelInfo.hostelContact} onChange={(e) => setHostelInfo(p => ({...p, hostelContact: e.target.value}))} />
+                      <input type="text" id="hostelName" name="hostelName" placeholder="Hostel Name" required value={hostelInfo.hostelName} onChange={(e) => setHostelInfo(p => ({...p, hostelName: e.target.value}))} />
+                      <input type="tel" id="hostelContact" name="hostelContact" placeholder="Hostel Contact Number" required value={hostelInfo.hostelContact} onChange={(e) => setHostelInfo(p => ({...p, hostelContact: e.target.value}))} />
                     </div>
                   )}
                   <div className="form-group">
                     <div className="password-input-wrapper">
-                      <input type={showPassword ? 'text' : 'password'} placeholder="Create Password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                      <input type={showPassword ? 'text' : 'password'} id="signupPassword" name="password" placeholder="Create Password" required value={password} onChange={(e) => setPassword(e.target.value)} />
                       <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
                         <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                       </button>
@@ -235,7 +235,7 @@ const AuthModal = ({ isOpen, onClose, redirectTo = null }) => {
                   </div>
                   <div className="form-group">
                     <div className="password-input-wrapper">
-                      <input type={showConfirmPassword ? 'text' : 'password'} placeholder="Confirm Password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                      <input type={showConfirmPassword ? 'text' : 'password'} id="confirmPassword" name="confirmPassword" placeholder="Confirm Password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
                       <button type="button" className="password-toggle" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
                         <i className={`fas ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                       </button>
@@ -262,7 +262,7 @@ const AuthModal = ({ isOpen, onClose, redirectTo = null }) => {
                 <h3>Reset Password</h3>
                 <p className="muted">Enter your email and we'll send you a link to reset your password.</p>
                 <form onSubmit={handleForgotPassword}>
-                  <input type="email" placeholder="Email Address" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <input type="email" id="forgotEmail" name="email" placeholder="Email Address" required value={email} onChange={(e) => setEmail(e.target.value)} />
                   <button type="submit" className="btn primary full-width">Send Reset Link</button>
                 </form>
                 <p className="form-switcher">Remember your password? <a href="#" onClick={(e) => handleFormSwitch(e, 'login')}>Back to Login</a></p>

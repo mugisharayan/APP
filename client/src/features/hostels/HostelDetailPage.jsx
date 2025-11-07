@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { apiService } from '../../service/api.service';
 import { AuthContext } from '../auth/AuthContext';
 import '../../styles/hostel-detail-modern.css';
+import '../../styles/hostel-detail-enhanced.css';
 
 const HostelDetailPage = ({ onOpenAuthModal }) => {
   const { hostelId } = useParams();
@@ -15,6 +16,7 @@ const HostelDetailPage = ({ onOpenAuthModal }) => {
   const [isFavorited, setIsFavorited] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   useEffect(() => {
     const loadHostel = async () => {
@@ -41,6 +43,15 @@ const HostelDetailPage = ({ onOpenAuthModal }) => {
       setIsFavorited(favorites.some(item => item.id === hostelId));
     }
   }, [hostelId, hostel]);
+
+  useEffect(() => {
+    if (hostel && hostel.images && hostel.images.length > 1) {
+      const interval = setInterval(() => {
+        setActiveImageIndex((prev) => (prev + 1) % hostel.images.length);
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [hostel]);
 
   if (loading) {
     return (
@@ -152,93 +163,171 @@ const HostelDetailPage = ({ onOpenAuthModal }) => {
   return (
     <>
       <main className="hostel-detail-page new-design">
-        <div className="container">
-          <header className="new-detail-header">
-            <div className="new-header-left">
-              <h1 data-hostel-id={hostelId}>{hostel.name}</h1>
-              <div className="meta-info">
+        {/* Hero Section */}
+        <section className="detail-hero-section">
+          <div className="floating-home-icons">
+            <i className="fa-solid fa-home floating-home-1"></i>
+            <i className="fa-solid fa-home floating-home-2"></i>
+            <i className="fa-solid fa-home floating-home-3"></i>
+            <i className="fa-solid fa-home floating-home-4"></i>
+            <i className="fa-solid fa-home floating-home-5"></i>
+            <i className="fa-solid fa-home floating-home-6"></i>
+          </div>
+          <div className="detail-hero-container">
+            <div className="detail-hero-content">
+              <h1 className="detail-hero-title">
+                {hostel.name.split(/(Hostel|hostel)/i).map((part, index) => 
+                  /hostel/i.test(part) ? <span key={index} className="hostel-name-animated">{part}</span> : part
+                )}
+              </h1>
+              <div className="detail-hero-meta">
                 <span><i className="fa-solid fa-star"></i> 4.0 (125 reviews)</span>
                 <span className="separator-dot">·</span>
                 <span><i className="fa-solid fa-map-marker-alt"></i> {hostel.location}, Makerere</span>
               </div>
+              <div className="new-header-actions">
+                <button className={`btn outline small ${isFavorited ? 'active' : ''}`} onClick={handleToggleFavorite}>
+                  <i className={isFavorited ? 'fa-solid fa-heart' : 'fa-regular fa-heart'}></i> {isFavorited ? 'Favorited' : 'Favorite'}
+                </button>
+                <Link to="/hostels" className="back-btn">Back to Hostels</Link>
+              </div>
             </div>
-            <div className="new-header-actions">
-              <button className={`btn outline small ${isFavorited ? 'active' : ''}`} onClick={handleToggleFavorite}>
-                <i className={isFavorited ? 'fa-solid fa-heart' : 'fa-regular fa-heart'}></i> {isFavorited ? 'Favorited' : 'Favorite'}
-              </button>
-              <Link to="/hostels" className="back-btn">Back to Hostels</Link>
-            </div>
-          </header>
+          </div>
+        </section>
 
-          <section className="hero-section animate-on-scroll">
-            <div className="hero-image-placeholder" onClick={() => openLightbox(0)}>
-              <img src={hostel.images && hostel.images[0] ? hostel.images[0] : 'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=800&h=400&dpr=1'} alt={`Main view of ${hostel.name}`} />
-            </div>
-            <div className="image-gallery">
-              {hostel.images && hostel.images.map((imgSrc, index) => (
-                <div className="gallery-image" key={index} onClick={() => openLightbox(index)}>
-                  <img src={imgSrc} alt={`Thumbnail of ${hostel.name}`} />
+        <section className="hero-section animate-on-scroll">
+            <div className="fullwidth-gallery">
+              <div className="main-display-image">
+                <img key={activeImageIndex} src={hostel.images && hostel.images[activeImageIndex] ? hostel.images[activeImageIndex] : 'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg'} alt={hostel.name} />
+                <div className="gallery-overlay-gradient"></div>
+                <div className="thumbnail-cards">
+                  {hostel.images && hostel.images.map((imgSrc, index) => (
+                    <div 
+                      key={index}
+                      className={`thumbnail-card ${index === activeImageIndex ? 'active' : ''}`}
+                      onClick={() => setActiveImageIndex(index)}
+                    >
+                      <img src={imgSrc} alt={`${hostel.name} ${index + 1}`} />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
-          </section>
+        </section>
 
-          <section className="about-section animate-on-scroll" style={{ transitionDelay: '100ms' }}>
-            <h2>ABOUT</h2>
-            <p className="about-text">{hostel.description || `${hostel.name} is a quality hostel located in ${hostel.location}, offering comfortable accommodation for students near Makerere University. Contact us at ${hostel.contact} for more information about our facilities and room options.`}</p>
-          </section>
-
-          <section className="amenities-section animate-on-scroll" style={{ transitionDelay: '200ms' }}>
-            <h2>AMENITIES</h2>
-            <div className="amenity-list">
-              {hostel.amenities && hostel.amenities.map((amenity, index) => (
-                <div className="amenity-box" key={index}>
-                  <i className={`fa-solid ${amenity.icon}`}></i>
-                  <span>{amenity.name}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="pricing-section animate-on-scroll" style={{ transitionDelay: '300ms' }}>
-            <h2>CHOOSE YOUR ROOM</h2>
-            <div className="pricing-grid">
-              {hostel.rooms && hostel.rooms.map((room, index) => (
-                <div className="pricing-card" key={index}>
-                  <i className={`fa-solid ${room.icon || 'fa-bed'} pricing-icon`}></i>
-                  <h3>{room.name}</h3>
-                  <p>{room.description}</p>
-                  <div className="pricing-card-price">
-                    <strong>UGX {room.price.toLocaleString()}</strong>
-                    <span>/ semester</span>
+        <section className="about-amenities-section animate-on-scroll" style={{ transitionDelay: '100ms' }}>
+          <div className="section-wrapper">
+            <div className="about-content-wrapper">
+              <div className="about-icon-box">
+                <i className="fa-solid fa-building"></i>
+              </div>
+              <div className="about-text-content">
+                <h2>About {hostel.name}</h2>
+                <p className="about-text">{hostel.description || `${hostel.name} is a quality hostel located in ${hostel.location}, offering comfortable accommodation for students near Makerere University. Contact us at ${hostel.contact} for more information about our facilities and room options.`}</p>
+                <div className="about-stats">
+                  <div className="stat-item">
+                    <i className="fa-solid fa-users"></i>
+                    <div>
+                      <strong>500+</strong>
+                      <span>Students</span>
+                    </div>
                   </div>
-                  <button className="btn primary full-width" onClick={() => handleBookNow(room)}>
-                    Book This Room
-                  </button>
+                  <div className="stat-item">
+                    <i className="fa-solid fa-star"></i>
+                    <div>
+                      <strong>4.0</strong>
+                      <span>Rating</span>
+                    </div>
+                  </div>
+                  <div className="stat-item">
+                    <i className="fa-solid fa-shield-alt"></i>
+                    <div>
+                      <strong>24/7</strong>
+                      <span>Security</span>
+                    </div>
+                  </div>
                 </div>
-              ))}
+              </div>
             </div>
-          </section>
+            
+            <div className="amenities-divider"></div>
+            
+            <div className="amenities-content">
+              <h3>What We Offer</h3>
+              <div className="amenity-list">
+                {hostel.amenities && hostel.amenities.map((amenity, index) => (
+                  <div className="amenity-box" key={index}>
+                    <i className={`fa-solid ${amenity.icon}`}></i>
+                    <span>{amenity.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="amenities-divider"></div>
+            
+            <div className="pricing-content">
+              <h3>Choose Your Room</h3>
+              <div className="pricing-grid">
+                {hostel.rooms && hostel.rooms.map((room, index) => (
+                  <div className="pricing-card" key={index}>
+                    <i className={`fa-solid ${room.icon || 'fa-bed'} pricing-icon`}></i>
+                    <h3>{room.name}</h3>
+                    <p>{room.description}</p>
+                    <div className="pricing-card-price">
+                      <strong>UGX {room.price.toLocaleString()}</strong>
+                      <span>/ semester</span>
+                    </div>
+                    <button className="btn primary full-width" onClick={() => handleBookNow(room)}>
+                      Book This Room
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
 
+        <div className="container">
           <section className="location-section animate-on-scroll" style={{ transitionDelay: '100ms' }}>
-            <div className="location-header">
-              <h2>LOCATION ON MAP</h2>
-              <p>Get a feel for the area and your daily commute.</p>
-            </div>
-            <div className="map-placeholder">
-              <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3989.75342939951!2d32.56619241475336!3d0.3339234997695831!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x177dbb6304295555%3A0x48315151187363d2!2sMakerere%20University!5e0!3m2!1sen!2sug!4v1678186439001!5m2!1sen!2sug"
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                allowFullScreen=""
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              ></iframe>
+            <div className="location-content">
+              <div className="location-info">
+                <div className="location-icon">
+                  <i className="fa-solid fa-map-marker-alt"></i>
+                </div>
+                <h2>Find Us Here</h2>
+                <p className="location-description">Conveniently located near Makerere University, making your daily commute easy and stress-free.</p>
+                <div className="location-details">
+                  <div className="detail-item">
+                    <i className="fa-solid fa-location-dot"></i>
+                    <span>{hostel.location}, Makerere</span>
+                  </div>
+                  <div className="detail-item">
+                    <i className="fa-solid fa-phone"></i>
+                    <span>{hostel.contact}</span>
+                  </div>
+                  <div className="detail-item">
+                    <i className="fa-solid fa-walking"></i>
+                    <span>5 min walk to campus</span>
+                  </div>
+                </div>
+              </div>
+              <div className="map-container">
+                <iframe
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3989.75342939951!2d32.56619241475336!3d0.3339234997695831!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x177dbb6304295555%3A0x48315151187363d2!2sMakerere%20University!5e0!3m2!1sen!2sug!4v1678186439001!5m2!1sen!2sug"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen=""
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                ></iframe>
+              </div>
             </div>
           </section>
+        </div>
 
-          <section className="review-action-section animate-on-scroll" style={{ transitionDelay: '400ms' }}>
+        <section className="review-action-section animate-on-scroll" style={{ transitionDelay: '400ms' }}>
             <h2>RATINGS AND REVIEWS</h2>
             <div className="review-box">
               <div className="review-summary-col">
@@ -292,8 +381,7 @@ const HostelDetailPage = ({ onOpenAuthModal }) => {
             <div className="action-buttons">
               <a href={`tel:${hostel.contact}`} className="contact-btn">CONTACT {hostel.contact}</a>
             </div>
-          </section>
-        </div>
+        </section>
       </main>
 
       {/* IMAGE LIGHTBOX MODAL */}
