@@ -9,6 +9,7 @@ const MyBookingsPage = ({ onOpenReviewModal }) => {
   const navigate = useNavigate();
   const { userProfile, bookingHistory, login, logout, setBookingHistory } = useContext(AuthContext);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [filterStatus, setFilterStatus] = useState('all');
 
   useEffect(() => {
     if (!userProfile) {
@@ -91,13 +92,22 @@ const MyBookingsPage = ({ onOpenReviewModal }) => {
 
           <div className="dashboard-content">
             <div id="my-bookings" className="dashboard-panel active">
-              <h2>My Bookings</h2>
-              <p className="muted">A history of your current and past hostel bookings.</p>
+              <div className="dashboard-header">
+                <div>
+                  <h2>My Bookings</h2>
+                  <p className="muted">A history of your current and past hostel bookings.</p>
+                </div>
+                <div className="filter-buttons">
+                  <button className={`filter-btn-small ${filterStatus === 'all' ? 'active' : ''}`} onClick={() => setFilterStatus('all')}>All</button>
+                  <button className={`filter-btn-small ${filterStatus === 'confirmed' ? 'active' : ''}`} onClick={() => setFilterStatus('confirmed')}>Active</button>
+                  <button className={`filter-btn-small ${filterStatus === 'cancelled' ? 'active' : ''}`} onClick={() => setFilterStatus('cancelled')}>Cancelled</button>
+                </div>
+              </div>
               <div className="booking-history-list" id="bookingHistoryList">
                 {bookingHistory.length === 0 ? (
                   <p className="muted">You have no bookings yet.</p>
                 ) : (
-                  bookingHistory.map((booking, index) => {
+                  bookingHistory.filter(b => filterStatus === 'all' || b.status?.toLowerCase() === filterStatus).map((booking, index) => {
                     const bookingDate = new Date(booking.bookingDate);
                     const formattedDate = bookingDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
                     const isCurrent = index === 0 && booking.status !== 'Cancelled';

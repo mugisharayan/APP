@@ -1079,6 +1079,69 @@
   }
 }
 
+.payment-modern-wrapper{display:grid;grid-template-columns:350px 1fr;gap:25px;max-width:900px;margin:0 auto;padding:40px 20px}
+.payment-summary-card-modern{background:white;border-radius:20px;padding:25px;box-shadow:0 8px 30px rgba(0,0,0,0.08);border:2px solid #e0f2fe}
+.summary-icon-modern{width:50px;height:50px;background:linear-gradient(135deg,#0ea5e9,#06b6d4);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:15px}
+.summary-icon-modern i{font-size:22px;color:white}
+.payment-summary-card-modern h3{font-size:18px;font-weight:700;margin-bottom:20px}
+.summary-list-modern{display:flex;flex-direction:column;gap:10px}
+.summary-row-compact{display:flex;justify-content:space-between;font-size:14px;color:#475569}
+.summary-row-compact i{color:#0ea5e9;margin-right:8px}
+.summary-divider-thin{height:1px;background:#e0f2fe;margin:10px 0}
+.summary-total-compact{display:flex;justify-content:space-between;font-size:18px;font-weight:800;color:#0ea5e9;padding-top:10px;border-top:2px solid #e0f2fe}
+.payment-methods-card-modern{background:white;border-radius:20px;padding:25px;box-shadow:0 8px 30px rgba(0,0,0,0.08)}
+.payment-methods-card-modern h3{font-size:18px;font-weight:700;margin-bottom:20px}
+.payment-cards-modern{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:25px}
+.pay-card-modern{position:relative;background:#f8fafc;border:3px solid #e2e8f0;border-radius:12px;padding:20px 10px;text-align:center;cursor:pointer;transition:all 0.3s}
+.pay-card-modern:hover{border-color:#0ea5e9;transform:translateY(-2px)}
+.pay-card-modern.active{background:linear-gradient(135deg,#0ea5e9,#06b6d4);border-color:#0ea5e9;color:white}
+.pay-icon-modern{font-size:28px;margin-bottom:8px;color:#0ea5e9}
+.pay-card-modern.active .pay-icon-modern{color:white}
+.pay-card-modern span{display:block;font-weight:600;font-size:13px}
+.check-modern{position:absolute;top:8px;right:8px;font-size:18px;color:#10b981;opacity:0;transition:opacity 0.3s}
+.pay-card-modern.active .check-modern{opacity:1;color:white}
+.payment-form-compact{margin-bottom:20px}
+.input-compact{width:100%;padding:14px;border:2px solid #e2e8f0;border-radius:10px;font-size:15px;margin-bottom:12px;transition:border 0.3s}
+.input-compact:focus{outline:none;border-color:#0ea5e9;box-shadow:0 0 0 3px rgba(14,165,233,0.1)}
+.input-row-compact{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.bank-box-modern{background:#f0f9ff;padding:18px;border-radius:10px;margin-bottom:15px;text-align:center}
+.bank-box-modern p{margin:4px 0;font-size:14px;color:#1e293b}
+.bank-box-modern strong{font-size:16px;color:#0ea5e9}
+.file-box-modern{position:relative}
+.file-label-compact{display:flex;align-items:center;justify-content:center;gap:10px;padding:16px;border:2px dashed #cbd5e1;border-radius:10px;cursor:pointer;transition:all 0.3s;background:#f8fafc;font-size:14px}
+.file-label-compact:hover{border-color:#0ea5e9;background:#f0f9ff}
+.file-label-compact i{font-size:20px;color:#0ea5e9}
+.pay-button-modern{width:100%;background:linear-gradient(135deg,#0ea5e9,#06b6d4);color:white;border:none;padding:16px;border-radius:50px;font-size:17px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all 0.3s;box-shadow:0 6px 20px rgba(14,165,233,0.3)}
+.pay-button-modern:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(14,165,233,0.4)}
+@media(max-width:980px){.payment-modern-wrapper{grid-template-columns:1fr}.payment-cards-modern{grid-template-columns:1fr}}
+
+.confirmation-wrapper{max-width:700px;margin:0 auto;padding:60px 30px;text-align:center}
+.success-animation{position:relative;margin-bottom:30px}
+.success-circle{width:90px;height:90px;background:linear-gradient(135deg,#10b981,#059669);border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;box-shadow:0 20px 60px rgba(16,185,129,0.4);animation:scaleIn 0.5s ease}
+.success-checkmark{animation:checkmark 0.8s ease 0.3s both}
+.success-checkmark i{font-size:45px;color:white}
+.confetti{position:absolute;top:0;left:50%;width:100%;height:100%;pointer-events:none}
+@keyframes scaleIn{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes checkmark{0%{transform:scale(0) rotate(-45deg);opacity:0}50%{transform:scale(1.2) rotate(0deg)}100%{transform:scale(1) rotate(0deg);opacity:1}}
+.confirmation-title{font-size:28px;font-weight:800;color:#1e293b;margin-bottom:10px;animation:fadeInUp 0.6s ease 0.5s both}
+.confirmation-subtitle{font-size:18px;color:#10b981;font-weight:600;margin-bottom:40px;animation:fadeInUp 0.6s ease 0.6s both}
+.confirmation-card{background:white;border-radius:20px;padding:35px;box-shadow:0 10px 40px rgba(0,0,0,0.08);border:2px solid #e0f2fe;animation:fadeInUp 0.6s ease 0.7s both}
+.confirmation-header{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:30px;padding-bottom:20px;border-bottom:2px solid #f0f9ff}
+.confirmation-header i{font-size:24px;color:#0ea5e9}
+.confirmation-header span{font-size:20px;font-weight:700;color:#1e293b}
+.confirmation-details{display:flex;flex-direction:column;gap:18px}
+.detail-row{display:flex;justify-content:space-between;align-items:center;padding:16px;background:#f8fafc;border-radius:12px;transition:all 0.3s}
+.detail-row:hover{background:#f0f9ff;transform:translateX(5px)}
+.detail-row span{display:flex;align-items:center;gap:10px;color:#64748b;font-size:15px}
+.detail-row span i{color:#0ea5e9;font-size:18px}
+.detail-row strong{color:#1e293b;font-size:15px;font-weight:600}
+.detail-row .amount{color:#10b981;font-size:20px;font-weight:800}
+.confirmation-actions{margin-top:40px;animation:fadeInUp 0.6s ease 0.8s both}
+.btn-dashboard{width:100%;max-width:400px;padding:18px 40px;background:linear-gradient(135deg,#0ea5e9,#06b6d4);color:white;border:none;border-radius:50px;font-size:18px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:12px;transition:all 0.3s;box-shadow:0 8px 25px rgba(14,165,233,0.3)}
+.btn-dashboard:hover{transform:translateY(-3px);box-shadow:0 12px 35px rgba(14,165,233,0.5)}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:768px){.confirmation-wrapper{padding:40px 20px}.confirmation-title{font-size:32px}.success-circle{width:100px;height:100px}.success-checkmark i{font-size:50px}.confirmation-card{padding:25px}}
+
 @media (max-width: 768px) {
   .booking-hero-section {
     padding: 50px 0 25px 0;

@@ -6,7 +6,7 @@ import '../../styles/booking-page.css';
 const BookingPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { login } = useContext(AuthContext);
+  const { loginWithUserData } = useContext(AuthContext);
 
   const hostelName = searchParams.get('hostel');
   const roomName = searchParams.get('room');
@@ -116,15 +116,18 @@ const BookingPage = () => {
       paymentMethod,
       paymentDetails: paymentMethod === 'mobile-money' ? { phone: mobileMoneyPhone } : {},
     };
-    const userProfile = {
+    const userData = {
       fullName: formData.fullName,
       email: formData.email,
       phone: formData.phone,
       course: formData.course,
       profilePicture: '',
       role: 'student',
+      token: 'mock-token',
     };
-    login(userProfile, [newBooking]);
+    localStorage.setItem('auth', JSON.stringify(userData));
+    localStorage.setItem('bookingHistory', JSON.stringify([newBooking]));
+    loginWithUserData(userData);
     navigate('/dashboard');
   };
   
@@ -360,207 +363,113 @@ const BookingPage = () => {
             )}
             
             {currentStep === 3 && (
-              <div style={{ padding: '80px 50px', maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
-                <div style={{ background: 'linear-gradient(135deg, #10b981, #059669)', width: '120px', height: '120px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 30px', boxShadow: '0 20px 60px rgba(16, 185, 129, 0.4)' }}>
-                  <i className="fa-solid fa-check" style={{ fontSize: '60px', color: 'white' }}></i>
+              <div className="confirmation-wrapper">
+                <div className="success-animation">
+                  <div className="success-circle">
+                    <div className="success-checkmark">
+                      <i className="fa-solid fa-check"></i>
+                    </div>
+                  </div>
+                  <div className="confetti"></div>
                 </div>
-                <h2 style={{ fontSize: '36px', fontWeight: 800, color: '#1e293b', marginBottom: '16px' }}>Congratulations!</h2>
-                <h3 style={{ fontSize: '24px', fontWeight: 600, color: '#10b981', marginBottom: '30px' }}>Your Payment Has Been Received</h3>
-                <p style={{ fontSize: '16px', color: '#64748b', lineHeight: '1.8', marginBottom: '20px' }}>Thank you for booking with us! Your payment of <strong style={{ color: '#0ea5e9' }}>UGX {totalPrice.toLocaleString()}</strong> has been successfully processed.</p>
-                <p style={{ fontSize: '16px', color: '#64748b', lineHeight: '1.8', marginBottom: '40px' }}>You will receive a confirmation email at <strong style={{ color: '#0ea5e9' }}>{formData.email}</strong> with your booking details.</p>
-                <div style={{ background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)', padding: '30px', borderRadius: '16px', border: '2px solid #bae6fd', marginBottom: '40px' }}>
-                  <h4 style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b', marginBottom: '20px' }}>Booking Summary</h4>
-                  <div style={{ display: 'grid', gap: '12px', textAlign: 'left' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #e0f2fe' }}>
-                      <span style={{ color: '#64748b', fontSize: '14px' }}>Hostel:</span>
-                      <strong style={{ color: '#1e293b', fontSize: '14px' }}>{hostelName}</strong>
+                <h2 className="confirmation-title">Payment Successful!</h2>
+                <p className="confirmation-subtitle">Your booking has been confirmed</p>
+                <div className="confirmation-card">
+                  <div className="confirmation-header">
+                    <i className="fa-solid fa-receipt"></i>
+                    <span>Booking Details</span>
+                  </div>
+                  <div className="confirmation-details">
+                    <div className="detail-row">
+                      <span><i className="fa-solid fa-building"></i> Hostel</span>
+                      <strong>{hostelName}</strong>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #e0f2fe' }}>
-                      <span style={{ color: '#64748b', fontSize: '14px' }}>Room Type:</span>
-                      <strong style={{ color: '#1e293b', fontSize: '14px' }}>{roomName}</strong>
+                    <div className="detail-row">
+                      <span><i className="fa-solid fa-door-open"></i> Room</span>
+                      <strong>{roomName}</strong>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #e0f2fe' }}>
-                      <span style={{ color: '#64748b', fontSize: '14px' }}>Payment Method:</span>
-                      <strong style={{ color: '#1e293b', fontSize: '14px' }}>Mobile Money</strong>
+                    <div className="detail-row">
+                      <span><i className="fa-solid fa-wallet"></i> Amount Paid</span>
+                      <strong className="amount">UGX {totalPrice.toLocaleString()}</strong>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0' }}>
-                      <span style={{ color: '#64748b', fontSize: '14px' }}>Total Paid:</span>
-                      <strong style={{ color: '#10b981', fontSize: '16px' }}>UGX {totalPrice.toLocaleString()}</strong>
+                    <div className="detail-row">
+                      <span><i className="fa-solid fa-envelope"></i> Email</span>
+                      <strong>{formData.email}</strong>
                     </div>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '40px' }}>
-                  <button onClick={() => setCurrentStep(2)} style={{ padding: '16px 32px', background: 'white', border: '2px solid #e2e8f0', color: '#64748b', borderRadius: '12px', fontWeight: 600, fontSize: '16px', cursor: 'pointer' }}>Stay Here</button>
-                  <button onClick={completeBooking} style={{ padding: '16px 32px', background: 'linear-gradient(135deg, #0ea5e9, #06b6d4)', border: 'none', color: 'white', borderRadius: '12px', fontWeight: 600, fontSize: '16px', cursor: 'pointer', boxShadow: '0 4px 16px rgba(14, 165, 233, 0.3)' }}>Go to Dashboard</button>
+                <div className="confirmation-actions">
+                  <button onClick={completeBooking} className="btn-dashboard">
+                    <i className="fa-solid fa-gauge"></i> Go to Dashboard
+                  </button>
                 </div>
               </div>
             )}
             
             {currentStep === 2 && (
-              <div className="booking-layout" style={{ padding: '50px', maxWidth: '1400px', margin: '0 auto' }}>
-                <div className="payment-options-col">
-                  <h3 style={{ color: '#fbbf24', animation: 'rubberBand 2s ease-in-out infinite' }}>1. Choose Payment Method</h3>
-                  <div className="payment-method-selector">
-                    <label className="payment-method-option">
-                      <input type="radio" name="payment-method" value="mobile-money" checked={paymentMethod === 'mobile-money'} onChange={handlePaymentMethodChange} />
-                      <div className="payment-method-content">
-                        <i className="fa-solid fa-mobile-screen-button"></i>
-                        <span>Mobile Money</span>
-                      </div>
-                    </label>
-                    <label className="payment-method-option">
-                      <input type="radio" name="payment-method" value="credit-card" checked={paymentMethod === 'credit-card'} onChange={handlePaymentMethodChange} />
-                      <div className="payment-method-content">
-                        <i className="fa-solid fa-credit-card"></i>
-                        <span>Credit/Debit Card</span>
-                      </div>
-                    </label>
-                    <label className="payment-method-option">
-                      <input type="radio" name="payment-method" value="bank-transfer" checked={paymentMethod === 'bank-transfer'} onChange={handlePaymentMethodChange} />
-                      <div className="payment-method-content">
-                        <i className="fa-solid fa-building-columns"></i>
-                        <span>Bank Transfer</span>
-                      </div>
-                    </label>
-                  </div>
-
-                  <div className="payment-details-forms">
-                    {paymentMethod === 'mobile-money' && (
-                      <div className="payment-form">
-                        <h4>Enter Mobile Money Number</h4>
-                        <div className="form-group">
-                          <label htmlFor="mm-phone">Phone Number</label>
-                          <input 
-                            type="tel" 
-                            id="mm-phone" 
-                            placeholder="e.g., 0771234567" 
-                            value={mobileMoneyPhone}
-                            onChange={(e) => setMobileMoneyPhone(e.target.value)}
-                            required
-                          />
-                        </div>
-                        <p className="form-note">A payment prompt will be sent to this number.</p>
-                      </div>
-                    )}
-                    {paymentMethod === 'credit-card' && (
-                      <div className="payment-form">
-                        <h4>Enter Card Details</h4>
-                        <div className="form-group">
-                          <label htmlFor="card-number">Card Number</label>
-                          <input 
-                            type="text" 
-                            id="card-number" 
-                            placeholder="0000 0000 0000 0000" 
-                            value={cardNumber}
-                            onChange={(e) => setCardNumber(e.target.value)}
-                            required
-                          />
-                        </div>
-                        <div className="form-grid">
-                          <div className="form-group">
-                            <label htmlFor="card-expiry">Expiry Date</label>
-                            <input 
-                              type="text" 
-                              id="card-expiry" 
-                              placeholder="MM / YY" 
-                              value={cardExpiry}
-                              onChange={(e) => setCardExpiry(e.target.value)}
-                              required
-                            />
-                          </div>
-                          <div className="form-group">
-                            <label htmlFor="card-cvc">CVC</label>
-                            <input 
-                              type="text" 
-                              id="card-cvc" 
-                              placeholder="123" 
-                              value={cardCVC}
-                              onChange={(e) => setCardCVC(e.target.value)}
-                              required
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    {paymentMethod === 'bank-transfer' && (
-                      <div className="payment-form">
-                        <h4>Bank Transfer Instructions</h4>
-                        <p>Please transfer the total amount to the following bank account and use your student number as the payment reference.</p>
-                        <ul className="bank-details-list">
-                          <li><strong>Bank Name:</strong> Stanbic Bank</li>
-                          <li><strong>Account Name:</strong> BookMyHostel Ltd</li>
-                          <li><strong>Account Number:</strong> 9030012345678</li>
-                        </ul>
-                        <div className="form-group" style={{ marginTop: '20px' }}>
-                          <label htmlFor="paymentProofUpload">Upload Payment Proof</label>
-                          <div className="file-upload-wrapper">
-                            <input type="file" id="paymentProofUpload" className="file-input" accept="image/*,.pdf" required onChange={handlePaymentFileUpload} />
-                            <label htmlFor="paymentProofUpload" className="file-upload-label">
-                              <i className="fa-solid fa-cloud-arrow-up"></i>
-                              <span>Choose File</span>
-                            </label>
-                            <span className="file-name-display">{paymentFileName}</span>
-                          </div>
-                          <p className="form-note">Please upload a screenshot or PDF of your transaction receipt.</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="security-info-section">
-                    <i className="fa-solid fa-lock"></i>
-                    <div>
-                      <strong>Secure Payment</strong>
-                      <p>All transactions are secure and encrypted. We do not store your payment details.</p>
-                    </div>
+              <div className="payment-modern-wrapper">
+                <div className="payment-summary-card-modern">
+                  <div className="summary-icon-modern"><i className="fa-solid fa-receipt"></i></div>
+                  <h3>Summary</h3>
+                  <div className="summary-list-modern">
+                    <div className="summary-row-compact"><span><i className="fa-solid fa-building"></i> {hostelName}</span></div>
+                    <div className="summary-row-compact"><span><i className="fa-solid fa-door-open"></i> {roomName}</span></div>
+                    <div className="summary-divider-thin"></div>
+                    <div className="summary-row-compact"><span>Room</span><span>UGX {price.toLocaleString()}</span></div>
+                    <div className="summary-row-compact"><span>Fee</span><span>UGX {serviceFee.toLocaleString()}</span></div>
+                    <div className="summary-total-compact"><span>Total</span><span>UGX {totalPrice.toLocaleString()}</span></div>
                   </div>
                 </div>
-
-                <div className="booking-summary-col">
-                  <div className="summary-card">
-                    <h3>Final Summary</h3>
-                    <div className="summary-item">
-                      <small>Hostel</small>
-                      <span>{hostelName || 'N/A'}</span>
+                <div className="payment-methods-card-modern">
+                  <h3>Payment Method</h3>
+                  <div className="payment-cards-modern">
+                    <div className={`pay-card-modern ${paymentMethod === 'mobile-money' ? 'active' : ''}`} onClick={() => setPaymentMethod('mobile-money')}>
+                      <div className="pay-icon-modern"><i className="fa-solid fa-mobile-screen-button"></i></div>
+                      <span>Mobile Money</span>
+                      <div className="check-modern"><i className="fa-solid fa-circle-check"></i></div>
                     </div>
-                    <div className="summary-item">
-                      <small>Room Type</small>
-                      <span>{roomName || 'N/A'}</span>
+                    <div className={`pay-card-modern ${paymentMethod === 'credit-card' ? 'active' : ''}`} onClick={() => setPaymentMethod('credit-card')}>
+                      <div className="pay-icon-modern"><i className="fa-solid fa-credit-card"></i></div>
+                      <span>Card</span>
+                      <div className="check-modern"><i className="fa-solid fa-circle-check"></i></div>
                     </div>
-                    <div className="summary-divider"></div>
-                    <div className="summary-item">
-                      <small>Room Price</small>
-                      <span>UGX {price.toLocaleString()}</span>
+                    <div className={`pay-card-modern ${paymentMethod === 'bank-transfer' ? 'active' : ''}`} onClick={() => setPaymentMethod('bank-transfer')}>
+                      <div className="pay-icon-modern"><i className="fa-solid fa-building-columns"></i></div>
+                      <span>Bank</span>
+                      <div className="check-modern"><i className="fa-solid fa-circle-check"></i></div>
                     </div>
-                    <div className="summary-item">
-                      <small>Service Fee</small>
-                      <span>UGX {serviceFee.toLocaleString()}</span>
-                    </div>
-                    <div className="summary-item total">
-                      <small>Total Price</small>
-                      <span>UGX {totalPrice.toLocaleString()}</span>
-                    </div>
-                    <div className="summary-divider"></div>
-                    <div className="summary-item">
-                      <small>Full Name</small>
-                      <span>{formData.fullName || 'N/A'}</span>
-                    </div>
-                    <div className="summary-item">
-                      <small>Email</small>
-                      <span>{formData.email || 'N/A'}</span>
-                    </div>
-                    <div className="summary-item">
-                      <small>Phone</small>
-                      <span>{formData.phone || 'N/A'}</span>
-                    </div>
-                    <div className="summary-item">
-                      <small>Course</small>
-                      <span>{formData.course || 'N/A'}</span>
-                    </div>
-                    <button className="btn primary full-width book-btn" style={{ marginTop: '20px' }} onClick={handleConfirmPayment}>
-                      {paymentMethod === 'mobile-money' ? 'Pay with Mobile Money' : paymentMethod === 'credit-card' ? 'Pay with Card' : 'Confirm Booking'}
-                    </button>
                   </div>
+
+                  <div className="payment-form-compact">
+                    {paymentMethod === 'mobile-money' && (
+                      <input type="tel" placeholder="Phone (e.g., 0771234567)" className="input-compact" value={mobileMoneyPhone} onChange={(e) => setMobileMoneyPhone(e.target.value)} />
+                    )}
+                    {paymentMethod === 'credit-card' && (
+                      <>
+                        <input type="text" placeholder="Card number" className="input-compact" value={cardNumber} onChange={(e) => setCardNumber(e.target.value)} />
+                        <div className="input-row-compact">
+                          <input type="text" placeholder="MM/YY" className="input-compact" value={cardExpiry} onChange={(e) => setCardExpiry(e.target.value)} />
+                          <input type="text" placeholder="CVC" className="input-compact" value={cardCVC} onChange={(e) => setCardCVC(e.target.value)} />
+                        </div>
+                      </>
+                    )}
+                    {paymentMethod === 'bank-transfer' && (
+                      <>
+                        <div className="bank-box-modern">
+                          <p><strong>Stanbic Bank</strong></p>
+                          <p>BookMyHostel Ltd</p>
+                          <p>9030012345678</p>
+                        </div>
+                        <div className="file-box-modern">
+                          <input type="file" id="proof" className="file-input" accept="image/*,.pdf" onChange={handlePaymentFileUpload} />
+                          <label htmlFor="proof" className="file-label-compact"><i className="fa-solid fa-cloud-arrow-up"></i> {paymentFileName}</label>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <button className="pay-button-modern" onClick={handleConfirmPayment}>
+                    <i className="fa-solid fa-lock"></i> Pay UGX {totalPrice.toLocaleString()}
+                  </button>
                 </div>
               </div>
             )}
