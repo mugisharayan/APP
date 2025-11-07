@@ -115,56 +115,70 @@ const ProfilePage = () => {
   }
 
   return (
-    <main className="dashboard-page">
-      <div className="container">
-        <div className="dashboard-layout">
-          <DashboardSidebar
-            user={userProfile}
-            role="student"
-            onLogout={() => setIsLogoutModalOpen(true)}
-          />
+    <>
+      <section className="dashboard-hero-section">
+        <div className="floating-home-icons">
+          <i className="fa-solid fa-home floating-home-1"></i>
+          <i className="fa-solid fa-home floating-home-2"></i>
+          <i className="fa-solid fa-home floating-home-3"></i>
+          <i className="fa-solid fa-home floating-home-4"></i>
+          <i className="fa-solid fa-home floating-home-5"></i>
+          <i className="fa-solid fa-home floating-home-6"></i>
+        </div>
+        <div className="dashboard-hero-container">
+          <h1 className="dashboard-hero-title">My <span className="dashboard-animated">Profile</span></h1>
+          <p className="dashboard-hero-subtitle">Manage your personal information and account settings</p>
+        </div>
+      </section>
+      
+      <main className="dashboard-page">
+        <div className="container">
+          <div className="dashboard-layout">
+            <DashboardSidebar
+              user={userProfile}
+              role="student"
+              onLogout={() => setIsLogoutModalOpen(true)}
+            />
 
-          <div className="dashboard-content">
-            <div id="profile" className="dashboard-panel active">
-              <div className="dashboard-header">
-                <h2>My Profile</h2>
-                <p className="muted">Manage your personal information and account settings.</p>
-              </div>
-
-              <div className="profile-content-new">
-                <div className="content-section">
-                  <div className="section-header">
-                    <h2>Profile Information</h2>
-                    <button className="btn outline small" id="editProfileBtn" onClick={() => setIsEditing(true)} style={{ display: isEditing ? 'none' : 'inline-flex' }}><i className="fas fa-pen"></i> Edit</button>
+            <div className="dashboard-content">
+              <div id="profile" className="dashboard-panel active">
+              <div className="profile-content-modern">
+                <div className="profile-info-card-modern">
+                  <div className="profile-card-header-modern">
+                    <div>
+                      <h3><i className="fas fa-user-circle"></i> Profile Information</h3>
+                      <p className="muted">Manage your personal details</p>
+                    </div>
+                    <button className="btn-edit-modern" onClick={() => setIsEditing(true)} style={{ display: isEditing ? 'none' : 'flex' }}><i className="fas fa-pen"></i> Edit Profile</button>
                   </div>
-                  <div className="profile-card-content">
-                    <div className="profile-pic-large-wrapper" id="changePicOverlay" onClick={handleProfilePicClick}>
-                      <img 
-                        src={userProfile.profilePicture || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Ccircle cx='75' cy='75' r='75' fill='%23f0f0f0'/%3E%3Cpath d='M75 45c-11 0-20 9-20 20s9 20 20 20 20-9 20-20-9-20-20-20zm0 90c-25 0-45-12-45-27 0-15 20-27 45-27s45 12 45 27c0 15-20 27-45 27z' fill='%23ccc'/%3E%3C/svg%3E"} 
-                        alt="Profile picture" 
-                        id="mainProfilePic" 
-                        style={{border: '3px solid #00bfff', borderRadius: '50%'}}
-                      />
-                      <div className="edit-overlay">Change</div>
+                  <div className="profile-card-content-modern">
+                    <div className="profile-pic-modern-wrapper" onClick={handleProfilePicClick}>
+                      <div className="profile-pic-circle">
+                        <img 
+                          src={userProfile.profilePicture || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Ccircle cx='75' cy='75' r='75' fill='%23f0f0f0'/%3E%3Cpath d='M75 45c-11 0-20 9-20 20s9 20 20 20 20-9 20-20-9-20-20-20zm0 90c-25 0-45-12-45-27 0-15 20-27 45-27s45 12 45 27c0 15-20 27-45 27z' fill='%23ccc'/%3E%3C/svg%3E"} 
+                          alt="Profile picture"
+                        />
+                        <div className="edit-overlay-modern"><i className="fas fa-camera"></i></div>
+                      </div>
                       <input type="file" id="profilePicInput" style={{ display: 'none' }} accept="image/*" onChange={handleProfilePicChange} />
                     </div>
-                    <div className="profile-details-form-wrapper">
+                    <div className="profile-details-modern">
                       {!isEditing ? (
-                        <div id="profile-view">
-                          <div className="profile-detail-item"><small>Full Name</small><p id="viewName">{userProfile.fullName}</p></div>
-                          <div className="profile-detail-item"><small>Email Address</small><p id="viewEmail">{userProfile.email}</p></div>
-                          <div className="profile-detail-item"><small>Phone Number</small><p id="viewPhone">{userProfile.phone || 'N/A'}</p></div>
-                          <div className="profile-detail-item"><small>Course / Program</small><p id="viewCourse">{userProfile.course}</p></div>
+                        <div className="profile-info-grid">
+                          <div className="info-item-modern"><i className="fas fa-user"></i><div><small>Full Name</small><p>{userProfile.fullName}</p></div></div>
+                          <div className="info-item-modern"><i className="fas fa-envelope"></i><div><small>Email Address</small><p>{userProfile.email}</p></div></div>
+                          <div className="info-item-modern"><i className="fas fa-phone"></i><div><small>Phone Number</small><p>{userProfile.phone || 'N/A'}</p></div></div>
+                          <div className="info-item-modern"><i className="fas fa-graduation-cap"></i><div><small>Course / Program</small><p>{userProfile.course}</p></div></div>
                         </div>
                       ) : (
-                        <form id="profile-edit-form" onSubmit={handleSaveProfile}>
-                          <div className="form-group"><label aria-label="Full Name">Full Name</label><input type="text" id="fullName" required value={editFormData.fullName} onChange={handleEditChange} /></div>
-                          <div className="form-group"><label aria-label="Email Address">Email Address</label><input type="email" id="email" required value={editFormData.email} onChange={handleEditChange} /></div>
-                          <div className="form-group"><label aria-label="Phone Number">Phone Number</label><input type="tel" id="phone" required value={editFormData.phone} onChange={handleEditChange} /></div>
-                          <div className="form-group"><label aria-label="Course / Program">Course / Program</label><input type="text" id="course" required value={editFormData.course} onChange={handleEditChange} /></div>
-                          <div className="form-actions" style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                            <button type="submit" className="btn primary">Save Changes</button>
-                            <button type="button" className="btn outline" onClick={() => setIsEditing(false)}>Cancel</button>
+                        <form className="profile-edit-form-modern" onSubmit={handleSaveProfile}>
+                          <div className="form-group-modern"><label><i className="fas fa-user"></i> Full Name</label><input type="text" id="fullName" required value={editFormData.fullName} onChange={handleEditChange} /></div>
+                          <div className="form-group-modern"><label><i className="fas fa-envelope"></i> Email Address</label><input type="email" id="email" required value={editFormData.email} onChange={handleEditChange} /></div>
+                          <div className="form-group-modern"><label><i className="fas fa-phone"></i> Phone Number</label><input type="tel" id="phone" required value={editFormData.phone} onChange={handleEditChange} /></div>
+                          <div className="form-group-modern"><label><i className="fas fa-graduation-cap"></i> Course / Program</label><input type="text" id="course" required value={editFormData.course} onChange={handleEditChange} /></div>
+                          <div className="form-actions-modern">
+                            <button type="submit" className="btn-save-modern"><i className="fas fa-check"></i> Save Changes</button>
+                            <button type="button" className="btn-cancel-modern" onClick={() => setIsEditing(false)}><i className="fas fa-times"></i> Cancel</button>
                           </div>
                         </form>
                       )}
@@ -172,9 +186,9 @@ const ProfilePage = () => {
                   </div>
                 </div>
 
-                <div className="profile-page-grid">
-                  <div className="content-section">
-                    <div className="section-header"><h2>Security Settings</h2></div>
+                <div className="profile-sections-grid">
+                  <div className="security-card-modern">
+                    <div className="card-header-modern"><h3><i className="fas fa-shield-alt"></i> Security Settings</h3><p className="muted">Manage your account security</p></div>
                     <div className="security-sections-wrapper">
                       <div className="security-section">
                         <div className="security-section-header"><h4>Change Password</h4><small className="muted">Last updated: 6 months ago</small></div>
@@ -186,11 +200,6 @@ const ProfilePage = () => {
                         </form>
                       </div>
                       <div className="security-section">
-                        <div className="security-section-header"><h4>Two-Factor Authentication (2FA)</h4><span className="status-badge-new disabled">Disabled</span></div>
-                        <p className="muted">Add an extra layer of security to your account by requiring a second verification step.</p>
-                        <button className="btn outline" id="enable2faBtn">Enable 2FA</button>
-                      </div>
-                      <div className="security-section">
                         <div className="security-section-header"><h4>Login History</h4></div>
                         <ul className="login-history-list">
                           <li><i className="fas fa-desktop"></i><div><strong>Kampala, UG</strong><small>Chrome on Windows - 1 hour ago</small></div></li>
@@ -200,8 +209,8 @@ const ProfilePage = () => {
                     </div>
                   </div>
 
-                  <div className="content-section notification-section-new">
-                    <div className="section-header"><h2>Notification Preferences</h2></div>
+                  <div className="notifications-card-modern">
+                    <div className="card-header-modern"><h3><i className="fas fa-bell"></i> Notification Preferences</h3><p className="muted">Choose how you receive updates</p></div>
                     <form id="notification-settings-form" onSubmit={handleNotificationSave}>
                       <p className="muted" style={{ marginBottom: '20px' }}>Select how you want to receive notifications.</p>
                       <div className="notification-table">
@@ -235,16 +244,17 @@ const ProfilePage = () => {
                   </div>
                 </div>
               </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </main>
       <LogoutConfirmModal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
         onConfirm={handleLogout}
       />
-    </main>
+    </>
   );
 };
 
