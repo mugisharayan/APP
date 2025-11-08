@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
+import '../../styles/modern-dashboard.css';
 
 const CustodianStudentsPage = () => {
   const navigate = useNavigate();
@@ -66,18 +67,31 @@ const CustodianStudentsPage = () => {
   };
 
   return (
-    <main className="dashboard-page">
-      <div className="container">
-        <div className="dashboard-layout">
-          <DashboardSidebar
-            user={custodianProfile}
-            role="custodian"
-            onLogout={() => setIsLogoutModalOpen(true)}
-          />
-          <div className="dashboard-content">
-            <div className="dashboard-header">
-              <h2>Student Directory</h2>
-              <p className="muted">Search and manage all registered students.</p>
+    <>
+      <section className="dashboard-hero-section">
+        <div className="floating-home-icons">
+          <i className="fa-solid fa-users floating-home-1"></i>
+          <i className="fa-solid fa-user-graduate floating-home-2"></i>
+          <i className="fa-solid fa-id-card floating-home-3"></i>
+          <i className="fa-solid fa-address-book floating-home-4"></i>
+          <i className="fa-solid fa-user-friends floating-home-5"></i>
+          <i className="fa-solid fa-user-check floating-home-6"></i>
+        </div>
+        <div className="dashboard-hero-container">
+          <h1 className="dashboard-hero-title">Student <span className="dashboard-animated">Directory</span></h1>
+          <p className="dashboard-hero-subtitle">Search and manage all registered students</p>
+        </div>
+      </section>
+      
+      <main className="dashboard-page">
+        <div className="container">
+          <div className="dashboard-layout">
+            <DashboardSidebar
+              user={custodianProfile}
+              role="custodian"
+              onLogout={() => setIsLogoutModalOpen(true)}
+            />
+            <div className="dashboard-content">
               <div className="section-actions">
                 <div className="search-wrapper modern">
                   <input
@@ -91,39 +105,40 @@ const CustodianStudentsPage = () => {
                 </div>
                 <button className="btn primary small" onClick={() => setIsAddStudentModalOpen(true)}><i className="fas fa-user-plus"></i> Add Student</button>
               </div>
-            </div>
 
-            <div className="dashboard-section">
-              <div className="student-grid">
-                {filteredStudents.length === 0 ? (
-                  <p className="muted" style={{ textAlign: 'center', gridColumn: '1 / -1' }}>No students found matching your search.</p>
-                ) : (
-                  filteredStudents.map(student => (
-                    <div className="student-card-new" key={student.id}>
-                      <div className="student-card-header">
-                        <img src={student.avatar} alt={student.name} />
-                        <div className="student-card-info">
-                          <span className="student-name">{student.name}</span>
-                          <span className="student-id">{student.studentId}</span>
+              <div className="dashboard-section">
+                <div className="student-grid">
+                  {filteredStudents.length === 0 ? (
+                    <p className="muted" style={{ textAlign: 'center', gridColumn: '1 / -1' }}>No students found matching your search.</p>
+                  ) : (
+                    filteredStudents.map(student => (
+                      <div className="student-card-new" key={student.id}>
+                        <div className="student-card-header">
+                          <img src={student.avatar} alt={student.name} />
+                          <div className="student-card-info">
+                            <span className="student-name">{student.name}</span>
+                            <span className="student-id">{student.studentId}</span>
+                          </div>
+                        </div>
+                        <div className="student-card-body">
+                          <div className="student-detail"><small>Room No.</small><span>{student.room}</span></div>
+                          <div className="student-detail"><small>Status</small><span className={`status-indicator ${student.status.toLowerCase().replace('-', '')}`}>{student.status}</span></div>
+                        </div>
+                        <div className="student-card-actions">
+                          <button className="btn-icon view" title="View Profile" onClick={() => handleViewProfile(student)}><i className="fas fa-eye"></i></button>
+                          <button className="btn-icon message" title="Send Message"><i className="fas fa-paper-plane"></i></button>
+                          <button className="btn-icon remove" title="Remove Student" onClick={() => handleRemoveStudent(student.id)}><i className="fas fa-trash-alt"></i></button>
                         </div>
                       </div>
-                      <div className="student-card-body">
-                        <div className="student-detail"><small>Room No.</small><span>{student.room}</span></div>
-                        <div className="student-detail"><small>Status</small><span className={`status-indicator ${student.status.toLowerCase().replace('-', '')}`}>{student.status}</span></div>
-                      </div>
-                      <div className="student-card-actions">
-                        <button className="btn-icon view" title="View Profile" onClick={() => handleViewProfile(student)}><i className="fas fa-eye"></i></button>
-                        <button className="btn-icon message" title="Send Message"><i className="fas fa-paper-plane"></i></button>
-                        <button className="btn-icon remove" title="Remove Student" onClick={() => handleRemoveStudent(student.id)}><i className="fas fa-trash-alt"></i></button>
-                      </div>
-                    </div>
-                  ))
-                )}
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </main>
+      
       <LogoutConfirmModal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
@@ -187,7 +202,7 @@ const CustodianStudentsPage = () => {
           </div>
         </div>
       )}
-    </main>
+    </>
   );
 };
 

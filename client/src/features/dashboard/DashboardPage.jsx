@@ -7,6 +7,7 @@ import bookingService from '../../service/booking.service';
 import userService from '../../service/user.service';
 import dashboardService from '../../service/dashboard.service';
 import receiptService from '../../service/receipt.service';
+import maintenanceService from '../../service/maintenance.service';
 
 const DashboardPage = ({ onOpenReviewModal }) => {
   const navigate = useNavigate();
@@ -42,9 +43,9 @@ const DashboardPage = ({ onOpenReviewModal }) => {
         const bookings = await bookingService.getMyBookings();
         setBookingHistory(bookings);
         
-        // Load maintenance requests (still from localStorage for now)
-        const storedMaintenance = JSON.parse(localStorage.getItem('maintenanceRequests')) || [];
-        setMaintenanceRequests(storedMaintenance);
+        // Load maintenance requests from backend
+        const requests = await maintenanceService.getMyMaintenanceRequests();
+        setMaintenanceRequests(requests);
       } catch (error) {
         setError('Failed to load dashboard data');
         console.error('Dashboard data error:', error);
@@ -187,39 +188,49 @@ const DashboardPage = ({ onOpenReviewModal }) => {
                 </div>
               </div>
 
-              {latestBooking && (
-                <div className="current-booking-modern">
-                  <div className="booking-header-modern">
-                    <h3><i className="fa-solid fa-home"></i> Current Booking</h3>
-                    <span className="status-badge-modern confirmed">Active</span>
-                  </div>
-                  <div className="booking-details-modern">
-                    <div className="booking-info-row">
-                      <div className="info-item">
-                        <i className="fa-solid fa-building"></i>
-                        <div>
-                          <small>Hostel</small>
-                          <strong>{dashboardService.getHostelName(latestBooking)}</strong>
+              <div className="current-booking-modern">
+                {latestBooking ? (
+                  <>
+                    <div className="booking-header-modern">
+                      <h3><i className="fa-solid fa-home"></i> Current Booking</h3>
+                      <span className="status-badge-modern confirmed">Active</span>
+                    </div>
+                    <div className="booking-card-redesign">
+                      <div className="booking-main-info">
+                        <div className="hostel-info">
+                          <h4>{dashboardService.getHostelName(latestBooking)}</h4>
+                          <p>{dashboardService.getRoomName(latestBooking)}</p>
+                        </div>
+                        <div className="price-badge">
+                          UGX {parseInt(dashboardService.getRoomPrice(latestBooking)).toLocaleString()}
                         </div>
                       </div>
-                      <div className="info-item">
-                        <i className="fa-solid fa-door-open"></i>
-                        <div>
-                          <small>Room</small>
-                          <strong>{dashboardService.getRoomName(latestBooking)}</strong>
+                      <div className="booking-meta">
+                        <div className="meta-item">
+                          <i className="fas fa-calendar-alt"></i>
+                          <span>Booked: {new Date(latestBooking.createdAt || latestBooking.bookingDate).toLocaleDateString()}</span>
                         </div>
-                      </div>
-                      <div className="info-item">
-                        <i className="fa-solid fa-calendar"></i>
-                        <div>
-                          <small>Booked On</small>
-                          <strong>{new Date(latestBooking.createdAt || latestBooking.bookingDate).toLocaleDateString()}</strong>
+                        <div className="booking-actions">
+                          <Link to="/my-bookings" className="btn-view-details">View Details</Link>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              )}
+                  </>
+                ) : (
+                  <>
+                    <div className="booking-header-modern">
+                      <h3><i className="fa-solid fa-home"></i> Current Booking</h3>
+                      <span className="status-badge-modern pending">No Active Booking</span>
+                    </div>
+                    <div style={{textAlign: 'center', padding: '40px 20px'}}>
+                      <i className="fas fa-calendar-plus" style={{fontSize: '48px', color: '#cbd5e1', marginBottom: '20px'}}></i>
+                      <h4 style={{color: '#64748b', marginBottom: '10px'}}>No Current Booking</h4>
+                      <p className="muted" style={{marginBottom: '20px'}}>You don't have any active bookings at the moment</p>
+                      <Link to="/hostels" className="btn primary">Browse Hostels</Link>
+                    </div>
+                  </>
+                )}
+              </div>
 
               <div className="quick-actions-modern">
                 <h3>Quick Actions</h3>
@@ -269,7 +280,15 @@ const DashboardPage = ({ onOpenReviewModal }) => {
                         const hostelName = dashboardService.getHostelName(booking);
                         const roomName = dashboardService.getRoomName(booking);
                         const roomPrice = dashboardService.getRoomPrice(booking);
-                        const status = booking.status || 'Confirmed';
+                        const endDate = new Date(booking.endDate);
+                        const now = new Date();
+                        const bookingStatus = (booking.status || 'active').toLowerCase();
+                        let status = 'Active';
+                        if (bookingStatus === 'cancelled') {
+                          status = 'Cancelled';
+                        } else if (endDate <= now) {
+                          status = 'Completed';
+                        }
                         
                         return (
                           <tr key={booking._id || index}>

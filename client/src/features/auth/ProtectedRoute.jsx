@@ -5,7 +5,12 @@ import { AuthContext } from './AuthContext';
 const ProtectedRoute = ({ allowedRoles }) => {
   const { isAuthenticated, userProfile } = useContext(AuthContext);
 
-  console.log('ProtectedRoute check:', { isAuthenticated, userRole: userProfile?.role, allowedRoles });
+  console.log('ProtectedRoute check:', { 
+    isAuthenticated, 
+    userRole: userProfile?.role, 
+    allowedRoles,
+    userProfile 
+  });
 
   if (!isAuthenticated) {
     console.log('Not authenticated, redirecting to home');
@@ -15,7 +20,11 @@ const ProtectedRoute = ({ allowedRoles }) => {
   const userRole = userProfile?.role;
 
   if (allowedRoles && !allowedRoles.includes(userRole)) {
-    console.log('Role not allowed, redirecting to default dashboard');
+    console.log('Role not allowed:', {
+      userRole,
+      allowedRoles,
+      includes: allowedRoles.includes(userRole)
+    });
     const redirectPath = userRole === 'Custodian' ? '/custodian-dashboard' : '/dashboard';
     return <Navigate to={redirectPath} replace />;
   }

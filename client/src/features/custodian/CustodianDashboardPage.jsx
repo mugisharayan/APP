@@ -1,34 +1,41 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
+import NotificationBell from '../../components/notifications/NotificationBell';
+import MessageCenter from '../../components/messaging/MessageCenter';
+import IntegrationPanel from '../../components/integrations/IntegrationPanel';
 import { AuthContext } from '../auth/AuthContext';
+import '../../styles/modern-dashboard.css';
+import '../../styles/mobile-responsive.css';
+import '../../styles/minimalist-dashboard.css';
 
 const CustodianDashboardPage = () => {
   const navigate = useNavigate();
-  const { userProfile, logout } = useContext(AuthContext);
+  const { userProfile, logout, loading } = useContext(AuthContext);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [activityFilter, setActivityFilter] = useState('');
+  const [isMessageCenterOpen, setIsMessageCenterOpen] = useState(false);
+  const [isIntegrationPanelOpen, setIsIntegrationPanelOpen] = useState(false);
 
-  // Use real user profile or fallback
+  if (loading || !userProfile) {
+    return (
+      <main className="dashboard-page">
+        <div className="container">
+          <div className="dashboard-panel active" style={{ textAlign: 'center', padding: '50px' }}>
+            <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '48px', color: '#0ea5e9', marginBottom: '20px' }}></i>
+            <h2>Loading Dashboard...</h2>
+            <p className="muted">Please wait while we fetch your data.</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   const custodianProfile = {
     fullName: userProfile?.name || 'Custodian',
     course: userProfile?.role || 'Custodian',
     profilePicture: userProfile?.profilePicture || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Ccircle cx='75' cy='75' r='75' fill='%23f0f0f0'/%3E%3Cpath d='M75 45c-11 0-20 9-20 20s9 20 20 20 20-9 20-20-9-20-20-20zm0 90c-25 0-45-12-45-27 0-15 20-27 45-27s45 12 45 27c0 15-20 27-45 27z' fill='%23ccc'/%3E%3C/svg%3E"
   };
-
-  // Dummy data for activity feed
-  const allActivities = [
-    { id: 1, iconClass: 'green', icon: 'fa-dollar-sign', text: 'Jane Doe submitted a payment for verification.', time: '15 minutes ago' },
-    { id: 2, iconClass: 'blue', icon: 'fa-bed', text: 'New booking received for Room A-104.', time: '1 hour ago' },
-    { id: 3, iconClass: 'orange', icon: 'fa-wrench', text: 'New maintenance request for Room B-02 (Jammed Door).', time: '3 hours ago' },
-    { id: 4, iconClass: 'green', icon: 'fa-dollar-sign', text: 'John Doe submitted a payment for verification.', time: '4 hours ago' },
-    { id: 5, iconClass: 'blue', icon: 'fa-bed', text: 'New booking received for Room C-201.', time: '5 hours ago' },
-  ];
-
-  const filteredActivities = allActivities.filter(activity =>
-    activity.text.toLowerCase().includes(activityFilter.toLowerCase())
-  );
 
   const handleLogout = () => {
     logout();
@@ -37,126 +44,143 @@ const CustodianDashboardPage = () => {
   };
 
   return (
-    <main className="dashboard-page">
-      <div className="container">
-        <div className="dashboard-layout">
-          <DashboardSidebar
-            user={custodianProfile}
-            role="custodian"
-            onLogout={() => setIsLogoutModalOpen(true)}
-          />
+    <div className="minimalist-dashboard">
+      <DashboardSidebar
+        user={custodianProfile}
+        role="custodian"
+        onLogout={() => setIsLogoutModalOpen(true)}
+      />
+      
+      <main className="dashboard-main">
+        <header className="dashboard-header">
+          <div className="header-content">
+            <div className="header-text">
+              <h1>Good morning, {userProfile?.name || 'Custodian'}</h1>
+              <p>Here's what's happening today</p>
+            </div>
+            <div className="header-actions">
+              <button className="icon-btn" onClick={() => setIsMessageCenterOpen(true)}>
+                <i className="fa-solid fa-envelope"></i>
+              </button>
+              <NotificationBell />
+            </div>
+          </div>
+        </header>
 
-          {/* Main Content */}
-          <div className="dashboard-content">
-            {/* Welcome Banner */}
-            <div className="welcome-banner">
-              <div className="banner-header">
-                <div>
-                  <h1>Welcome Back, {userProfile?.name || 'Custodian'}!</h1>
-                  <p>Here’s what’s happening with your hostels today.</p>
-                </div>
-                <div className="header-actions">
-                  <button className="action-btn" title="Notifications"><i className="fas fa-bell"></i><span className="notification-badge">3</span></button>
-                  <Link to="/custodian-profile" className="user-profile">
-                    <img 
-                      src={custodianProfile.profilePicture} 
-                      alt="User profile" 
-                      style={{border: '2px solid #00bfff', borderRadius: '50%'}}
-                    />
-                    <span>{userProfile?.name || 'Custodian'}</span>
-                  </Link>
-                </div>
-              </div>
-              <div className="widgets-grid">
-                <div className="widget"><div className="widget-icon blue"><i className="fas fa-file-invoice-dollar"></i></div><div className="widget-info"><p>New Payments</p><h3>5</h3></div></div>
-                <div className="widget"><div className="widget-icon red"><i className="fas fa-tools"></i></div><div className="widget-info"><p>Open Tickets</p><h3>3</h3></div></div>
-                <div className="widget"><div className="widget-icon green"><i className="fas fa-chart-pie"></i></div><div className="widget-info"><p>Occupancy Rate</p><h3>85%</h3></div></div>
-                <div className="widget"><div className="widget-icon orange"><i className="fas fa-key"></i></div><div className="widget-info"><p>Pending Assignments</p><h3>2</h3></div></div>
+        <div className="dashboard-grid">
+          <div className="stats-row">
+            <div className="stat-card">
+              <div className="stat-value">127</div>
+              <div className="stat-label">Total Rooms</div>
+              <div className="stat-trend positive">+2.5%</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">89%</div>
+              <div className="stat-label">Occupancy</div>
+              <div className="stat-trend positive">+5.2%</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">5</div>
+              <div className="stat-label">Pending</div>
+              <div className="stat-trend neutral">-</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">3</div>
+              <div className="stat-label">Maintenance</div>
+              <div className="stat-trend negative">+1</div>
+            </div>
+          </div>
+
+          <div className="content-grid">
+            <div className="quick-actions">
+              <h3>Quick Actions</h3>
+              <div className="actions-list">
+                <Link to="/custodian-payment-management" className="action-item">
+                  <div className="action-icon">
+                    <i className="fa-solid fa-credit-card"></i>
+                  </div>
+                  <span>Verify Payments</span>
+                  <i className="fa-solid fa-chevron-right"></i>
+                </Link>
+                <Link to="/custodian-room-assignment" className="action-item">
+                  <div className="action-icon">
+                    <i className="fa-solid fa-key"></i>
+                  </div>
+                  <span>Assign Rooms</span>
+                  <i className="fa-solid fa-chevron-right"></i>
+                </Link>
+                <Link to="/custodian-room-management" className="action-item">
+                  <div className="action-icon">
+                    <i className="fa-solid fa-door-open"></i>
+                  </div>
+                  <span>Room Management</span>
+                  <i className="fa-solid fa-chevron-right"></i>
+                </Link>
+                <Link to="/custodian-maintenance" className="action-item">
+                  <div className="action-icon">
+                    <i className="fa-solid fa-wrench"></i>
+                  </div>
+                  <span>Maintenance</span>
+                  <i className="fa-solid fa-chevron-right"></i>
+                </Link>
               </div>
             </div>
 
-            {/* Main Dashboard Grid */}
-            <div className="dashboard-grid-new">
-              {/* Left Column */}
-              <div>
-                <div className="content-section">
-                  <div className="section-header"><h2>Quick Actions</h2></div>
-                  <div className="quick-actions-grid new-style">
-                    <Link to="/custodian-payment-management" className="quick-action-btn"><i className="fas fa-check-double"></i><span>Verify Payment</span></Link>
-                    <Link to="/custodian-room-assignment" className="quick-action-btn"><i className="fas fa-key"></i><span>Assign Room</span></Link>
-                    <Link to="/custodian-maintenance" className="quick-action-btn"><i className="fas fa-plus"></i><span>Create Ticket</span></Link>
-                    <Link to="/custodian-students" className="quick-action-btn"><i className="fas fa-user-plus"></i><span>Add Student</span></Link>
-                  </div>
-                </div>
-                <div className="content-section" style={{ marginTop: '30px' }}>
-                  <div className="section-header">
-                    <h2>Recent Activity</h2>
-                    <div className="search-wrapper-sm">
-                      <i className="fas fa-search"></i>
-                      <input
-                        type="text"
-                        id="activitySearchInput"
-                        placeholder="Filter activity..."
-                        value={activityFilter}
-                        onChange={(e) => setActivityFilter(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <ul className="activity-feed" id="activityFeedList">
-                    {filteredActivities.length > 0 ? (
-                      filteredActivities.map(activity => (
-                        <li className="activity-item" key={activity.id}>
-                          <div className={`activity-icon ${activity.iconClass}`}><i className={`fas ${activity.icon}`}></i></div>
-                          <div className="activity-content"><p><strong>{activity.text.split(' ')[0]} {activity.text.split(' ')[1]}</strong> {activity.text.substring(activity.text.indexOf(' ') + activity.text.indexOf(' ') + 2)}</p><span className="activity-time">{activity.time}</span></div>
-                        </li>
-                      ))
-                    ) : (
-                      <p className="no-activity-message" id="noActivityMessage" style={{ textAlign: 'center', color: 'var(--text-light)', padding: '20px 0' }}>No activity found matching your search.</p>
-                    )}
-                  </ul>
-                </div>
+            <div className="recent-activity">
+              <div className="section-header">
+                <h3>Recent Activity</h3>
+                <Link to="/custodian-audit-log" className="view-all">View all</Link>
               </div>
-              {/* Right Column */}
-              <div className="content-section">
-                <div className="section-header"><h2>Pending Tasks</h2></div>
-                <div className="pending-tasks-list" id="pendingTasksList">
-                  {/* These would ideally be dynamic from state */}
-                  <div className="pending-item">
-                    <div className="activity-icon assignment"><i className="fas fa-key"></i></div>
-                    <div className="student-info">
-                      <h5>Assign Room</h5>
-                      <p>A new student booking requires room assignment.</p>
-                    </div>
-                    <Link to="/custodian-room-assignment" className="btn outline small">View</Link>
+              <div className="activity-list">
+                <div className="activity-item">
+                  <div className="activity-icon payment">
+                    <i className="fa-solid fa-dollar-sign"></i>
                   </div>
-                  <div className="pending-item">
-                    <div className="activity-icon green"><i className="fas fa-dollar-sign"></i></div>
-                    <div className="student-info">
-                      <h5>Verify Payment: Jane Doe</h5>
-                      <p>Room A-102 - UGX 1,200,000</p>
-                    </div>
-                    <Link to="/custodian-payment-management" className="btn outline small">Verify</Link>
+                  <div className="activity-content">
+                    <div className="activity-title">Payment received</div>
+                    <div className="activity-subtitle">Jane Doe • Room A-104</div>
                   </div>
-                  <div className="pending-item">
-                    <div className="activity-icon orange"><i className="fas fa-wrench"></i></div>
-                    <div className="student-info">
-                      <h5>New Ticket: Leaking Pipe</h5>
-                      <p>Room A-105 - High Priority</p>
-                    </div>
-                    <Link to="/custodian-maintenance" className="btn outline small">View</Link>
+                  <div className="activity-time">2m ago</div>
+                </div>
+                <div className="activity-item">
+                  <div className="activity-icon maintenance">
+                    <i className="fa-solid fa-wrench"></i>
                   </div>
+                  <div className="activity-content">
+                    <div className="activity-title">Maintenance request</div>
+                    <div className="activity-subtitle">John Smith • Room B-205</div>
+                  </div>
+                  <div className="activity-time">1h ago</div>
+                </div>
+                <div className="activity-item">
+                  <div className="activity-icon booking">
+                    <i className="fa-solid fa-bed"></i>
+                  </div>
+                  <div className="activity-content">
+                    <div className="activity-title">New booking</div>
+                    <div className="activity-subtitle">Mary Johnson • Room C-301</div>
+                  </div>
+                  <div className="activity-time">3h ago</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </main>
       <LogoutConfirmModal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
         onConfirm={handleLogout}
       />
-    </main>
+      <MessageCenter 
+        isOpen={isMessageCenterOpen}
+        onClose={() => setIsMessageCenterOpen(false)}
+      />
+      <IntegrationPanel 
+        isOpen={isIntegrationPanelOpen}
+        onClose={() => setIsIntegrationPanelOpen(false)}
+      />
+    </div>
   );
 };
 

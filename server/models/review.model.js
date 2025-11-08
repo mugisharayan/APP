@@ -12,6 +12,11 @@ const reviewSchema = new mongoose.Schema(
       ref: 'Hostel',
       required: true,
     },
+    booking: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Booking',
+      required: true,
+    },
     rating: {
       type: Number,
       required: true,
@@ -20,10 +25,14 @@ const reviewSchema = new mongoose.Schema(
     },
     comment: {
       type: String,
+      required: true,
     },
   },
   { timestamps: true }
 );
+
+// Ensure one review per booking
+reviewSchema.index({ booking: 1 }, { unique: true });
 
 const Review = mongoose.model('Review', reviewSchema);
 export default Review;

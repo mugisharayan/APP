@@ -5,8 +5,12 @@ import { AuthContext } from '../../features/auth/AuthContext';
 const FavoritesOverlay = ({ isOpen, onClose }) => {
   const { favorites, toggleFavorite } = useContext(AuthContext);
 
-  const handleRemoveFavorite = (idToRemove) => {
-    toggleFavorite({ id: idToRemove }); // Pass a partial object with the ID
+  const handleRemoveFavorite = async (hostelId) => {
+    try {
+      await toggleFavorite(hostelId);
+    } catch (error) {
+      alert('Failed to remove favorite');
+    }
   };
 
   if (!isOpen) return null;
@@ -22,18 +26,27 @@ const FavoritesOverlay = ({ isOpen, onClose }) => {
           {favorites.length === 0 ? (
             <p className="cart-empty-message">You haven't added any hostels to your favorites yet.</p>
           ) : (
-            favorites.map(item => (
-              <div className="cart-item" data-id={item.id} key={item.id}>
-                <img src={item.imageSrc} alt={item.name} className="cart-item-img" />
-                <div className="cart-item-details">
-                  <h5>{item.name}</h5>
-                  <p className="cart-item-price">{item.price}</p>
-                  <div className="cart-item-actions">
-                    <button className="remove-item-btn remove-favorite-btn" onClick={() => handleRemoveFavorite(item.id)}>Remove</button>
+            favorites.map(fav => {
+              if (!fav.hostel) return null;
+              const hostel = fav.hostel;
+              const lowestPrice = hostel.rooms && hostel.rooms.length > 0 
+                ? hostel.rooms.reduce((min, room) => (room.price < min ? room.price : min), Infinity)
+                : 0;
+              const defaultImage = (hostel.images && hostel.images.length > 0) ? hostel.images[0] : 'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&dpr=1';
+              
+              return (
+                <div className="cart-item" data-id={hostel._id} key={fav._id}>
+                  <img src={defaultImage} alt={hostel.name} className="cart-item-img" />
+                  <div className="cart-item-details">
+                    <h5>{hostel.name}</h5>
+                    <p className="cart-item-price">UGX {lowestPrice.toLocaleString()}</p>
+                    <div className="cart-item-actions">
+                      <button className="remove-item-btn remove-favorite-btn" onClick={() => handleRemoveFavorite(hostel._id)}>Remove</button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            }).filter(Boolean)
           )}
         </div>
         <div className="cart-footer">

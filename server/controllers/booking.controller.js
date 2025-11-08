@@ -1,5 +1,6 @@
 import Booking from '../models/booking.model.js';
 import asyncHandler from 'express-async-handler';
+import mongoose from 'mongoose';
 
 /**
  * @desc    Create new booking
@@ -63,11 +64,53 @@ const createBooking = asyncHandler(async (req, res) => {
  * @access  Private
  */
 const getMyBookings = asyncHandler(async (req, res) => {
+  const Hostel = (await import('../models/hostel.model.js')).default;
+  
   const bookings = await Booking.find({ student: req.user._id })
-    .populate('hostel', 'name location')
-    .populate('room', 'name price type')
-    .populate('payment', 'amount paymentMethod status');
-  res.json(bookings);
+    .populate('payment', 'amount paymentMethod status')
+    .sort({ createdAt: -1 });
+  
+  // Enrich bookings with hostel and room details
+  const enrichedBookings = await Promise.all(bookings.map(async (booking) => {
+    const bookingObj = booking.toObject();
+    
+    // Handle hostel - could be ObjectId or string
+    if (mongoose.Types.ObjectId.isValid(booking.hostel)) {
+      const hostel = await Hostel.findById(booking.hostel);
+      if (hostel) {
+        bookingObj.hostelName = hostel.name;
+        bookingObj.hostelLocation = hostel.location;
+        
+        // Handle room - could be ObjectId or string
+        if (mongoose.Types.ObjectId.isValid(booking.room)) {
+          const room = hostel.rooms.id(booking.room);
+          if (room) {
+            bookingObj.roomName = room.name;
+            bookingObj.roomPrice = room.price;
+            bookingObj.roomType = room.type;
+          }
+        } else {
+          // Room is a string, try to find by name
+          const room = hostel.rooms.find(r => r.name === booking.room);
+          if (room) {
+            bookingObj.roomName = room.name;
+            bookingObj.roomPrice = room.price;
+            bookingObj.roomType = room.type;
+          } else {
+            bookingObj.roomName = booking.room;
+          }
+        }
+      }
+    } else {
+      // Hostel is a string (name)
+      bookingObj.hostelName = booking.hostel;
+      bookingObj.roomName = booking.room;
+    }
+    
+    return bookingObj;
+  }));
+  
+  res.json(enrichedBookings);
 });
 
 /**

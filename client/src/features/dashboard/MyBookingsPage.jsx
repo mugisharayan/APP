@@ -2,15 +2,16 @@ import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import CancelBookingModal from '../../components/modals/CancelBookingModal';
+import ReviewModal from '../../components/modals/ReviewModal';
 import { AuthContext } from '../auth/AuthContext';
 import DashboardSidebar from './DashboardSidebar';
 import bookingService from '../../service/booking.service';
 import dashboardService from '../../service/dashboard.service';
 import receiptService from '../../service/receipt.service';
 
-const MyBookingsPage = ({ onOpenReviewModal }) => {
+const MyBookingsPage = () => {
   const navigate = useNavigate();
-  const { userProfile, bookingHistory, login, logout, setBookingHistory } = useContext(AuthContext);
+  const { userProfile, bookingHistory, logout, setBookingHistory } = useContext(AuthContext);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -19,6 +20,8 @@ const MyBookingsPage = ({ onOpenReviewModal }) => {
   const [downloadingReceipt, setDownloadingReceipt] = useState(null);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState(null);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [bookingToReview, setBookingToReview] = useState(null);
 
   useEffect(() => {
     const loadBookings = async () => {
@@ -60,6 +63,24 @@ const MyBookingsPage = ({ onOpenReviewModal }) => {
   const openCancelModal = (booking) => {
     setBookingToCancel(booking);
     setCancelModalOpen(true);
+  };
+
+  const openReviewModal = (booking) => {
+    const enrichedBooking = {
+      ...booking,
+      hostelName: dashboardService.getHostelName(booking),
+      roomName: dashboardService.getRoomName(booking)
+    };
+    setBookingToReview(enrichedBooking);
+    setReviewModalOpen(true);
+  };
+
+  const handleReviewSubmitted = (success) => {
+    setReviewModalOpen(false);
+    setBookingToReview(null);
+    if (success) {
+      alert('Thank you for your review!');
+    }
   };
 
   const handleDownloadReceipt = async (booking, index) => {
@@ -223,9 +244,21 @@ const MyBookingsPage = ({ onOpenReviewModal }) => {
                     .map((booking, index) => {
                     const bookingDate = new Date(booking.createdAt || booking.bookingDate);
                     const formattedDate = bookingDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-                    const isCurrent = index === 0 && (booking.status || 'confirmed') !== 'cancelled';
-                    const statusClass = (booking.status || 'confirmed').toLowerCase();
-                    const statusText = booking.status || 'Confirmed';
+                    const endDate = new Date(booking.endDate);
+                    const now = new Date();
+                    const bookingStatus = (booking.status || 'active').toLowerCase();
+                    let statusText = 'Active';
+                    let statusClass = 'confirmed';
+                    let isCurrent = false;
+                    if (bookingStatus === 'cancelled') {
+                      statusText = 'Cancelled';
+                      statusClass = 'cancelled';
+                    } else if (endDate <= now) {
+                      statusText = 'Completed';
+                      statusClass = 'completed';
+                    } else {
+                      isCurrent = true;
+                    }
                     const semester = isCurrent ? 'Aug 2024 - Dec 2024' : 'Jan 2024 - May 2024';
                     const hostelName = dashboardService.getHostelName(booking);
                     const roomName = dashboardService.getRoomName(booking);
@@ -270,7 +303,7 @@ const MyBookingsPage = ({ onOpenReviewModal }) => {
                               <i className="fas fa-times"></i> Cancel
                             </button>
                           ) : (
-                            <button className="btn-action-modern review" onClick={() => onOpenReviewModal(hostelName)}>
+                            <button className="btn-action-modern review" onClick={() => openReviewModal(booking)}>
                               <i className="fas fa-star"></i> Review
                             </button>
                           )}
@@ -298,6 +331,11 @@ const MyBookingsPage = ({ onOpenReviewModal }) => {
           hostel: dashboardService.getHostelName(bookingToCancel),
           room: dashboardService.getRoomName(bookingToCancel)
         } : null}
+      />
+      <ReviewModal
+        isOpen={reviewModalOpen}
+        onClose={handleReviewSubmitted}
+        booking={bookingToReview}
       />
     </>
   );

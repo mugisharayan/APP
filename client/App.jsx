@@ -65,8 +65,8 @@ function App() {
             setAuthRedirectTo('booking');
             setIsAuthModalOpen(true);
           }} />} />
-          <Route path="/booking" element={<BookingPage />} />
-          <Route path="/payment" element={<PaymentPage />} />
+          <Route path="/booking" element={<ProtectedRoute allowedRoles={['Student', 'student']}><BookingPage /></ProtectedRoute>} />
+          <Route path="/payment" element={<ProtectedRoute allowedRoles={['Student', 'student']}><PaymentPage /></ProtectedRoute>} />
 
           {/* Protected Student Routes */}
           <Route element={<ProtectedRoute allowedRoles={['Student', 'student']} />}>

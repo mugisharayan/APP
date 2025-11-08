@@ -1,80 +1,87 @@
 import React, { useState, useEffect } from 'react';
+import reviewService from '../../service/review.service';
 
-const StarRating = ({ label, onRatingChange }) => {
-  const [currentRating, setCurrentRating] = useState(0);
+const ReviewModal = ({ isOpen, onClose, booking }) => {
+  const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
-
-  const handleClick = (value) => {
-    setCurrentRating(value);
-    onRatingChange(label, value);
-  };
-
-  return (
-    <div className="rating-group">
-      <label>{label}</label>
-      <div className="rating-input">
-        {[1, 2, 3, 4, 5].map((value) => (
-          <i
-            key={value}
-            className={(hoverRating || currentRating) >= value ? 'fa-solid fa-star' : 'fa-regular fa-star'}
-            data-value={value}
-            onMouseEnter={() => setHoverRating(value)}
-            onMouseLeave={() => setHoverRating(0)}
-            onClick={() => handleClick(value)}
-          ></i>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const ReviewModal = ({ isOpen, onClose, hostelName }) => {
-  const [reviewText, setReviewText] = useState('');
-  const [ratings, setRatings] = useState({ Security: 0, Hygiene: 0 });
+  const [comment, setComment] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!isOpen) {
-      setReviewText('');
-      setRatings({ Security: 0, Hygiene: 0 });
+      setRating(0);
+      setHoverRating(0);
+      setComment('');
+      setError('');
     }
   }, [isOpen]);
 
-  const handleRatingChange = (category, value) => {
-    setRatings(prev => ({ ...prev, [category]: value }));
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // In a real app, you'd send this data to a backend
-    console.log(`Submitting review for ${hostelName}:`, { reviewText, ratings });
-    // showToast('Thank you for your review!'); // Placeholder for toast
-    onClose();
+    if (rating === 0) {
+      setError('Please select a rating');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setError('');
+    
+    try {
+      await reviewService.createReview({
+        hostel: booking.hostel,
+        booking: booking._id,
+        rating,
+        comment
+      });
+      onClose(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !booking) return null;
 
   return (
     <div className="modal-overlay is-visible" onClick={(e) => e.target.className.includes('modal-overlay') && onClose()}>
       <div className="modal-content animate-on-scroll">
         <button className="close-modal-btn" onClick={onClose}>&times;</button>
-        <h3>Write a Review for <span id="reviewHostelName">{hostelName}</span></h3>
+        <h3>Write a Review for <span id="reviewHostelName">{booking.hostelName}</span></h3>
         <p className="muted">Share your experience to help other students.</p>
+        {error && <div style={{padding: '10px', background: '#fee', color: '#c00', borderRadius: '8px', marginBottom: '15px'}}>{error}</div>}
         <form className="rating-form modal-form" onSubmit={handleSubmit}>
-          <StarRating label="Security" onRatingChange={handleRatingChange} />
-          <StarRating label="Hygiene" onRatingChange={handleRatingChange} />
+          <div className="rating-group">
+            <label>Overall Rating</label>
+            <div className="rating-input">
+              {[1, 2, 3, 4, 5].map((value) => (
+                <i
+                  key={value}
+                  className={(hoverRating || rating) >= value ? 'fa-solid fa-star' : 'fa-regular fa-star'}
+                  onMouseEnter={() => setHoverRating(value)}
+                  onMouseLeave={() => setHoverRating(0)}
+                  onClick={() => setRating(value)}
+                  style={{cursor: 'pointer'}}
+                ></i>
+              ))}
+            </div>
+          </div>
           <div className="form-group">
-            <label htmlFor="reviewText" aria-label="Your Review">Your Review</label>
+            <label htmlFor="reviewText">Your Review</label>
             <textarea
               id="reviewText"
-              placeholder="Share details of your own experience at this hostel..."
+              placeholder="Share details of your experience at this hostel..."
               rows="4"
-              value={reviewText}
-              onChange={(e) => setReviewText(e.target.value)}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
               required
             ></textarea>
           </div>
           <div className="form-actions" style={{ marginTop: '20px' }}>
-            <button type="submit" className="btn primary full-width">Submit Review</button>
+            <button type="submit" className="btn primary full-width" disabled={isSubmitting}>
+              {isSubmitting ? 'Submitting...' : 'Submit Review'}
+            </button>
           </div>
         </form>
       </div>

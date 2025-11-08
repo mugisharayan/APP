@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
+import '../../styles/modern-dashboard.css';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 const CustodianMaintenancePage = () => {
@@ -165,21 +166,33 @@ const CustodianMaintenancePage = () => {
   );
 
   return (
-    <main className="dashboard-page">
-      <div className="container">
-        <div className="dashboard-layout">
-          <DashboardSidebar
-            user={custodianProfile}
-            role="custodian"
-            onLogout={() => setIsLogoutModalOpen(true)}
-          />
+    <>
+      <section className="dashboard-hero-section">
+        <div className="floating-home-icons">
+          <i className="fa-solid fa-tools floating-home-1"></i>
+          <i className="fa-solid fa-wrench floating-home-2"></i>
+          <i className="fa-solid fa-screwdriver-wrench floating-home-3"></i>
+          <i className="fa-solid fa-hammer floating-home-4"></i>
+          <i className="fa-solid fa-clipboard-list floating-home-5"></i>
+          <i className="fa-solid fa-hard-hat floating-home-6"></i>
+        </div>
+        <div className="dashboard-hero-container">
+          <h1 className="dashboard-hero-title">Issue <span className="dashboard-animated">Ticketing</span></h1>
+          <p className="dashboard-hero-subtitle">Track and resolve all student complaints and maintenance requests</p>
+        </div>
+      </section>
+      
+      <main className="dashboard-page">
+        <div className="container">
+          <div className="dashboard-layout">
+            <DashboardSidebar
+              user={custodianProfile}
+              role="custodian"
+              onLogout={() => setIsLogoutModalOpen(true)}
+            />
 
-          {/* Main Content */}
-          <div className="dashboard-content">
-            <div className="dashboard-header">
-              <h2>Issue Ticketing</h2>
-              <p className="muted">Track and resolve all student complaints and maintenance requests.</p>
-            </div>
+            {/* Main Content */}
+            <div className="dashboard-content">
 
             <div className="dashboard-section">
               <div className="section-header">
@@ -218,6 +231,8 @@ const CustodianMaintenancePage = () => {
           </div>
         </div>
       </div>
+      </main>
+      
       <LogoutConfirmModal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
@@ -275,7 +290,7 @@ const CustodianMaintenancePage = () => {
           </div>
         </div>
       )}
-    </main>
+    </>
   );
 };
 

@@ -1,6 +1,8 @@
 import React, { useState, createContext, useEffect } from 'react';
 import authService from '../../service/auth.service.js';
 import userService from '../../service/user.service.js';
+import favoriteService from '../../service/favorite.service.js';
+import bookingService from '../../service/booking.service.js';
 
 export const AuthContext = createContext(null);
 
@@ -13,7 +15,7 @@ export const AuthProvider = ({ children }) => {
 
   // On initial load, check localStorage for existing session
   useEffect(() => {
-    const checkLoggedIn = () => {
+    const checkLoggedIn = async () => {
       const authData = localStorage.getItem('auth');
       if (authData) {
         try {
@@ -22,9 +24,20 @@ export const AuthProvider = ({ children }) => {
             setUserProfile(userData);
             setIsAuthenticated(true);
             
-            // Load favorites from localStorage
-            const storedFavorites = JSON.parse(localStorage.getItem('bookMyHostelFavorites')) || [];
-            setFavorites(storedFavorites);
+            // Load favorites and bookings from backend
+            try {
+              const favs = await favoriteService.getMyFavorites();
+              setFavorites(favs);
+            } catch (error) {
+              console.error('Failed to load favorites:', error);
+            }
+            
+            try {
+              const bookings = await bookingService.getMyBookings();
+              setBookingHistory(bookings);
+            } catch (error) {
+              console.error('Failed to load bookings:', error);
+            }
           }
         } catch (error) {
           console.error('Invalid auth data:', error);
@@ -41,22 +54,41 @@ export const AuthProvider = ({ children }) => {
     const userData = await authService.login(email, password);
     setUserProfile(userData);
     setIsAuthenticated(true);
-    // Load favorites from localStorage on login
-    const storedFavorites = JSON.parse(localStorage.getItem('bookMyHostelFavorites')) || [];
-    setFavorites(storedFavorites);
+    // Load favorites and bookings from backend on login
+    try {
+      const favs = await favoriteService.getMyFavorites();
+      setFavorites(favs);
+    } catch (error) {
+      console.error('Failed to load favorites:', error);
+    }
+    
+    try {
+      const bookings = await bookingService.getMyBookings();
+      setBookingHistory(bookings);
+    } catch (error) {
+      console.error('Failed to load bookings:', error);
+    }
     return userData;
   };
 
-  const loginWithUserData = (userData) => {
+  const loginWithUserData = async (userData) => {
     setUserProfile(userData);
     setIsAuthenticated(true);
     localStorage.setItem('auth', JSON.stringify(userData));
     
-    const storedFavorites = JSON.parse(localStorage.getItem('bookMyHostelFavorites')) || [];
-    setFavorites(storedFavorites);
+    try {
+      const favs = await favoriteService.getMyFavorites();
+      setFavorites(favs);
+    } catch (error) {
+      console.error('Failed to load favorites:', error);
+    }
     
-    const storedBookings = JSON.parse(localStorage.getItem('bookingHistory')) || [];
-    setBookingHistory(storedBookings);
+    try {
+      const bookings = await bookingService.getMyBookings();
+      setBookingHistory(bookings);
+    } catch (error) {
+      console.error('Failed to load bookings:', error);
+    }
   };
 
   const logout = () => {
@@ -65,26 +97,28 @@ export const AuthProvider = ({ children }) => {
     setUserProfile(null);
     setIsAuthenticated(false);
     setFavorites([]);
+    setBookingHistory([]);
   };
 
-  // Note: Favorite functionality still uses localStorage.
-  // This can be migrated to the backend once favorite-related API endpoints are created.
-  const toggleFavorite = (hostel) => {
-    let updatedFavorites = [];
-    const isAlreadyFavorited = favorites.some(item => item.id === hostel.id);
+  const toggleFavorite = async (hostelId) => {
+    try {
+      const isAlreadyFavorited = favorites.some(fav => fav.hostel && fav.hostel._id === hostelId);
 
-    if (isAlreadyFavorited) {
-      updatedFavorites = favorites.filter(item => item.id !== hostel.id);
-    } else {
-      updatedFavorites = [...favorites, hostel];
+      if (isAlreadyFavorited) {
+        await favoriteService.removeFavorite(hostelId);
+        setFavorites(favorites.filter(fav => fav.hostel && fav.hostel._id !== hostelId));
+      } else {
+        const newFavorite = await favoriteService.addFavorite(hostelId);
+        setFavorites([...favorites, newFavorite]);
+      }
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+      throw error;
     }
-
-    setFavorites(updatedFavorites);
-    localStorage.setItem('bookMyHostelFavorites', JSON.stringify(updatedFavorites));
   };
 
   const isFavorited = (hostelId) => {
-    return favorites.some(item => item.id === hostelId);
+    return favorites.some(fav => fav.hostel && fav.hostel._id === hostelId);
   };
 
   const value = {

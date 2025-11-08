@@ -2,13 +2,16 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
+import '../../styles/modern-dashboard.css';
 
 const CustodianRoomManagementPage = () => {
   const navigate = useNavigate();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRoomActionModalOpen, setIsRoomActionModalOpen] = useState(false);
+  const [isAddRoomModalOpen, setIsAddRoomModalOpen] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [currentFilter, setCurrentFilter] = useState('all');
+  const [newRoom, setNewRoom] = useState({ id: '', roomType: 'Single', block: 'A', floor: '1' });
 
   const custodianProfile = {
     fullName: 'John K.',
@@ -62,6 +65,24 @@ const CustodianRoomManagementPage = () => {
     navigate('/');
   };
 
+  const handleAddRoom = () => {
+    if (!newRoom.id.trim()) return;
+    
+    const roomId = `${newRoom.block}-${newRoom.floor}${newRoom.id.padStart(2, '0')}`;
+    const newRoomData = {
+      id: roomId,
+      status: 'Available',
+      occupant: 'None',
+      roomType: newRoom.roomType,
+      occupancy: newRoom.roomType === 'Single' ? '0/1' : '0/2',
+      occupantGender: 'None'
+    };
+    
+    setRooms(prev => [...prev, newRoomData]);
+    setNewRoom({ id: '', roomType: 'Single', block: 'A', floor: '1' });
+    setIsAddRoomModalOpen(false);
+  };
+
   const filteredRooms = rooms.filter(room => {
     if (currentFilter === 'all') return true;
     return room.status.toLowerCase().replace(/ /g, '-') === currentFilter;
@@ -96,19 +117,31 @@ const CustodianRoomManagementPage = () => {
   );
 
   return (
-    <main className="dashboard-page">
-      <div className="container">
-        <div className="dashboard-layout">
-          <DashboardSidebar
-            user={custodianProfile}
-            role="custodian"
-            onLogout={() => setIsLogoutModalOpen(true)}
-          />
-          <div className="dashboard-content">
-            <div className="dashboard-header">
-              <h2>Room Management</h2>
-              <p className="muted">Interactive floor plan and real-time room status.</p>
-            </div>
+    <>
+      <section className="dashboard-hero-section">
+        <div className="floating-home-icons">
+          <i className="fa-solid fa-door-open floating-home-1"></i>
+          <i className="fa-solid fa-bed floating-home-2"></i>
+          <i className="fa-solid fa-building floating-home-3"></i>
+          <i className="fa-solid fa-key floating-home-4"></i>
+          <i className="fa-solid fa-home floating-home-5"></i>
+          <i className="fa-solid fa-door-closed floating-home-6"></i>
+        </div>
+        <div className="dashboard-hero-container">
+          <h1 className="dashboard-hero-title">Room <span className="dashboard-animated">Management</span></h1>
+          <p className="dashboard-hero-subtitle">Interactive floor plan and real-time room status</p>
+        </div>
+      </section>
+      
+      <main className="dashboard-page">
+        <div className="container">
+          <div className="dashboard-layout">
+            <DashboardSidebar
+              user={custodianProfile}
+              role="custodian"
+              onLogout={() => setIsLogoutModalOpen(true)}
+            />
+            <div className="dashboard-content">
 
             <div className="room-management-header">
               <div className="room-filters-new">
@@ -122,6 +155,9 @@ const CustodianRoomManagementPage = () => {
                   </button>
                 ))}
               </div>
+              <button className="btn primary" onClick={() => setIsAddRoomModalOpen(true)}>
+                <i className="fas fa-plus"></i> Add Room
+              </button>
               <div className="room-status-legend">
                 <span className="legend-item"><span className="legend-color available"></span>Available</span>
                 <span className="legend-item"><span className="legend-color booked"></span>Booked</span>
@@ -143,6 +179,8 @@ const CustodianRoomManagementPage = () => {
           </div>
         </div>
       </div>
+      </main>
+      
       <LogoutConfirmModal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
@@ -191,7 +229,59 @@ const CustodianRoomManagementPage = () => {
           </div>
         </div>
       )}
-    </main>
+
+      {/* Add Room Modal */}
+      {isAddRoomModalOpen && (
+        <div className="modal-overlay is-visible" onClick={(e) => e.target.className.includes('modal-overlay') && setIsAddRoomModalOpen(false)}>
+          <div className="modal-content room-modal-content animate-on-scroll">
+            <button className="close-modal-btn" onClick={() => setIsAddRoomModalOpen(false)}>&times;</button>
+            <h3>Add New Room</h3>
+            <div className="room-modal-body">
+              <div className="form-group">
+                <label>Block</label>
+                <select value={newRoom.block} onChange={(e) => setNewRoom(prev => ({...prev, block: e.target.value}))}>
+                  <option value="A">Block A</option>
+                  <option value="B">Block B</option>
+                  <option value="C">Block C</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Floor</label>
+                <select value={newRoom.floor} onChange={(e) => setNewRoom(prev => ({...prev, floor: e.target.value}))}>
+                  <option value="1">Ground Floor (1xx)</option>
+                  <option value="2">First Floor (2xx)</option>
+                  <option value="3">Second Floor (3xx)</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Room Number</label>
+                <input 
+                  type="number" 
+                  placeholder="e.g., 01, 02, 03" 
+                  value={newRoom.id} 
+                  onChange={(e) => setNewRoom(prev => ({...prev, id: e.target.value}))}
+                  min="1"
+                  max="99"
+                />
+              </div>
+              <div className="form-group">
+                <label>Room Type</label>
+                <select value={newRoom.roomType} onChange={(e) => setNewRoom(prev => ({...prev, roomType: e.target.value}))}>
+                  <option value="Single">Single Room</option>
+                  <option value="Double">Double Room</option>
+                </select>
+              </div>
+              <div className="room-modal-actions">
+                <button className="btn outline" onClick={() => setIsAddRoomModalOpen(false)}>Cancel</button>
+                <button className="btn primary" onClick={handleAddRoom} disabled={!newRoom.id.trim()}>
+                  <i className="fas fa-plus"></i> Add Room
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

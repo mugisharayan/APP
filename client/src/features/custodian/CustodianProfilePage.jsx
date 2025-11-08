@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
+import '../../styles/modern-dashboard.css';
 
 const CustodianProfilePage = () => {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -108,19 +109,38 @@ const CustodianProfilePage = () => {
   };
 
   return (
-    <main className="dashboard-page">
-      <div className="container">
-        <div className="dashboard-layout">
-          <DashboardSidebar
-            user={{ fullName: profileData.fullName, course: profileData.role, profilePicture: profileData.profilePicture }}
-            role="custodian"
-            onLogout={() => setIsLogoutModalOpen(true)}
-          />
-          <div className="dashboard-content">
-            <div className="dashboard-header">
-              <h2>My Profile</h2>
-              <p className="muted">Manage your personal information and account settings.</p>
+    <>
+      <section className="dashboard-hero-section">
+        <div className="floating-home-icons">
+          <i className="fa-solid fa-user floating-home-1"></i>
+          <i className="fa-solid fa-user-gear floating-home-2"></i>
+          <i className="fa-solid fa-id-card floating-home-3"></i>
+          <i className="fa-solid fa-user-shield floating-home-4"></i>
+          <i className="fa-solid fa-user-cog floating-home-5"></i>
+          <i className="fa-solid fa-address-card floating-home-6"></i>
+        </div>
+        <div className="dashboard-hero-container">
+          <div className="hero-profile-info">
+            <img src={profileData.profilePicture} alt="Profile" className="hero-profile-pic" />
+            <div className="hero-profile-text">
+              <h2 className="hero-profile-name">{profileData.fullName}</h2>
+              <p className="hero-profile-role">{profileData.role}</p>
             </div>
+          </div>
+          <h1 className="dashboard-hero-title">My <span className="dashboard-animated">Profile</span></h1>
+          <p className="dashboard-hero-subtitle">Manage your personal information and account settings</p>
+        </div>
+      </section>
+      
+      <main className="dashboard-page">
+        <div className="container">
+          <div className="dashboard-layout">
+            <DashboardSidebar
+              user={{ fullName: profileData.fullName, course: profileData.role, profilePicture: profileData.profilePicture }}
+              role="custodian"
+              onLogout={() => setIsLogoutModalOpen(true)}
+            />
+            <div className="dashboard-content">
 
             <div className="profile-content-new">
               <div className="profile-banner-card">
@@ -185,12 +205,14 @@ const CustodianProfilePage = () => {
           </div>
         </div>
       </div>
+      </main>
+      
       <LogoutConfirmModal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
         onConfirm={handleLogout}
       />
-    </main>
+    </>
   );
 };
 

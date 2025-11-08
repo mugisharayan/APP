@@ -5,6 +5,7 @@ import Litepicker from 'litepicker'; // Assuming litepicker is installed
 import html2canvas from 'html2canvas'; // Assuming html2canvas is installed
 import { jsPDF } from 'jspdf'; // Assuming jspdf is installed
 import DashboardSidebar from '../dashboard/DashboardSidebar';
+import '../../styles/modern-dashboard.css';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -17,6 +18,7 @@ import {
   ArcElement,
 } from 'chart.js';
 import { Line, Doughnut, Pie } from 'react-chartjs-2';
+import { generatePredictions, getSeasonalTrends } from '../../utils/predictiveAnalytics';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ArcElement);
 
@@ -25,6 +27,8 @@ const CustodianAnalyticsPage = () => {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [dateRange, setDateRange] = useState('All Time');
   const pickerRef = useRef(null);
+  const [predictions] = useState(generatePredictions());
+  const [seasonalData] = useState(getSeasonalTrends());
 
   const custodianProfile = {
     fullName: 'John K.',
@@ -177,22 +181,32 @@ const CustodianAnalyticsPage = () => {
   };
 
   return (
-    <main className="dashboard-page">
-      <div className="container">
-        <div className="dashboard-layout">
-          <DashboardSidebar
-            user={custodianProfile}
-            role="custodian"
-            onLogout={() => setIsLogoutModalOpen(true)}
-          />
-          {/* Main Content */}
-          <div className="dashboard-content">
-            {/* Header */}
-            <header className="main-header">
-              <div className="header-title">
-                <h1>Analytics & Reports</h1>
-                <p>Track key metrics and performance indicators.</p>
-              </div>
+    <>
+      <section className="dashboard-hero-section">
+        <div className="floating-home-icons">
+          <i className="fa-solid fa-chart-line floating-home-1"></i>
+          <i className="fa-solid fa-chart-bar floating-home-2"></i>
+          <i className="fa-solid fa-chart-pie floating-home-3"></i>
+          <i className="fa-solid fa-file-chart-line floating-home-4"></i>
+          <i className="fa-solid fa-analytics floating-home-5"></i>
+          <i className="fa-solid fa-chart-area floating-home-6"></i>
+        </div>
+        <div className="dashboard-hero-container">
+          <h1 className="dashboard-hero-title">Analytics & <span className="dashboard-animated">Reports</span></h1>
+          <p className="dashboard-hero-subtitle">Track key metrics and performance indicators</p>
+        </div>
+      </section>
+      
+      <main className="dashboard-page">
+        <div className="container">
+          <div className="dashboard-layout">
+            <DashboardSidebar
+              user={custodianProfile}
+              role="custodian"
+              onLogout={() => setIsLogoutModalOpen(true)}
+            />
+            {/* Main Content */}
+            <div className="dashboard-content">
               <div className="header-actions">
                 <div className="date-range-filter">
                   <div className="date-input-wrapper">
@@ -203,7 +217,6 @@ const CustodianAnalyticsPage = () => {
                 </div>
                 <button className="btn outline small" onClick={generatePDFReport}><i className="fas fa-download"></i> Download Report</button>
               </div>
-            </header>
 
             {/* Stat Cards Section */}
             <section className="stat-card-grid">
@@ -226,6 +239,38 @@ const CustodianAnalyticsPage = () => {
                 <h4>Open Maintenance Tickets</h4>
                 <p id="maintenanceTicketsStat">{stats.maintenanceTickets}</p>
                 <span className="stat-change neutral" id="maintenanceTicketsChange">{stats.maintenanceTicketsChange}</span>
+              </div>
+            </section>
+
+            {/* Predictions Section */}
+            <section style={{ marginBottom: '40px' }}>
+              <h3 style={{ fontSize: '24px', fontWeight: '700', color: '#1e293b', marginBottom: '20px' }}>Predictive Insights</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+                <div style={{ background: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+                  <h4 style={{ margin: '0 0 12px 0', color: '#0ea5e9' }}>Occupancy Forecast</h4>
+                  <div style={{ fontSize: '28px', fontWeight: '700', color: '#1e293b', marginBottom: '8px' }}>{predictions.occupancyForecast.nextMonth}%</div>
+                  <div style={{ fontSize: '14px', color: '#64748b' }}>Next month prediction ({predictions.occupancyForecast.confidence}% confidence)</div>
+                  <div style={{ fontSize: '12px', color: predictions.occupancyForecast.trend === 'increasing' ? '#10b981' : '#ef4444', marginTop: '4px' }}>
+                    {predictions.occupancyForecast.trend === 'increasing' ? '↗' : '↘'} {predictions.occupancyForecast.trend}
+                  </div>
+                </div>
+                <div style={{ background: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+                  <h4 style={{ margin: '0 0 12px 0', color: '#10b981' }}>Revenue Forecast</h4>
+                  <div style={{ fontSize: '28px', fontWeight: '700', color: '#1e293b', marginBottom: '8px' }}>UGX {(predictions.revenueForecast.nextMonth / 1000000).toFixed(1)}M</div>
+                  <div style={{ fontSize: '14px', color: '#64748b' }}>Next month projection</div>
+                  <div style={{ fontSize: '12px', color: '#10b981', marginTop: '4px' }}>↗ {predictions.revenueForecast.growth} growth</div>
+                </div>
+              </div>
+              <div style={{ background: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+                <h4 style={{ margin: '0 0 16px 0' }}>AI Recommendations</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {predictions.recommendations.map((rec, index) => (
+                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', background: '#f8fafc', borderRadius: '6px' }}>
+                      <i className="fa-solid fa-lightbulb" style={{ color: '#f59e0b', fontSize: '14px' }}></i>
+                      <span style={{ fontSize: '14px', color: '#1e293b' }}>{rec}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </section>
 
@@ -256,12 +301,14 @@ const CustodianAnalyticsPage = () => {
           </div>
         </div>
       </div>
+      </main>
+      
       <LogoutConfirmModal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
         onConfirm={handleLogout}
       />
-    </main>
+    </>
   );
 };
 

@@ -21,6 +21,23 @@ const BookingPage = () => {
     }
   }, [userProfile, navigate, searchParams]);
 
+  // Check for active bookings on page load
+  React.useEffect(() => {
+    const checkActiveBooking = async () => {
+      if (userProfile) {
+        try {
+          const activeBookings = await bookingService.checkActiveBookings();
+          if (activeBookings.length > 0) {
+            setShowActiveBookingModal(true);
+          }
+        } catch (error) {
+          console.error('Failed to check active bookings:', error);
+        }
+      }
+    };
+    checkActiveBooking();
+  }, [userProfile]);
+
   const hostelName = searchParams.get('hostel');
   const roomName = searchParams.get('room');
   const roomPrice = searchParams.get('price');
@@ -60,6 +77,7 @@ const BookingPage = () => {
   const [error, setError] = useState('');
   const [paymentResult, setPaymentResult] = useState(null);
   const [downloadingReceipt, setDownloadingReceipt] = useState(false);
+  const [showActiveBookingModal, setShowActiveBookingModal] = useState(false);
   
   const processCreditCardPayment = async () => {
     setIsLoading(true);
@@ -74,7 +92,7 @@ const BookingPage = () => {
       
       const result = await paymentService.processCreditCardPayment(cardData, totalPrice);
       sessionStorage.setItem('paymentResult', JSON.stringify(result));
-      setCurrentStep(3);
+      await completeBooking();
     } catch (error) {
       setError(error.message || 'Card payment failed. Please try again.');
     } finally {
@@ -155,8 +173,8 @@ const BookingPage = () => {
     } else if (paymentMethod === 'credit-card') {
       await processCreditCardPayment();
     } else {
-      // Bank transfer - proceed directly
-      setCurrentStep(3);
+      // Bank transfer - complete booking
+      await completeBooking();
     }
   };
   
@@ -210,24 +228,10 @@ const BookingPage = () => {
       // Get payment result from session
       const storedPaymentResult = JSON.parse(sessionStorage.getItem('paymentResult') || '{}');
       
-      // Store booking data for dashboard
-      const bookingForStorage = {
-        _id: createdBooking._id,
-        hostel: hostelName,
-        room: roomName,
-        price: price,
-        bookingDate: new Date().toISOString(),
-        status: 'Confirmed',
-        paymentMethod: paymentData.paymentMethod,
-        transactionId: storedPaymentResult.transactionId
-      };
-      
-      localStorage.setItem('bookingHistory', JSON.stringify([bookingForStorage]));
       sessionStorage.removeItem('paymentResult');
-      
       sessionStorage.removeItem('tempUser');
       
-      navigate('/dashboard');
+      setCurrentStep(3);
     } catch (error) {
       setError(error.message || 'Booking failed. Please try again.');
     } finally {
@@ -295,7 +299,7 @@ const BookingPage = () => {
       setPin('');
       setPaymentStatus('');
       
-      setCurrentStep(3);
+      await completeBooking();
     } catch (error) {
       setIsProcessing(false);
       setPaymentStatus('');
@@ -592,7 +596,7 @@ const BookingPage = () => {
                       <><i className="fa-solid fa-download"></i> Download Receipt</>
                     )}
                   </button>
-                  <button onClick={() => navigate('/dashboard')} className="btn-dashboard">
+                  <button onClick={() => { window.location.href = '/dashboard'; }} className="btn-dashboard">
                     <i className="fa-solid fa-gauge"></i> Go to Dashboard
                   </button>
                 </div>
@@ -672,6 +676,25 @@ const BookingPage = () => {
             )}
           </div>
       </div>
+      
+      {/* Active Booking Modal */}
+      {showActiveBookingModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: 'white', padding: '0', borderRadius: '16px', maxWidth: '450px', width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px 30px', borderBottom: '2px solid #e2e8f0' }}>
+              <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: '#1e293b' }}>Active Booking Found</h3>
+            </div>
+            <div style={{ padding: '30px', textAlign: 'center' }}>
+              <i className="fa-solid fa-exclamation-circle" style={{ fontSize: '48px', color: '#f59e0b', marginBottom: '20px' }}></i>
+              <p style={{ color: '#475569', fontSize: '16px', marginBottom: '16px', lineHeight: '1.6' }}>You already have an active booking. Please cancel or wait for it to expire before booking again.</p>
+            </div>
+            <div style={{ display: 'flex', gap: '12px', padding: '20px 30px', borderTop: '2px solid #e2e8f0' }}>
+              <button onClick={() => navigate('/my-bookings')} style={{ flex: 1, padding: '14px 24px', background: 'linear-gradient(135deg, #0ea5e9, #06b6d4)', border: 'none', color: 'white', borderRadius: '10px', fontWeight: 600, fontSize: '15px', cursor: 'pointer', boxShadow: '0 4px 16px rgba(14, 165, 233, 0.3)' }}>View My Bookings</button>
+              <button onClick={() => navigate('/hostels')} style={{ flex: 1, padding: '14px 24px', background: 'white', border: '2px solid #e2e8f0', color: '#64748b', borderRadius: '10px', fontWeight: 600, fontSize: '15px', cursor: 'pointer' }}>Browse Hostels</button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* PIN Modal */}
       {showPinModal && (

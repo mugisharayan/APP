@@ -2,9 +2,12 @@ const dashboardService = {
   // Calculate booking statistics
   calculateBookingStats: (bookings) => {
     const totalBookings = bookings.length;
-    const activeBookings = bookings.filter(b => 
-      (b.status || 'confirmed').toLowerCase() === 'confirmed'
-    ).length;
+    const now = new Date();
+    const activeBookings = bookings.filter(b => {
+      const endDate = new Date(b.endDate);
+      const status = (b.status || 'active').toLowerCase();
+      return endDate > now && status !== 'cancelled';
+    }).length;
     const totalSpent = bookings.reduce((sum, booking) => {
       // Try to get price from multiple sources
       let price = 0;
@@ -83,49 +86,48 @@ const dashboardService = {
 
   // Extract hostel name from booking
   getHostelName: (booking) => {
+    // Check new API field first
+    if (booking.hostelName) {
+      return booking.hostelName;
+    }
+    
     if (typeof booking.hostel === 'object' && booking.hostel.name) {
       return booking.hostel.name;
     }
     
-    // Check localStorage for hostel name
-    const localBookings = JSON.parse(localStorage.getItem('bookingHistory') || '[]');
-    const localBooking = localBookings.find(b => b._id === booking._id);
-    if (localBooking && localBooking.hostel && typeof localBooking.hostel === 'string') {
-      return localBooking.hostel;
+    if (typeof booking.hostel === 'string' && !booking.hostel.match(/^[0-9a-fA-F]{24}$/)) {
+      return booking.hostel;
     }
     
-    // If it's an ObjectId, show a user-friendly message
-    if (typeof booking.hostel === 'string' && booking.hostel.match(/^[0-9a-fA-F]{24}$/)) {
-      return 'Hostel Booking';
-    }
-    
-    return booking.hostel || 'Unknown Hostel';
+    return 'Unknown Hostel';
   },
 
   // Extract room name from booking
   getRoomName: (booking) => {
+    // Check new API field first
+    if (booking.roomName) {
+      return booking.roomName;
+    }
+    
     if (typeof booking.room === 'object' && booking.room.name) {
       return booking.room.name;
     }
     
-    // Check localStorage for room name
-    const localBookings = JSON.parse(localStorage.getItem('bookingHistory') || '[]');
-    const localBooking = localBookings.find(b => b._id === booking._id);
-    if (localBooking && localBooking.room && typeof localBooking.room === 'string') {
-      return localBooking.room;
+    if (typeof booking.room === 'string' && !booking.room.match(/^[0-9a-fA-F]{24}$/)) {
+      return booking.room;
     }
     
-    // If it's an ObjectId, show a user-friendly message
-    if (typeof booking.room === 'string' && booking.room.match(/^[0-9a-fA-F]{24}$/)) {
-      return 'Room Booking';
-    }
-    
-    return booking.room || 'Unknown Room';
+    return 'Unknown Room';
   },
 
   // Extract room price from booking
   getRoomPrice: (booking) => {
-    // Try payment amount first (most reliable)
+    // Check new API field first
+    if (booking.roomPrice) {
+      return booking.roomPrice;
+    }
+    
+    // Try payment amount
     if (booking.payment && booking.payment.amount) {
       return booking.payment.amount;
     }
@@ -138,13 +140,6 @@ const dashboardService = {
     // Try direct price field
     if (booking.price) {
       return booking.price;
-    }
-    
-    // Check localStorage for booking with same ID
-    const localBookings = JSON.parse(localStorage.getItem('bookingHistory') || '[]');
-    const localBooking = localBookings.find(b => b._id === booking._id);
-    if (localBooking && localBooking.price) {
-      return localBooking.price;
     }
     
     // Fallback based on room name

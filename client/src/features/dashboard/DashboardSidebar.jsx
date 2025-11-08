@@ -31,7 +31,7 @@ const DashboardSidebar = ({ user, onLogout, role = 'student' }) => {
           style={{border: '2px solid #00bfff', borderRadius: '50%'}}
         />
         <h4>{user.fullName || user.name}</h4>
-        <p>{user.name || user.fullName}</p>
+        <p>{user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Student'}</p>
       </div>
       <nav className="dashboard-nav">
         {links.map(link => <NavLink key={link.to} to={link.to} className="dashboard-link"><i className={`fa-solid ${link.icon}`}></i> {link.text}</NavLink>)}

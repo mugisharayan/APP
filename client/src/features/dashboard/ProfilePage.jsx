@@ -3,55 +3,89 @@ import { useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from './DashboardSidebar';
 import { AuthContext } from '../auth/AuthContext';
+import userService from '../../service/user.service';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
-  const { userProfile, login, logout } = useContext(AuthContext); // Use context
+  const { userProfile, loginWithUserData, logout } = useContext(AuthContext);
   const [isEditing, setIsEditing] = useState(false);
   const [editFormData, setEditFormData] = useState(userProfile || {});
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    if (!userProfile) {
-      // If context has no user, try to get from localStorage once
-      const storedProfile = JSON.parse(localStorage.getItem('userProfile'));
-      if (storedProfile) {
-        const storedBookings = JSON.parse(localStorage.getItem('bookingHistory')) || [];
-        login(storedProfile, storedBookings); // Hydrate context
+    const loadProfile = async () => {
+      if (!userProfile) {
+        const storedAuth = JSON.parse(localStorage.getItem('auth'));
+        if (storedAuth && storedAuth.token) {
+          try {
+            const profile = await userService.getUserProfile();
+            loginWithUserData({ ...storedAuth, ...profile });
+            setEditFormData(profile);
+          } catch (error) {
+            console.error('Failed to load profile:', error);
+            navigate('/');
+          }
+        } else {
+          navigate('/');
+        }
       } else {
-        navigate('/'); // Redirect if not logged in
+        setEditFormData(userProfile);
       }
-    } else {
-      setEditFormData(userProfile); // Sync form data when userProfile is available
-    }
-  }, [userProfile, navigate, login]);
+    };
+    loadProfile();
+  }, [userProfile, navigate, loginWithUserData]);
 
   const handleEditChange = (e) => {
     const { id, value } = e.target;
     setEditFormData(prev => ({ ...prev, [id]: value }));
   };
 
-  const handleSaveProfile = (e) => {
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
-    const updatedProfile = { ...userProfile, ...editFormData };
-    const bookings = JSON.parse(localStorage.getItem('bookingHistory')) || [];
-    login(updatedProfile, bookings); // Update profile via context
-    setIsEditing(false);
-    // showToast('Profile updated successfully!');
+    setIsLoading(true);
+    setError('');
+    setSuccess('');
+    
+    try {
+      const updatedProfile = await userService.updateUserProfile(editFormData);
+      const auth = JSON.parse(localStorage.getItem('auth'));
+      const newUserData = { ...auth, ...updatedProfile };
+      loginWithUserData(newUserData);
+      setEditFormData(updatedProfile);
+      setIsEditing(false);
+      setSuccess('Profile updated successfully!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      setError(error.message || 'Failed to update profile');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleProfilePicChange = (e) => {
+  const handleProfilePicChange = async (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       if (file.type.startsWith('image/')) {
         const reader = new FileReader();
-        reader.onload = function(event) {
+        reader.onload = async function(event) {
           const result = event.target.result;
           if (typeof result === 'string' && result.startsWith('data:image/')) {
-            const updatedProfile = { ...userProfile, ...editFormData, profilePicture: result };
-            const bookings = JSON.parse(localStorage.getItem('bookingHistory')) || [];
-            login(updatedProfile, bookings); // Update profile via context
-            // showToast('Profile picture updated!');
+            try {
+              setIsLoading(true);
+              const updatedProfile = await userService.updateUserProfile({ profilePicture: result });
+              const auth = JSON.parse(localStorage.getItem('auth'));
+              const newUserData = { ...auth, ...updatedProfile };
+              loginWithUserData(newUserData);
+              setSuccess('Profile picture updated!');
+              setTimeout(() => setSuccess(''), 3000);
+            } catch (error) {
+              setError(error.message || 'Failed to update profile picture');
+            } finally {
+              setIsLoading(false);
+            }
           }
         };
         reader.readAsDataURL(file);
@@ -59,19 +93,31 @@ const ProfilePage = () => {
     }
   };
 
-  const handlePasswordChange = (e) => {
+  const handlePasswordChange = async (e) => {
     e.preventDefault();
+    setError('');
+    setSuccess('');
     const form = e.target;
+    const currentPassword = form.currentPassword.value;
     const newPassword = form.newPassword.value;
     const confirmPassword = form.confirmPassword.value;
 
     if (newPassword !== confirmPassword) {
-      // showToast('New passwords do not match.', true);
+      setError('New passwords do not match.');
       return;
     }
-    // In a real app, you'd send this to a backend for password update
-    // showToast('Password updated successfully!');
-    form.reset();
+    
+    setIsLoading(true);
+    try {
+      await userService.changePassword({ currentPassword, newPassword });
+      setSuccess('Password updated successfully!');
+      setTimeout(() => setSuccess(''), 3000);
+      form.reset();
+    } catch (error) {
+      setError(error.message || 'Failed to update password');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const togglePasswordVisibility = (e) => {
@@ -151,6 +197,16 @@ const ProfilePage = () => {
                     </div>
                     <button className="btn-edit-modern" onClick={() => setIsEditing(true)} style={{ display: isEditing ? 'none' : 'flex' }}><i className="fas fa-pen"></i> Edit Profile</button>
                   </div>
+                  {error && (
+                    <div className="error-message" style={{background: '#fee2e2', color: '#dc2626', padding: '12px', borderRadius: '8px', margin: '20px'}}>
+                      <i className="fa-solid fa-exclamation-triangle"></i> {error}
+                    </div>
+                  )}
+                  {success && (
+                    <div className="success-message" style={{background: '#d1fae5', color: '#065f46', padding: '12px', borderRadius: '8px', margin: '20px'}}>
+                      <i className="fa-solid fa-check-circle"></i> {success}
+                    </div>
+                  )}
                   <div className="profile-card-content-modern">
                     <div className="profile-pic-modern-wrapper" onClick={handleProfilePicClick}>
                       <div className="profile-pic-circle">
@@ -177,8 +233,10 @@ const ProfilePage = () => {
                           <div className="form-group-modern"><label><i className="fas fa-phone"></i> Phone Number</label><input type="tel" id="phone" required value={editFormData.phone} onChange={handleEditChange} /></div>
                           <div className="form-group-modern"><label><i className="fas fa-graduation-cap"></i> Course / Program</label><input type="text" id="course" required value={editFormData.course} onChange={handleEditChange} /></div>
                           <div className="form-actions-modern">
-                            <button type="submit" className="btn-save-modern"><i className="fas fa-check"></i> Save Changes</button>
-                            <button type="button" className="btn-cancel-modern" onClick={() => setIsEditing(false)}><i className="fas fa-times"></i> Cancel</button>
+                            <button type="submit" className="btn-save-modern" disabled={isLoading}>
+                              {isLoading ? <><i className="fas fa-spinner fa-spin"></i> Saving...</> : <><i className="fas fa-check"></i> Save Changes</>}
+                            </button>
+                            <button type="button" className="btn-cancel-modern" onClick={() => setIsEditing(false)} disabled={isLoading}><i className="fas fa-times"></i> Cancel</button>
                           </div>
                         </form>
                       )}
@@ -196,7 +254,9 @@ const ProfilePage = () => {
                           <div className="form-group"><label htmlFor="currentPassword" aria-label="Current Password">Current Password</label><div className="password-wrapper"><input type="password" id="currentPassword" name="currentPassword" required /><i className="fas fa-eye-slash toggle-password" onClick={togglePasswordVisibility}></i></div></div>
                           <div className="form-group"><label htmlFor="newPassword" aria-label="New Password">New Password</label><div className="password-wrapper"><input type="password" id="newPassword" name="newPassword" required /><i className="fas fa-eye-slash toggle-password" onClick={togglePasswordVisibility}></i></div></div>
                           <div className="form-group"><label htmlFor="confirmPassword" aria-label="Confirm New Password">Confirm New Password</label><div className="password-wrapper"><input type="password" id="confirmPassword" name="confirmPassword" required /><i className="fas fa-eye-slash toggle-password" onClick={togglePasswordVisibility}></i></div></div>
-                          <button type="submit" className="btn primary" style={{ marginTop: '10px' }}>Update Password</button>
+                          <button type="submit" className="btn primary" style={{ marginTop: '10px' }} disabled={isLoading}>
+                            {isLoading ? <><i className="fas fa-spinner fa-spin"></i> Updating...</> : 'Update Password'}
+                          </button>
                         </form>
                       </div>
                       <div className="security-section">

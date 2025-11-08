@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
+import '../../styles/modern-dashboard.css';
 
 const CustodianRoomAssignmentPage = () => {
   const navigate = useNavigate();
@@ -48,19 +49,31 @@ const CustodianRoomAssignmentPage = () => {
   };
 
   return (
-    <main className="dashboard-page">
-      <div className="container">
-        <div className="dashboard-layout">
-          <DashboardSidebar
-            user={custodianProfile}
-            role="custodian"
-            onLogout={() => setIsLogoutModalOpen(true)}
-          />
-          <div className="dashboard-content">
-            <div className="dashboard-header">
-              <h2>Room Assignment System</h2>
-              <p className="muted">Assign rooms to students with verified payments.</p>
-            </div>
+    <>
+      <section className="dashboard-hero-section">
+        <div className="floating-home-icons">
+          <i className="fa-solid fa-key floating-home-1"></i>
+          <i className="fa-solid fa-bed floating-home-2"></i>
+          <i className="fa-solid fa-door-open floating-home-3"></i>
+          <i className="fa-solid fa-home floating-home-4"></i>
+          <i className="fa-solid fa-building floating-home-5"></i>
+          <i className="fa-solid fa-door-closed floating-home-6"></i>
+        </div>
+        <div className="dashboard-hero-container">
+          <h1 className="dashboard-hero-title">Room <span className="dashboard-animated">Assignment</span></h1>
+          <p className="dashboard-hero-subtitle">Assign rooms to students with verified payments</p>
+        </div>
+      </section>
+      
+      <main className="dashboard-page">
+        <div className="container">
+          <div className="dashboard-layout">
+            <DashboardSidebar
+              user={custodianProfile}
+              role="custodian"
+              onLogout={() => setIsLogoutModalOpen(true)}
+            />
+            <div className="dashboard-content">
 
             <div className="assignment-layout">
               <div className="assignment-column">
@@ -104,8 +117,10 @@ const CustodianRoomAssignmentPage = () => {
               </div>
             </div>
           </div>
+          </div>
         </div>
-      </div>
+      </main>
+      
       <LogoutConfirmModal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
@@ -143,7 +158,7 @@ const CustodianRoomAssignmentPage = () => {
           </div>
         </div>
       )}
-    </main>
+    </>
   );
 };
 

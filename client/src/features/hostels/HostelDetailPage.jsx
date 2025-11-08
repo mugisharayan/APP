@@ -2,21 +2,23 @@ import React, { useEffect, useState, useContext } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { apiService } from '../../service/api.service';
 import { AuthContext } from '../auth/AuthContext';
+import reviewService from '../../service/review.service';
 import '../../styles/hostel-detail-modern.css';
 import '../../styles/hostel-detail-enhanced.css';
 
 const HostelDetailPage = ({ onOpenAuthModal }) => {
   const { hostelId } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated, isFavorited, toggleFavorite } = useContext(AuthContext);
   
   const [hostel, setHostel] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isFavorited, setIsFavorited] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
 
   useEffect(() => {
     const loadHostel = async () => {
@@ -32,17 +34,26 @@ const HostelDetailPage = ({ onOpenAuthModal }) => {
         setLoading(false);
       }
     };
+    
+    const loadReviews = async () => {
+      try {
+        setReviewsLoading(true);
+        const reviewsData = await reviewService.getHostelReviews(hostelId);
+        setReviews(reviewsData);
+      } catch (err) {
+        console.error('Failed to load reviews:', err);
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+    
     if (hostelId) {
       loadHostel();
+      loadReviews();
     }
   }, [hostelId]);
 
-  useEffect(() => {
-    if (hostel) {
-      const favorites = JSON.parse(localStorage.getItem('bookMyHostelFavorites')) || [];
-      setIsFavorited(favorites.some(item => item.id === hostelId));
-    }
-  }, [hostelId, hostel]);
+
 
   useEffect(() => {
     if (hostel && hostel.images && hostel.images.length > 1) {
@@ -100,25 +111,23 @@ const HostelDetailPage = ({ onOpenAuthModal }) => {
     );
   }
 
-  const handleToggleFavorite = () => {
-    let favorites = JSON.parse(localStorage.getItem('bookMyHostelFavorites')) || [];
-    const lowestPrice = hostel.rooms && hostel.rooms.length > 0 
-      ? hostel.rooms.reduce((min, room) => (room.price < min ? room.price : min), Infinity)
-      : 0;
-    const defaultImage = (hostel.images && hostel.images.length > 0) ? hostel.images[0] : 'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&dpr=1';
-
-    if (isFavorited) {
-      favorites = favorites.filter(item => item.id !== hostelId);
-    } else {
-      favorites.push({
-        id: hostelId,
-        name: hostel.name,
-        price: `UGX ${lowestPrice.toLocaleString()}`,
-        imageSrc: defaultImage,
-      });
+  const handleToggleFavorite = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
     }
-    localStorage.setItem('bookMyHostelFavorites', JSON.stringify(favorites));
-    setIsFavorited(!isFavorited);
+    
+    if (!isAuthenticated) {
+      onOpenAuthModal();
+      return;
+    }
+
+    try {
+      await toggleFavorite(hostelId);
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+      alert(error.message || 'Failed to update favorite');
+    }
   };
 
   const openLightbox = (index) => {
@@ -181,13 +190,13 @@ const HostelDetailPage = ({ onOpenAuthModal }) => {
                 )}
               </h1>
               <div className="detail-hero-meta">
-                <span><i className="fa-solid fa-star"></i> 4.0 (125 reviews)</span>
+                <span><i className="fa-solid fa-star"></i> {reviews.length > 0 ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1) : '0.0'} ({reviews.length} reviews)</span>
                 <span className="separator-dot">·</span>
                 <span><i className="fa-solid fa-map-marker-alt"></i> {hostel.location}, Makerere</span>
               </div>
               <div className="new-header-actions">
-                <button className={`btn outline small ${isFavorited ? 'active' : ''}`} onClick={handleToggleFavorite}>
-                  <i className={isFavorited ? 'fa-solid fa-heart' : 'fa-regular fa-heart'}></i> {isFavorited ? 'Favorited' : 'Favorite'}
+                <button className={`btn outline small ${isFavorited(hostelId) ? 'active' : ''}`} onClick={handleToggleFavorite}>
+                  <i className={isFavorited(hostelId) ? 'fa-solid fa-heart' : 'fa-regular fa-heart'}></i> {isFavorited(hostelId) ? 'Favorited' : 'Favorite'}
                 </button>
                 <Link to="/hostels" className="back-btn">Back to Hostels</Link>
               </div>
@@ -235,7 +244,7 @@ const HostelDetailPage = ({ onOpenAuthModal }) => {
                   <div className="stat-item">
                     <i className="fa-solid fa-star"></i>
                     <div>
-                      <strong>4.0</strong>
+                      <strong>{reviews.length > 0 ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1) : '0.0'}</strong>
                       <span>Rating</span>
                     </div>
                   </div>
@@ -333,48 +342,67 @@ const HostelDetailPage = ({ onOpenAuthModal }) => {
               <div className="review-summary-col">
                 <div className="review-summary">
                   <div className="summary-total">
-                    <div className="total-rating">4.0</div>
+                    <div className="total-rating">{reviews.length > 0 ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1) : '0.0'}</div>
                     <div className="total-stars">
-                      <i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i><i className="fa-regular fa-star"></i>
+                      {(() => {
+                        const avgRating = reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
+                        return [...Array(5)].map((_, i) => (
+                          <i key={i} className={i < Math.round(avgRating) ? 'fa-solid fa-star' : 'fa-regular fa-star'}></i>
+                        ));
+                      })()}
                     </div>
-                    <div className="total-reviews">125 reviews</div>
+                    <div className="total-reviews">{reviews.length} reviews</div>
                   </div>
                   <div className="summary-bars">
-                    <div className="bar-item"><span>5 Star</span><div className="bar-container"><div className="bar" style={{ width: '70%' }}></div></div><span>70%</span></div>
-                    <div className="bar-item"><span>4 Star</span><div className="bar-container"><div className="bar" style={{ width: '15%' }}></div></div><span>15%</span></div>
-                    <div className="bar-item"><span>3 Star</span><div className="bar-container"><div className="bar" style={{ width: '10%' }}></div></div><span>10%</span></div>
-                    <div className="bar-item"><span>2 Star</span><div className="bar-container"><div className="bar" style={{ width: '3%' }}></div></div><span>3%</span></div>
-                    <div className="bar-item"><span>1 Star</span><div className="bar-container"><div className="bar" style={{ width: '2%' }}></div></div><span>2%</span></div>
+                    {(() => {
+                      const ratingCounts = [0, 0, 0, 0, 0];
+                      reviews.forEach(r => ratingCounts[r.rating - 1]++);
+                      const total = reviews.length || 1;
+                      return [5, 4, 3, 2, 1].map(star => {
+                        const count = ratingCounts[star - 1];
+                        const percentage = Math.round((count / total) * 100);
+                        return (
+                          <div className="bar-item" key={star}>
+                            <span>{star} Star</span>
+                            <div className="bar-container"><div className="bar" style={{ width: `${percentage}%` }}></div></div>
+                            <span>{percentage}%</span>
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               </div>
               <div className="reviews-list-col">
-                <article className="review-card">
-                  <div className="review-card-header">
-                    <img src="https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" alt="Reviewer avatar" />
-                    <div className="review-author-info">
-                      <h5>Sarah K.</h5>
-                      <small>Reviewed on 15 Jul, 2024</small>
-                    </div>
-                    <div className="review-stars">
-                      <i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i><i className="fa-regular fa-star"></i>
-                    </div>
+                {reviewsLoading ? (
+                  <div style={{textAlign: 'center', padding: '40px'}}>
+                    <i className="fa-solid fa-spinner fa-spin" style={{fontSize: '32px', color: '#0ea5e9'}}></i>
+                    <p>Loading reviews...</p>
                   </div>
-                  <p className="review-text">"Great location, very close to the university gate. The rooms are clean and the Wi-Fi is surprisingly reliable. Would recommend!"</p>
-                </article>
-                <article className="review-card">
-                  <div className="review-card-header">
-                    <img src="https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" alt="Reviewer avatar" />
-                    <div className="review-author-info">
-                      <h5>David O.</h5>
-                      <small>Reviewed on 02 Jun, 2024</small>
-                    </div>
-                    <div className="review-stars">
-                      <i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i>
-                    </div>
+                ) : reviews.length === 0 ? (
+                  <div style={{textAlign: 'center', padding: '40px'}}>
+                    <i className="fa-solid fa-comment-slash" style={{fontSize: '48px', color: '#cbd5e1', marginBottom: '16px'}}></i>
+                    <p style={{color: '#64748b'}}>No reviews yet. Be the first to review!</p>
                   </div>
-                  <p className="review-text">"The security is top-notch, which was my main concern. The custodian is very responsive to any issues. It's a quiet environment, perfect for studying."</p>
-                </article>
+                ) : (
+                  reviews.map((review) => (
+                    <article className="review-card" key={review._id}>
+                      <div className="review-card-header">
+                        <img src="https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" alt="Reviewer avatar" />
+                        <div className="review-author-info">
+                          <h5>{review.student?.name || 'Anonymous'}</h5>
+                          <small>Reviewed on {new Date(review.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</small>
+                        </div>
+                        <div className="review-stars">
+                          {[...Array(5)].map((_, i) => (
+                            <i key={i} className={i < review.rating ? 'fa-solid fa-star' : 'fa-regular fa-star'}></i>
+                          ))}
+                        </div>
+                      </div>
+                      <p className="review-text">"{review.comment}"</p>
+                    </article>
+                  ))
+                )}
               </div>
             </div>
 

@@ -15,10 +15,14 @@ const HostelCard = ({ hostelId, hostel }) => {
   const defaultImage = 'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&dpr=1';
   const hostelImage = hostel.images && hostel.images[0] ? hostel.images[0] : defaultImage;
 
-  const handleFavoriteClick = (e) => {
+  const handleFavoriteClick = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    toggleFavorite({ id: hostelId, ...hostel });
+    try {
+      await toggleFavorite(hostelId);
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+    }
   };
 
   return (

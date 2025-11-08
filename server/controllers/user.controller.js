@@ -10,15 +10,28 @@ import User from '../models/user.model.js';
  * @access  Private
  */
 const getUserProfile = asyncHandler(async (req, res) => {
-  // req.user is populated by the `protect` middleware
-  const user = req.user;
+  const user = await User.findById(req.user._id).select('-password');
 
   if (user) {
     res.json({
       _id: user._id,
       name: user.name,
+      fullName: user.name,
       email: user.email,
+      phone: user.phone,
       role: user.role,
+      course: user.course,
+      gender: user.gender,
+      dateOfBirth: user.dateOfBirth,
+      yearOfStudy: user.yearOfStudy,
+      studentNumber: user.studentNumber,
+      residence: user.residence,
+      nextOfKinName: user.nextOfKinName,
+      nextOfKinContact: user.nextOfKinContact,
+      guardianName: user.guardianName,
+      guardianContact: user.guardianContact,
+      profileCompleted: user.profileCompleted,
+      profilePicture: user.profilePicture,
     });
   } else {
     res.status(404);
@@ -121,6 +134,9 @@ const loginUser = asyncHandler(async (req, res) => {
       fullName: user.name,
       email: user.email,
       role: user.role,
+      phone: user.phone,
+      course: user.course,
+      profilePicture: user.profilePicture,
       token: token,
     });
   } else {
@@ -132,25 +148,69 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
   if (user) {
-    user.name = req.body.name || user.name;
+    user.name = req.body.fullName || req.body.name || user.name;
     user.email = req.body.email || user.email;
-
-    if (req.body.password) {
-      user.password = req.body.password; // The pre-save hook will hash it
-    }
+    user.phone = req.body.phone || user.phone;
+    user.course = req.body.course || user.course;
+    user.gender = req.body.gender || user.gender;
+    user.dateOfBirth = req.body.dateOfBirth || user.dateOfBirth;
+    user.yearOfStudy = req.body.yearOfStudy || user.yearOfStudy;
+    user.studentNumber = req.body.studentNumber || user.studentNumber;
+    user.residence = req.body.residence || user.residence;
+    user.nextOfKinName = req.body.nextOfKinName || user.nextOfKinName;
+    user.nextOfKinContact = req.body.nextOfKinContact || user.nextOfKinContact;
+    user.guardianName = req.body.guardianName || user.guardianName;
+    user.guardianContact = req.body.guardianContact || user.guardianContact;
+    user.profileCompleted = req.body.profileCompleted !== undefined ? req.body.profileCompleted : user.profileCompleted;
+    user.profilePicture = req.body.profilePicture || user.profilePicture;
 
     const updatedUser = await user.save();
 
     res.json({
       _id: updatedUser._id,
       name: updatedUser.name,
+      fullName: updatedUser.name,
       email: updatedUser.email,
+      phone: updatedUser.phone,
       role: updatedUser.role,
+      course: updatedUser.course,
+      gender: updatedUser.gender,
+      dateOfBirth: updatedUser.dateOfBirth,
+      yearOfStudy: updatedUser.yearOfStudy,
+      studentNumber: updatedUser.studentNumber,
+      residence: updatedUser.residence,
+      nextOfKinName: updatedUser.nextOfKinName,
+      nextOfKinContact: updatedUser.nextOfKinContact,
+      guardianName: updatedUser.guardianName,
+      guardianContact: updatedUser.guardianContact,
+      profileCompleted: updatedUser.profileCompleted,
+      profilePicture: updatedUser.profilePicture,
     });
   } else {
     res.status(404);
     throw new Error('User not found');
   }
+});
+
+const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  const isMatch = await bcrypt.compare(currentPassword, user.password);
+  if (!isMatch) {
+    res.status(400);
+    throw new Error('Current password is incorrect');
+  }
+
+  user.password = newPassword;
+  await user.save();
+
+  res.json({ message: 'Password updated successfully' });
 });
 
 // Temporary debug endpoint - remove in production
@@ -165,5 +225,6 @@ export {
   loginUser,
   getUserProfile,
   updateUserProfile,
+  changePassword,
   debugUsers,
 };

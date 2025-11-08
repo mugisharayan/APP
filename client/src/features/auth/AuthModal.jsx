@@ -66,21 +66,21 @@ const AuthModal = ({ isOpen, onClose, redirectTo = null }) => {
         fullName: fullName,
         email: email,
         password: password,
-        role: role.toLowerCase()
+        role: role
       });
 
       // Auto-login after successful registration
       localStorage.setItem('auth', JSON.stringify(response.data));
-      loginWithUserData(response.data);
+      await loginWithUserData(response.data);
       
       alert('Registration successful! Welcome!');
       onClose();
-
-      // Small delay to ensure auth state is updated
+      
+      // Use setTimeout to allow state to update before navigation
       setTimeout(() => {
         if (response.data.role === 'Custodian') {
-          console.log('Navigating to custodian dashboard');
-          navigate('/custodian-dashboard');
+          console.log('Navigating to custodian dashboard, role:', response.data.role);
+          window.location.href = '/custodian-dashboard';
         } else {
           // Handle different redirect scenarios for students
           if (redirectTo === 'hostels') {
@@ -94,7 +94,7 @@ const AuthModal = ({ isOpen, onClose, redirectTo = null }) => {
             navigate('/dashboard');
           }
         }
-      }, 100);
+      }, 200);
     } catch (error) {
       console.error('Registration error:', error);
       if (error.response?.status === 400) {
@@ -112,21 +112,21 @@ const AuthModal = ({ isOpen, onClose, redirectTo = null }) => {
       const response = await apiService.auth.login(email, password);
       
       localStorage.setItem('auth', JSON.stringify(response.data));
-      loginWithUserData(response.data);
+      await loginWithUserData(response.data);
       
       alert('Logged in successfully!');
       onClose();
-
-      // Small delay to ensure auth state is updated
+      
+      // Use setTimeout to allow state to update before navigation
       setTimeout(() => {
         if (response.data.role === 'Custodian') {
-          console.log('Navigating to custodian dashboard');
-          navigate('/custodian-dashboard');
+          console.log('Navigating to custodian dashboard, role:', response.data.role);
+          window.location.href = '/custodian-dashboard';
         } else {
           console.log('Navigating to student dashboard');
           navigate('/dashboard');
         }
-      }, 100);
+      }, 200);
     } catch (error) {
       console.error('Login error:', error);
       alert('Login failed: ' + (error.response?.data?.message || 'Invalid email or password'));
@@ -155,7 +155,7 @@ const AuthModal = ({ isOpen, onClose, redirectTo = null }) => {
     setFullName('');
     setPasswordValidations({ length: false, uppercase: false, lowercase: false, number: false, specialChar: false });
     setHostelInfo({ hostelName: '', hostelContact: '' });
-    setRole('student'); // Reset role on switch
+    setRole('Student'); // Reset role on switch
   };
 
   return (

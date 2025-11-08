@@ -50,6 +50,9 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
+    profilePicture: {
+      type: String,
+    },
     nextOfKin: {
       name: String,
       contact: String,
@@ -66,7 +69,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['student', 'custodian'],
+      enum: ['student', 'custodian', 'Student', 'Custodian'],
       required: true,
     },
   },

@@ -37,6 +37,44 @@ const getUserProfile = async () => {
 const userService = {
   getUserProfile,
   
+  // Update user profile
+  updateUserProfile: async (profileData) => {
+    const response = await fetch(`${API_URL}/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeader(),
+      },
+      body: JSON.stringify(profileData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to update profile');
+    }
+
+    return response.json();
+  },
+  
+  // Change password
+  changePassword: async (passwordData) => {
+    const response = await fetch(`${API_URL}/change-password`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeader(),
+      },
+      body: JSON.stringify(passwordData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to change password');
+    }
+
+    return response.json();
+  },
+  
   // Save booking profile data
   saveBookingProfile: async (bookingData) => {
     const profileData = {
