@@ -34,7 +34,9 @@ const bookingService = {
   // Check for active bookings
   checkActiveBookings: async () => {
     try {
-      const bookings = await bookingService.getMyBookings();
+      // Force fresh data by bypassing any potential cache
+      const response = await apiService.bookings.getAll();
+      const bookings = response.data;
       const activeBookings = bookings.filter(booking => {
         const endDate = new Date(booking.endDate);
         const now = new Date();

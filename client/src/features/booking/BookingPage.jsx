@@ -17,15 +17,23 @@ const BookingPage = () => {
   // Redirect to login if not authenticated
   React.useEffect(() => {
     if (!userProfile) {
-      navigate('/login?redirect=/booking?' + searchParams.toString());
+      console.log('No user profile, redirecting to home with auth modal');
+      navigate('/');
     }
   }, [userProfile, navigate, searchParams]);
+
+  // Don't render anything if no user profile
+  if (!userProfile) {
+    return null;
+  }
 
   // Check for active bookings on page load
   React.useEffect(() => {
     const checkActiveBooking = async () => {
       if (userProfile) {
         try {
+          // Add small delay to ensure any recent cancellations are processed
+          await new Promise(resolve => setTimeout(resolve, 500));
           const activeBookings = await bookingService.checkActiveBookings();
           if (activeBookings.length > 0) {
             setShowActiveBookingModal(true);
@@ -183,10 +191,12 @@ const BookingPage = () => {
     setError('');
     
     try {
-      // Check for existing active bookings
+      // Double-check for existing active bookings with fresh data
       const activeBookings = await bookingService.checkActiveBookings();
       if (activeBookings.length > 0) {
+        console.log('Active bookings found:', activeBookings);
         setError('You already have an active booking. Please cancel or wait for it to expire before booking again.');
+        setShowActiveBookingModal(true);
         setIsLoading(false);
         return;
       }
@@ -686,11 +696,24 @@ const BookingPage = () => {
             </div>
             <div style={{ padding: '30px', textAlign: 'center' }}>
               <i className="fa-solid fa-exclamation-circle" style={{ fontSize: '48px', color: '#f59e0b', marginBottom: '20px' }}></i>
-              <p style={{ color: '#475569', fontSize: '16px', marginBottom: '16px', lineHeight: '1.6' }}>You already have an active booking. Please cancel or wait for it to expire before booking again.</p>
+              <p style={{ color: '#475569', fontSize: '16px', marginBottom: '16px', lineHeight: '1.6' }}>You already have an active booking. If you just cancelled a booking, please wait a moment and refresh the status.</p>
             </div>
             <div style={{ display: 'flex', gap: '12px', padding: '20px 30px', borderTop: '2px solid #e2e8f0' }}>
+              <button onClick={async () => {
+                setShowActiveBookingModal(false);
+                // Wait a moment then recheck
+                setTimeout(async () => {
+                  try {
+                    const activeBookings = await bookingService.checkActiveBookings();
+                    if (activeBookings.length > 0) {
+                      setShowActiveBookingModal(true);
+                    }
+                  } catch (error) {
+                    console.error('Failed to recheck bookings:', error);
+                  }
+                }, 1000);
+              }} style={{ flex: 1, padding: '14px 24px', background: '#10b981', border: 'none', color: 'white', borderRadius: '10px', fontWeight: 600, fontSize: '15px', cursor: 'pointer', boxShadow: '0 4px 16px rgba(16, 185, 129, 0.3)' }}>Refresh Status</button>
               <button onClick={() => navigate('/my-bookings')} style={{ flex: 1, padding: '14px 24px', background: 'linear-gradient(135deg, #0ea5e9, #06b6d4)', border: 'none', color: 'white', borderRadius: '10px', fontWeight: 600, fontSize: '15px', cursor: 'pointer', boxShadow: '0 4px 16px rgba(14, 165, 233, 0.3)' }}>View My Bookings</button>
-              <button onClick={() => navigate('/hostels')} style={{ flex: 1, padding: '14px 24px', background: 'white', border: '2px solid #e2e8f0', color: '#64748b', borderRadius: '10px', fontWeight: 600, fontSize: '15px', cursor: 'pointer' }}>Browse Hostels</button>
             </div>
           </div>
         </div>
