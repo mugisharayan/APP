@@ -131,6 +131,16 @@
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
 }
 
+/* Custodian Sidebar - Fixed Position */
+.dashboard-sidebar.custodian-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  height: 100vh;
+  overflow-y: auto;
+}
+
 .profile-summary {
   padding: 30px 20px;
   text-align: center;
@@ -242,6 +252,13 @@
   padding: 40px;
   width: 100%;
   max-width: none;
+}
+
+/* Custodian Dashboard Main Content */
+.dashboard-main {
+  margin-left: 250px;
+  min-height: 100vh;
+  background: #f8fafc;
 }
 
 
@@ -770,6 +787,16 @@
     width: 100%;
     height: auto;
     position: relative;
+  }
+  
+  .dashboard-sidebar.custodian-sidebar {
+    position: relative;
+    width: 100%;
+    height: auto;
+  }
+  
+  .dashboard-main {
+    margin-left: 0;
   }
   
   .profile-summary {
