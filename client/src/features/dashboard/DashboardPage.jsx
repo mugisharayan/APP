@@ -122,9 +122,20 @@ const DashboardPage = ({ onOpenReviewModal }) => {
 
   const bookings = bookingHistory || [];
   const stats = dashboardService.calculateBookingStats(bookings);
-  const latestBooking = bookings[0];
-  const pastBookingsForReview = bookings.filter((booking, index) => {
-    return index > 0 || (index === 0 && (booking.status || 'confirmed').toLowerCase() === 'cancelled');
+  
+  // Get only active bookings (not cancelled and not expired)
+  const activeBooking = bookings.find(booking => {
+    const endDate = new Date(booking.endDate);
+    const now = new Date();
+    const status = (booking.status || 'active').toLowerCase();
+    return status !== 'cancelled' && endDate > now;
+  });
+  
+  const pastBookingsForReview = bookings.filter((booking) => {
+    const endDate = new Date(booking.endDate);
+    const now = new Date();
+    const status = (booking.status || 'active').toLowerCase();
+    return status === 'cancelled' || endDate <= now;
   });
 
   return (
@@ -189,7 +200,7 @@ const DashboardPage = ({ onOpenReviewModal }) => {
               </div>
 
               <div className="current-booking-modern">
-                {latestBooking ? (
+                {activeBooking ? (
                   <>
                     <div className="booking-header-modern">
                       <h3><i className="fa-solid fa-home"></i> Current Booking</h3>
@@ -198,17 +209,17 @@ const DashboardPage = ({ onOpenReviewModal }) => {
                     <div className="booking-card-redesign">
                       <div className="booking-main-info">
                         <div className="hostel-info">
-                          <h4>{dashboardService.getHostelName(latestBooking)}</h4>
-                          <p>{dashboardService.getRoomName(latestBooking)}</p>
+                          <h4>{dashboardService.getHostelName(activeBooking)}</h4>
+                          <p>{dashboardService.getRoomName(activeBooking)}</p>
                         </div>
                         <div className="price-badge">
-                          UGX {parseInt(dashboardService.getRoomPrice(latestBooking)).toLocaleString()}
+                          UGX {parseInt(dashboardService.getRoomPrice(activeBooking)).toLocaleString()}
                         </div>
                       </div>
                       <div className="booking-meta">
                         <div className="meta-item">
                           <i className="fas fa-calendar-alt"></i>
-                          <span>Booked: {new Date(latestBooking.createdAt || latestBooking.bookingDate).toLocaleDateString()}</span>
+                          <span>Booked: {new Date(activeBooking.createdAt || activeBooking.bookingDate).toLocaleDateString()}</span>
                         </div>
                         <div className="booking-actions">
                           <Link to="/my-bookings" className="btn-view-details">View Details</Link>
