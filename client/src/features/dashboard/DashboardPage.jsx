@@ -10,6 +10,8 @@ import NotificationBell from '../../components/student/NotificationBell';
 import SupportTicketForm from '../../components/student/SupportTicketForm';
 import EmergencyContact from '../../components/student/EmergencyContact';
 import StudentNotificationCenter from '../../components/student/StudentNotificationCenter';
+import RoomAssignmentNotification from '../../components/notifications/RoomAssignmentNotification';
+import { useNotifications } from '../../contexts/NotificationContext';
 import bookingService from '../../service/booking.service';
 import userService from '../../service/user.service';
 import dashboardService from '../../service/dashboard.service';
@@ -21,6 +23,7 @@ import '../../styles/student-communication.css';
 const DashboardPage = ({ onOpenReviewModal }) => {
   const navigate = useNavigate();
   const { userProfile, bookingHistory, login, logout, setBookingHistory } = useContext(AuthContext);
+  const { notifications, markAsRead, removeNotification, getUnreadCount } = useNotifications();
   const [maintenanceRequests, setMaintenanceRequests] = useState([]);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -202,6 +205,25 @@ const DashboardPage = ({ onOpenReviewModal }) => {
                   </div>
                 </div>
               </div>
+
+              {/* Room Assignment Notifications */}
+              {notifications.filter(n => n.type === 'room_assignment').length > 0 && (
+                <div className="room-notifications-section">
+                  <h3><i className="fas fa-key"></i> Room Assignments</h3>
+                  {notifications
+                    .filter(n => n.type === 'room_assignment')
+                    .slice(0, 3)
+                    .map(notification => (
+                      <RoomAssignmentNotification
+                        key={notification.id}
+                        notification={notification}
+                        onMarkRead={markAsRead}
+                        onRemove={removeNotification}
+                      />
+                    ))
+                  }
+                </div>
+              )}
 
               <div className="alert-card-modern">
                 <div className="alert-icon"><i className="fa-solid fa-bell"></i></div>

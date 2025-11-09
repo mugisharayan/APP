@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../auth/AuthContext';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
 import RoomLevelManager from '../../components/hostel/RoomLevelManager';
@@ -10,6 +11,7 @@ import '../../styles/room-management-modern.css';
 
 const CustodianRoomManagementPage = () => {
   const navigate = useNavigate();
+  const { userProfile } = useContext(AuthContext);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRoomActionModalOpen, setIsRoomActionModalOpen] = useState(false);
   const [isAddRoomModalOpen, setIsAddRoomModalOpen] = useState(false);
@@ -20,9 +22,9 @@ const CustodianRoomManagementPage = () => {
   const [pendingRooms, setPendingRooms] = useState([]);
 
   const custodianProfile = {
-    fullName: 'John K.',
-    course: 'Lead Custodian',
-    profilePicture: 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+    fullName: userProfile?.name || 'Custodian',
+    course: userProfile?.role || 'Custodian',
+    profilePicture: userProfile?.profilePicture || 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
   };
 
   const { rooms, setRooms, updateRoom } = useRoomData();
@@ -78,10 +80,11 @@ const CustodianRoomManagementPage = () => {
     navigate('/');
   };
 
-  const handleAddRoom = () => {
+  const handleAddRoom = async () => {
     if (!newRoom.id.trim()) return;
     
-    const roomId = `${newRoom.block}-${newRoom.floor}${newRoom.id.padStart(2, '0')}`;
+    const linkedHostel = JSON.parse(localStorage.getItem('linkedHostel') || '{}');
+    const roomId = `LM-${newRoom.floor}${newRoom.id.padStart(2, '0')}`;
     const newRoomData = {
       id: roomId,
       status: 'Available',
@@ -89,22 +92,42 @@ const CustodianRoomManagementPage = () => {
       roomType: newRoom.roomType,
       occupancy: newRoom.roomType === 'Single' ? '0/1' : '0/2',
       occupantGender: 'None',
-      hotel: newRoom.hotel,
-      block: newRoom.block,
+      hotel: linkedHostel.name || 'Lyn Modern Hostel',
+      block: 'A',
       floor: newRoom.floor,
       maintenanceStatus: null,
       maintenanceDescription: null,
       maintenanceDate: null
     };
     
-    setPendingRooms(prev => [...prev, newRoomData]);
-    setNewRoom({ id: '', roomType: 'Single', hotel: 'University Hotel A', block: 'A', floor: '1' });
+    try {
+      // Add room to database
+      await addRoom(newRoomData);
+      alert('Room added successfully!');
+    } catch (error) {
+      console.error('Failed to add room:', error);
+      // Fallback to local state
+      setPendingRooms(prev => [...prev, newRoomData]);
+    }
+    
+    setNewRoom({ id: '', roomType: 'Single', hotel: 'Lyn Modern Hostel', block: 'A', floor: '1' });
     setIsAddRoomModalOpen(false);
   };
 
-  const confirmRoomsToFloorPlan = () => {
-    setRooms(prev => [...prev, ...pendingRooms]);
-    setPendingRooms([]);
+  const confirmRoomsToFloorPlan = async () => {
+    try {
+      // Add all pending rooms to database
+      for (const room of pendingRooms) {
+        await addRoom(room);
+      }
+      setPendingRooms([]);
+      alert('All rooms added to floor plan successfully!');
+    } catch (error) {
+      console.error('Failed to add rooms:', error);
+      // Fallback to local state
+      setRooms(prev => [...prev, ...pendingRooms]);
+      setPendingRooms([]);
+    }
   };
 
   const filteredRooms = rooms;
@@ -177,9 +200,9 @@ const CustodianRoomManagementPage = () => {
                   <div className="stat-card-modern blue">
                     <div className="stat-icon"><i className="fa-solid fa-users"></i></div>
                     <div className="stat-info">
-                      <h3>{rooms.filter(r => r.status === 'Occupied').length}</h3>
-                      <p>Occupied Rooms</p>
-                      <span className="stat-trend positive">Currently in use</span>
+                      <h3>{rooms.filter(r => r.status === 'Partially Booked' || r.status === 'Partially Available').length}</h3>
+                      <p>Partial Rooms</p>
+                      <span className="stat-trend positive">Partially occupied</span>
                     </div>
                   </div>
                   <div className="stat-card-modern orange">
@@ -280,8 +303,8 @@ const CustodianRoomManagementPage = () => {
                   <div className="legend-items">
                     <div className="legend-item"><div className="legend-dot available"></div>Available</div>
                     <div className="legend-item"><div className="legend-dot booked"></div>Booked</div>
-                    <div className="legend-item"><div className="legend-dot occupied"></div>Occupied</div>
-                    <div className="legend-item"><div className="legend-dot partially-occupied"></div>Partially Occupied</div>
+                    <div className="legend-item"><div className="legend-dot partially-booked"></div>Partially Booked</div>
+                    <div className="legend-item"><div className="legend-dot partially-available"></div>Partially Available</div>
                     <div className="legend-item"><div className="legend-dot maintenance"></div>Maintenance</div>
                   </div>
                 </div>
@@ -371,7 +394,7 @@ const CustodianRoomManagementPage = () => {
                 </div>
               </div>
               <div className={`room-status-indicator status-${selectedRoom.status.toLowerCase().replace(/ /g, '-')}`}>
-                <i className={`fas ${selectedRoom.status === 'Available' ? 'fa-check-circle' : selectedRoom.status === 'Occupied' ? 'fa-users' : selectedRoom.status === 'Maintenance' ? 'fa-tools' : 'fa-calendar-check'}`}></i>
+                <i className={`fas ${selectedRoom.status === 'Available' ? 'fa-check-circle' : selectedRoom.status === 'Maintenance' ? 'fa-tools' : selectedRoom.status.includes('Partially') ? 'fa-user-friends' : 'fa-calendar-check'}`}></i>
                 <span>{selectedRoom.status}</span>
               </div>
             </div>
@@ -420,70 +443,9 @@ const CustodianRoomManagementPage = () => {
                 </div>
               </div>
               
-              <div className="maintenance-status-section">
-                <div className="section-header">
-                  <i className="fas fa-tools"></i>
-                  <h4>Maintenance Force Actions</h4>
-                  <p>Force maintenance status changes for any room</p>
-                </div>
-                {selectedRoom.status === 'Maintenance' && (
-                  <div className="maintenance-info">
-                    <div className="current-status">
-                      <span className="label">Current Status:</span>
-                      <span className={`status-badge ${selectedRoom.maintenanceStatus?.toLowerCase() || 'pending'}`}>
-                        {selectedRoom.maintenanceStatus || 'Pending'}
-                      </span>
-                    </div>
-                    <div className="maintenance-date">
-                      <span className="label">Last Updated:</span>
-                      <span className="date">
-                        {selectedRoom.maintenanceDate ? new Date(selectedRoom.maintenanceDate).toLocaleDateString() : 'Not set'}
-                      </span>
-                    </div>
-                  </div>
-                )}
-                <div className="maintenance-actions">
-                  <button 
-                    className="maintenance-btn pending" 
-                    onClick={() => handleMaintenanceStatusUpdate('Pending')}
-                  >
-                    <i className="fas fa-clock"></i> Force Pending
-                  </button>
-                  <button 
-                    className="maintenance-btn in-progress" 
-                    onClick={() => handleMaintenanceStatusUpdate('In Progress')}
-                  >
-                    <i className="fas fa-cog"></i> Force In Progress
-                  </button>
-                  <button 
-                    className="maintenance-btn resolved" 
-                    onClick={() => handleMaintenanceStatusUpdate('Resolved')}
-                  >
-                    <i className="fas fa-check-circle"></i> Force Resolved
-                  </button>
-                </div>
-              </div>
+
               
-              {selectedRoom.roomType === 'Double' && (selectedRoom.status === 'Available' || selectedRoom.status === 'Partially Occupied') && (
-                <div className="assignment-section">
-                  <div className="section-header">
-                    <i className="fas fa-user-plus"></i>
-                    <h4>Quick Assignment</h4>
-                  </div>
-                  <div className="assignment-form">
-                    <div className="form-group">
-                      <label>Student Gender</label>
-                      <select id="newStudentGender">
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                      </select>
-                    </div>
-                    <button className="assign-student-btn">
-                      <i className="fas fa-plus"></i> Assign Student
-                    </button>
-                  </div>
-                </div>
-              )}
+
               
               <div className="force-actions-section">
                 <div className="section-header">
@@ -503,15 +465,7 @@ const CustodianRoomManagementPage = () => {
                     </div>
                   </button>
                   
-                  <button className="status-action-btn occupied" onClick={() => handleForceAction('Occupied')}>
-                    <div className="action-icon">
-                      <i className="fas fa-users"></i>
-                    </div>
-                    <div className="action-content">
-                      <span className="action-title">Occupied</span>
-                      <span className="action-desc">Currently in use</span>
-                    </div>
-                  </button>
+
                   
                   <button className="status-action-btn booked" onClick={() => handleForceAction('Booked')}>
                     <div className="action-icon">
@@ -534,15 +488,26 @@ const CustodianRoomManagementPage = () => {
                   </button>
                   
                   {selectedRoom.roomType === 'Double' && (
-                    <button className="status-action-btn partial" onClick={() => handleForceAction('Partially Occupied')}>
-                      <div className="action-icon">
-                        <i className="fas fa-user-friends"></i>
-                      </div>
-                      <div className="action-content">
-                        <span className="action-title">Partially Occupied</span>
-                        <span className="action-desc">One bed available</span>
-                      </div>
-                    </button>
+                    <>
+                      <button className="status-action-btn partial" onClick={() => handleForceAction('Partially Booked')}>
+                        <div className="action-icon">
+                          <i className="fas fa-user-friends"></i>
+                        </div>
+                        <div className="action-content">
+                          <span className="action-title">Partially Booked</span>
+                          <span className="action-desc">One bed booked</span>
+                        </div>
+                      </button>
+                      <button className="status-action-btn partial" onClick={() => handleForceAction('Partially Available')}>
+                        <div className="action-icon">
+                          <i className="fas fa-bed"></i>
+                        </div>
+                        <div className="action-content">
+                          <span className="action-title">Partially Available</span>
+                          <span className="action-desc">One bed available</span>
+                        </div>
+                      </button>
+                    </>
                   )}
                 </div>
               </div>

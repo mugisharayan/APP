@@ -11,7 +11,7 @@ const login = async (email, password) => {
   const user = response.data;
   
   if (user.token) {
-    localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem('auth', JSON.stringify(user));
   }
   return user;
 };
@@ -25,7 +25,6 @@ const logout = async () => {
   } catch (error) {
     console.error('Logout error:', error);
   } finally {
-    localStorage.removeItem('user');
     localStorage.removeItem('auth');
   }
 };
@@ -35,7 +34,7 @@ const logout = async () => {
  * @returns {any | null}
  */
 const getCurrentUser = () => {
-  const userStr = localStorage.getItem('user') || localStorage.getItem('auth');
+  const userStr = localStorage.getItem('auth');
   return userStr ? JSON.parse(userStr) : null;
 };
 

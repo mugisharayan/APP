@@ -319,6 +319,18 @@
 }
 
 /* Responsive Design */
+.payment-overview-grid {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.overview-card.methods {
+  max-width: 600px;
+  width: 100%;
+}
+
 @media (max-width: 768px) {
   .payment-management-header {
     flex-direction: column;

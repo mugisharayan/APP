@@ -13,26 +13,19 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // On initial load, check for existing session and load user data from database
+  // On initial load, check for existing session
   useEffect(() => {
-    const checkLoggedIn = async () => {
+    const checkLoggedIn = () => {
       const authData = localStorage.getItem('auth');
       if (authData) {
         try {
           const userData = JSON.parse(authData);
           if (userData.token) {
-            // Verify token is still valid by fetching fresh user data
-            try {
-              const freshUserData = await userService.getUserProfile();
-              setUserProfile({ ...userData, ...freshUserData });
-              setIsAuthenticated(true);
-              
-              // Load all user data from database
-              await loadUserData();
-            } catch (error) {
-              console.error('Token expired or invalid:', error);
-              logout();
-            }
+            setUserProfile(userData);
+            setIsAuthenticated(true);
+            
+            // Load user data in background (non-blocking)
+            loadUserData().catch(console.error);
           }
         } catch (error) {
           console.error('Invalid auth data:', error);
@@ -64,8 +57,8 @@ export const AuthProvider = ({ children }) => {
     setUserProfile(userData);
     setIsAuthenticated(true);
     
-    // Load all user data from database
-    await loadUserData();
+    // Load user data in background (non-blocking)
+    loadUserData().catch(console.error);
     
     return userData;
   };
@@ -75,8 +68,8 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(true);
     localStorage.setItem('auth', JSON.stringify(userData));
     
-    // Load all user data from database
-    await loadUserData();
+    // Load user data in background (non-blocking)
+    loadUserData().catch(console.error);
   };
 
   const logout = async () => {
@@ -117,6 +110,12 @@ export const AuthProvider = ({ children }) => {
     return favorites.some(fav => fav.hostel && fav.hostel._id === hostelId);
   };
 
+  const updateProfile = (updatedData) => {
+    const newProfile = { ...userProfile, ...updatedData };
+    setUserProfile(newProfile);
+    localStorage.setItem('auth', JSON.stringify(newProfile));
+  };
+
   const value = {
     userProfile,
     isAuthenticated,
@@ -131,7 +130,8 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated, // Exposing for direct auth state updates
     bookingHistory,
     setBookingHistory,
-    loadUserData
+    loadUserData,
+    updateProfile
   };
 
   return (

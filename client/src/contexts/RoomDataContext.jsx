@@ -12,36 +12,41 @@ export const useRoomData = () => {
 };
 
 export const RoomDataProvider = ({ children }) => {
-  const [rooms, setRooms] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [rooms, setRooms] = useState([
+    { id: 'LM-101', status: 'Available', occupant: 'None', roomType: 'Single', occupancy: '0/1', occupantGender: 'None', hotel: 'Lyn Modern Hostel', block: 'A', floor: '1' },
+    { id: 'LM-102', status: 'Partially Booked', occupant: 'John Doe', roomType: 'Double', occupancy: '1/2', occupantGender: 'Male', hotel: 'Lyn Modern Hostel', block: 'A', floor: '1' },
+    { id: 'LM-103', status: 'Maintenance', occupant: 'None', roomType: 'Single', occupancy: '0/1', occupantGender: 'None', hotel: 'Lyn Modern Hostel', block: 'A', floor: '1', maintenanceStatus: 'Pending' },
+    { id: 'LM-104', status: 'Booked', occupant: 'Bob Johnson', roomType: 'Single', occupancy: '1/1', occupantGender: 'Male', hotel: 'Lyn Modern Hostel', block: 'A', floor: '1' },
+    { id: 'LM-105', status: 'Partially Available', occupant: 'Mike Johnson', roomType: 'Double', occupancy: '1/2', occupantGender: 'Male', hotel: 'Lyn Modern Hostel', block: 'A', floor: '1' },
+    { id: 'LM-201', status: 'Available', occupant: 'None', roomType: 'Single', occupancy: '0/1', occupantGender: 'None', hotel: 'Lyn Modern Hostel', block: 'A', floor: '2' },
+    { id: 'LM-202', status: 'Available', occupant: 'None', roomType: 'Double', occupancy: '0/2', occupantGender: 'None', hotel: 'Lyn Modern Hostel', block: 'A', floor: '2' }
+  ]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   // Load rooms from database on mount
   useEffect(() => {
-    loadRooms();
+    const linkedHostel = localStorage.getItem('linkedHostel');
+    if (linkedHostel) {
+      loadRooms();
+    }
   }, []);
 
   const loadRooms = async () => {
     try {
       setLoading(true);
-      const response = await apiService.hostels.getAll();
-      const hostels = response.data;
+      const linkedHostel = JSON.parse(localStorage.getItem('linkedHostel') || '{}');
       
-      // Extract all rooms from all hostels
-      const allRooms = [];
-      hostels.forEach(hostel => {
-        if (hostel.rooms) {
-          hostel.rooms.forEach(room => {
-            allRooms.push({
-              ...room,
-              hostelId: hostel._id,
-              hostelName: hostel.name
-            });
-          });
-        }
-      });
+      if (linkedHostel.name) {
+        // Load rooms for specific hostel
+        const response = await apiService.rooms.getByHostel(linkedHostel.id);
+        setRooms(response.data || []);
+      } else {
+        // Load all rooms
+        const response = await apiService.rooms.getAll();
+        setRooms(response.data || []);
+      }
       
-      setRooms(allRooms);
       setError(null);
     } catch (err) {
       setError('Failed to load rooms');
@@ -53,9 +58,18 @@ export const RoomDataProvider = ({ children }) => {
 
   const addRoom = async (room) => {
     try {
-      // In a real implementation, this would create a room via API
-      // For now, just add to local state
-      setRooms(prev => [...prev, { ...room, id: Date.now().toString() }]);
+      const linkedHostel = JSON.parse(localStorage.getItem('linkedHostel') || '{}');
+      const roomData = {
+        ...room,
+        hotel: linkedHostel.name || 'Lyn Modern Hostel',
+        hostelId: linkedHostel.id || 'lyn-modern-001'
+      };
+      
+      // Save to database
+      const response = await apiService.rooms.create(roomData);
+      
+      // Add to local state
+      setRooms(prev => [...prev, response.data]);
       return true;
     } catch (error) {
       console.error('Error adding room:', error);
@@ -65,7 +79,10 @@ export const RoomDataProvider = ({ children }) => {
 
   const updateRoom = async (roomId, updates) => {
     try {
-      // In a real implementation, this would update room via API
+      // Update in database
+      await apiService.rooms.update(roomId, updates);
+      
+      // Update local state
       setRooms(prev => prev.map(room => 
         room.id === roomId ? { ...room, ...updates } : room
       ));
@@ -77,21 +94,25 @@ export const RoomDataProvider = ({ children }) => {
   };
 
   const getRoomStats = () => {
-    const total = rooms.length;
-    const available = rooms.filter(r => r.status === 'Available').length;
-    const occupied = rooms.filter(r => r.status === 'Occupied').length;
-    const booked = rooms.filter(r => r.status === 'Booked').length;
-    const maintenance = rooms.filter(r => r.status === 'Maintenance').length;
-    const partiallyOccupied = rooms.filter(r => r.status === 'Partially Occupied').length;
+    // Filter rooms by linked hostel
+    const linkedHostel = JSON.parse(localStorage.getItem('linkedHostel') || '{}');
+    const hostelRooms = linkedHostel.name ? rooms.filter(r => r.hotel === linkedHostel.name) : rooms;
+    
+    const total = hostelRooms.length;
+    const available = hostelRooms.filter(r => r.status === 'Available').length;
+    const booked = hostelRooms.filter(r => r.status === 'Booked').length;
+    const maintenance = hostelRooms.filter(r => r.status === 'Maintenance').length;
+    const partiallyBooked = hostelRooms.filter(r => r.status === 'Partially Booked').length;
+    const partiallyAvailable = hostelRooms.filter(r => r.status === 'Partially Available').length;
 
     return {
       total,
       available,
-      occupied,
       booked,
       maintenance,
-      partiallyOccupied,
-      occupancyRate: total > 0 ? Math.round(((occupied + partiallyOccupied) / total) * 100) : 0
+      partiallyBooked,
+      partiallyAvailable,
+      occupancyRate: total > 0 ? Math.round(((booked + partiallyBooked + partiallyAvailable) / total) * 100) : 0
     };
   };
 
@@ -110,9 +131,15 @@ export const RoomDataProvider = ({ children }) => {
     return { pending, inProgress, resolved, total: maintenanceRooms.length };
   };
 
+  // Filter rooms by linked hostel
+  const getFilteredRooms = () => {
+    const linkedHostel = JSON.parse(localStorage.getItem('linkedHostel') || '{}');
+    return linkedHostel.name ? rooms.filter(r => r.hotel === linkedHostel.name) : rooms;
+  };
+
   return (
     <RoomDataContext.Provider value={{
-      rooms,
+      rooms: getFilteredRooms(),
       setRooms,
       addRoom,
       updateRoom,

@@ -1,55 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import communicationService from '../../service/communication.service';
+import React, { useState, useEffect, useContext } from 'react';
+import { useMessages } from '../../contexts/MessageContext';
+import { AuthContext } from '../../features/auth/AuthContext';
+// Fixed import path
 
 const StudentMessageCenter = ({ isOpen, onClose }) => {
-  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [conversationId, setConversationId] = useState(null);
+  const { conversations, sendMessage, createConversation } = useMessages();
+  const { userProfile } = useContext(AuthContext);
 
   useEffect(() => {
-    if (isOpen) {
-      loadMessages();
+    if (isOpen && userProfile) {
+      // Find or create conversation for this student
+      let conv = conversations.find(c => c.studentId === userProfile.studentId);
+      if (!conv) {
+        const newConvId = createConversation(
+          userProfile.name,
+          userProfile.studentId,
+          userProfile.room || 'Not assigned'
+        );
+        setConversationId(newConvId);
+      } else {
+        setConversationId(conv.id);
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, userProfile, conversations, createConversation]);
 
-  const loadMessages = async () => {
-    try {
-      setLoading(true);
-      const data = await communicationService.getMessages();
-      setMessages(data);
-    } catch (err) {
-      setError('Failed to load messages');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const sendMessage = async () => {
-    if (!newMessage.trim()) return;
+  const handleSendMessage = () => {
+    if (!newMessage.trim() || !conversationId) return;
     
     try {
-      setLoading(true);
-      const messageData = await communicationService.sendMessage({
-        message: newMessage.trim(),
-        recipientType: 'custodian'
-      });
-      
-      const formattedMessage = {
-        id: messageData._id,
-        from: 'student',
-        message: messageData.message,
-        time: new Date(messageData.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        read: true
-      };
-      
-      setMessages([...messages, formattedMessage]);
+      sendMessage(conversationId, newMessage.trim(), 'student');
       setNewMessage('');
       setError('');
     } catch (err) {
       setError('Failed to send message');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -64,14 +51,14 @@ const StudentMessageCenter = ({ isOpen, onClose }) => {
         </div>
         
         <div className="message-list">
-          {messages.map(msg => (
-            <div key={msg.id} className={`message-item ${msg.from}`}>
+          {conversationId && conversations.find(c => c.id === conversationId)?.messages?.map(msg => (
+            <div key={msg.id} className={`message-item ${msg.senderType}`}>
               <div className="message-content">
                 <p>{msg.message}</p>
-                <span className="message-time">{msg.time}</span>
+                <span className="message-time">{new Date(msg.timestamp).toLocaleTimeString()}</span>
               </div>
             </div>
-          ))}
+          )) || <p>No messages yet. Start a conversation!</p>}
         </div>
         
         <div className="message-input-area">
@@ -80,9 +67,9 @@ const StudentMessageCenter = ({ isOpen, onClose }) => {
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Type your message..."
-            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
           />
-          <button onClick={sendMessage} className="btn primary">
+          <button onClick={handleSendMessage} className="btn primary">
             <i className="fas fa-paper-plane"></i>
           </button>
         </div>

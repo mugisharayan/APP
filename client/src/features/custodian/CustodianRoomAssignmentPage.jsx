@@ -1,5 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../auth/AuthContext';
+import { useRoomData } from '../../contexts/RoomDataContext';
+import { useNotifications } from '../../contexts/NotificationContext';
+import RoomAssignmentNotification from '../../components/notifications/RoomAssignmentNotification';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
 import EmailService from '../../service/email.service';
@@ -32,6 +36,9 @@ const ROLES = {
 
 const CustodianRoomAssignmentPage = () => {
   const navigate = useNavigate();
+  const { userProfile } = useContext(AuthContext);
+  const { rooms, getRoomStats, setRooms } = useRoomData();
+  const { addNotification } = useNotifications();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isAssignRoomModalOpen, setIsAssignRoomModalOpen] = useState(false);
   const [isBulkAssignModalOpen, setIsBulkAssignModalOpen] = useState(false);
@@ -50,31 +57,33 @@ const CustodianRoomAssignmentPage = () => {
   const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [messageData, setMessageData] = useState({});
 
   const custodianProfile = {
-    fullName: 'John Kamau',
-    course: 'Lead Custodian',
+    fullName: userProfile?.name || 'Custodian',
+    course: userProfile?.role || 'Custodian',
     role: 'senior_custodian',
-    profilePicture: 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+    profilePicture: userProfile?.profilePicture || 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
   };
 
-  // Enhanced data for pending assignments with real-time updates
-  const initialPendingAssignments = [
-    { id: 1, name: 'John Doe', studentId: '22/U/12345', email: 'john.doe@university.edu', paidOn: '28 Jul 2024', avatar: 'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', preferences: 'Single room, Ground floor', priority: 'high', paymentAmount: '850,000' },
-    { id: 2, name: 'Aisha Bello', studentId: '22/U/98765', email: 'aisha.bello@university.edu', paidOn: '27 Jul 2024', avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', preferences: 'Double room, Any floor', priority: 'medium', paymentAmount: '650,000' },
-    { id: 3, name: 'David Wilson', studentId: '22/U/54321', email: 'david.wilson@university.edu', paidOn: '26 Jul 2024', avatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', preferences: 'Single room, Upper floor', priority: 'low', paymentAmount: '850,000' },
-    { id: 4, name: 'Maria Garcia', studentId: '22/U/67890', email: 'maria.garcia@university.edu', paidOn: '25 Jul 2024', avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', preferences: 'Double room, Ground floor', priority: 'medium', paymentAmount: '650,000' },
-    { id: 5, name: 'James Smith', studentId: '22/U/11111', email: 'james.smith@university.edu', paidOn: '24 Jul 2024', avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', preferences: 'Single room, Any floor', priority: 'high', paymentAmount: '850,000' },
-    { id: 6, name: 'Lisa Johnson', studentId: '22/U/22222', email: 'lisa.johnson@university.edu', paidOn: '23 Jul 2024', avatar: 'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', preferences: 'Double room, Upper floor', priority: 'low', paymentAmount: '650,000' },
-  ];
-  const { data: pendingAssignments, setData: setPendingAssignments, lastUpdated } = useRealTimeUpdates(initialPendingAssignments);
+  // Load pending assignments from localStorage and merge with initial data
+  const getInitialPendingAssignments = () => {
+    const storedPending = JSON.parse(localStorage.getItem('pendingAssignments') || '[]');
+    const initialPendingAssignments = [
+      { id: 1, name: 'John Doe', studentId: '22/U/12345', email: 'john.doe@university.edu', paidOn: '28 Jul 2024', avatar: 'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', preferences: 'Single room, Ground floor', priority: 'high', paymentAmount: '850,000' },
+      { id: 2, name: 'Aisha Bello', studentId: '22/U/98765', email: 'aisha.bello@university.edu', paidOn: '27 Jul 2024', avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', preferences: 'Double room, Any floor', priority: 'medium', paymentAmount: '650,000' },
+      { id: 3, name: 'David Wilson', studentId: '22/U/54321', email: 'david.wilson@university.edu', paidOn: '26 Jul 2024', avatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', preferences: 'Single room, Upper floor', priority: 'low', paymentAmount: '850,000' },
+      { id: 4, name: 'Maria Garcia', studentId: '22/U/67890', email: 'maria.garcia@university.edu', paidOn: '25 Jul 2024', avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', preferences: 'Double room, Ground floor', priority: 'medium', paymentAmount: '650,000' },
+      { id: 5, name: 'James Smith', studentId: '22/U/11111', email: 'james.smith@university.edu', paidOn: '24 Jul 2024', avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', preferences: 'Single room, Any floor', priority: 'high', paymentAmount: '850,000' },
+      { id: 6, name: 'Lisa Johnson', studentId: '22/U/22222', email: 'lisa.johnson@university.edu', paidOn: '23 Jul 2024', avatar: 'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', preferences: 'Double room, Upper floor', priority: 'low', paymentAmount: '650,000' },
+    ];
+    return [...storedPending, ...initialPendingAssignments];
+  };
+  const { data: pendingAssignments, setData: setPendingAssignments, lastUpdated } = useRealTimeUpdates(getInitialPendingAssignments());
 
-  // Enhanced assignment history and room data
-  const [assignmentHistory, setAssignmentHistory] = useState([
-    { id: 3, studentName: 'Michael Chen', room: 'A-207', time: '2 hours ago', type: 'Single', assignedBy: 'John K.' },
-    { id: 4, studentName: 'Sarah K.', room: 'A-108', time: '5 hours ago', type: 'Double', assignedBy: 'John K.' },
-    { id: 5, studentName: 'Emma Johnson', room: 'B-301', time: '1 day ago', type: 'Single', assignedBy: 'John K.' },
-  ]);
+  // Real assignment history from actual assignments
+  const [assignmentHistory, setAssignmentHistory] = useState([]);
 
   // Enhanced room and hotel data with detailed occupant information
   const [hotelData, setHotelData] = useState({
@@ -240,29 +249,20 @@ const CustodianRoomAssignmentPage = () => {
   };
 
   const getAllRooms = () => {
-    const allRooms = [];
-    Object.entries(hotelData).forEach(([hotelName, hotel]) => {
-      Object.entries(hotel.floors).forEach(([floorNumber, rooms]) => {
-        rooms.forEach(room => {
-          allRooms.push({
-            ...room,
-            hotel: room.hotel || hotelName,
-            floor: room.floor || parseInt(floorNumber),
-            isAvailable: room.occupied < room.capacity,
-            isPartiallyBooked: room.occupied > 0 && room.occupied < room.capacity
-          });
-        });
-      });
-    });
-    return allRooms;
+    return rooms.map(room => ({
+      ...room,
+      isAvailable: room.status === 'Available' || room.status === 'Partially Available',
+      isPartiallyBooked: room.status === 'Partially Booked' || room.status === 'Partially Available'
+    }));
   };
 
   const getAvailableRooms = () => {
     return getAllRooms().filter(room => {
-      if (filterBy === 'single') return room.type === 'Single' && room.isAvailable;
-      if (filterBy === 'double') return room.type === 'Double' && room.isAvailable;
-      if (filterBy === 'available') return room.isAvailable;
-      return room.isAvailable;
+      const isAvailable = room.status === 'Available' || room.status === 'Partially Available';
+      if (filterBy === 'single') return room.roomType === 'Single' && isAvailable;
+      if (filterBy === 'double') return room.roomType === 'Double' && isAvailable;
+      if (filterBy === 'available') return isAvailable;
+      return isAvailable;
     });
   };
 
@@ -305,42 +305,60 @@ const CustodianRoomAssignmentPage = () => {
       // Send email notification
       const emailResult = await EmailService.sendRoomAssignmentNotification(assignmentData);
       
-      // Update room occupancy in hotel data
-      setHotelData(prev => {
-        const newData = { ...prev };
-        Object.keys(newData).forEach(hotelName => {
-          Object.keys(newData[hotelName].floors).forEach(floorNum => {
-            newData[hotelName].floors[floorNum] = newData[hotelName].floors[floorNum].map(room => 
-              room.id === roomId ? { 
-                ...room, 
-                occupied: room.occupied + 1,
-                occupants: [...room.occupants, {
-                  name: selectedStudent.name,
-                  sex: 'Unknown',
-                  course: 'Unknown',
-                  year: 'Unknown',
-                  studentId: selectedStudent.studentId,
-                  checkInDate: new Date().toLocaleDateString(),
-                  email: selectedStudent.email || `${selectedStudent.studentId}@university.edu`,
-                  accessToken: accessToken
-                }]
-              } : room
-            );
-          });
-        });
-        return newData;
-      });
+      // Update room status in RoomDataContext
+      const assignedRoom = rooms.find(r => r.id === roomId);
+      if (assignedRoom) {
+        const updatedRoom = {
+          ...assignedRoom,
+          status: assignedRoom.roomType === 'Double' && assignedRoom.status === 'Available' ? 'Partially Booked' : 'Booked',
+          occupant: selectedStudent.name,
+          occupantGender: 'Unknown',
+          occupancy: assignedRoom.roomType === 'Single' ? '1/1' : '1/2'
+        };
+        
+        // Update room in context
+        setRooms(prev => prev.map(room => 
+          room.id === roomId ? updatedRoom : room
+        ));
+      }
       
-      setPendingAssignments(prev => prev.filter(s => s.id !== selectedStudent.id));
+      setPendingAssignments(prev => {
+        const updated = prev.filter(s => s.id !== selectedStudent.id);
+        // Update localStorage
+        const storedPending = JSON.parse(localStorage.getItem('pendingAssignments') || '[]');
+        const updatedStored = storedPending.filter(s => s.id !== selectedStudent.id);
+        localStorage.setItem('pendingAssignments', JSON.stringify(updatedStored));
+        return updated;
+      });
+      // Send notification to custodian with share callback
+      addNotification({
+        type: 'room_assignment',
+        data: {
+          studentName: selectedStudent.name,
+          roomNumber: roomId,
+          hostelName: assignedRoom?.hotel || 'University Hotel',
+          accessCode: accessToken
+        },
+        onShare: (data) => {
+          setMessageData({
+            recipient: data.studentName,
+            subject: `Room Assignment - ${data.roomNumber}`,
+            message: `Hi ${data.studentName},\n\nYour room has been assigned successfully!\n\nRoom: ${data.roomNumber}\nHostel: ${data.hostelName}\nAccess Code: ${data.accessCode}\n\nPlease use this code for room access.\n\nBest regards,\nHostel Management`
+          });
+          setShowMessageModal(true);
+        }
+      });
+
       setAssignmentHistory(prev => [{ 
         id: Date.now(), 
         studentName: selectedStudent.name, 
         room: roomId, 
         time: 'Just now',
-        type: roomDetails?.type || 'Unknown',
+        type: assignedRoom?.roomType || 'Unknown',
         assignedBy: custodianProfile.fullName,
         accessCode: accessToken,
-        emailSent: emailResult.success
+        emailSent: emailResult.success,
+        assignmentDate: new Date().toISOString()
       }, ...prev]);
       
       // Show secure token modal
@@ -394,16 +412,6 @@ const CustodianRoomAssignmentPage = () => {
     setIsDragging(false);
   };
 
-  const getRoomStats = () => {
-    const allRooms = getAllRooms();
-    const totalRooms = allRooms.length;
-    const occupiedRooms = allRooms.filter(r => r.occupied > 0).length;
-    const availableRooms = allRooms.filter(r => r.isAvailable).length;
-    const occupancyRate = totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0;
-    
-    return { totalRooms, occupiedRooms, availableRooms, occupancyRate };
-  };
-
   const filteredRooms = getAvailableRooms();
   const roomStats = getRoomStats();
 
@@ -442,15 +450,15 @@ const CustodianRoomAssignmentPage = () => {
                       <span className="card-title">Total Rooms</span>
                     </div>
                     <div className="card-content">
-                      <h3 className="counter-animation" data-target="{roomStats.totalRooms}">{roomStats.totalRooms}</h3>
+                      <h3 className="counter-animation" data-target="{roomStats.total}">{roomStats.total}</h3>
                       <p>Accommodation Units</p>
                       <div className="room-breakdown">
                         <div className="breakdown-item">
-                          <span className="count">{getAllRooms().filter(r => r.type === 'Single').length}</span>
+                          <span className="count">{rooms.filter(r => r.roomType === 'Single').length}</span>
                           <span className="label">Single</span>
                         </div>
                         <div className="breakdown-item">
-                          <span className="count">{getAllRooms().filter(r => r.type === 'Double').length}</span>
+                          <span className="count">{rooms.filter(r => r.roomType === 'Double').length}</span>
                           <span className="label">Double</span>
                         </div>
                       </div>
@@ -463,13 +471,13 @@ const CustodianRoomAssignmentPage = () => {
                       <span className="card-title">Available Rooms</span>
                     </div>
                     <div className="card-content">
-                      <h3 className="counter-animation" data-target="{roomStats.availableRooms}">{roomStats.availableRooms}</h3>
+                      <h3 className="counter-animation" data-target="{roomStats.available}">{roomStats.available}</h3>
                       <p>Ready for Assignment</p>
                       <div className="availability-indicator">
                         <div className="progress-bar">
-                          <div className="progress" style={{width: `${(roomStats.availableRooms / roomStats.totalRooms) * 100}%`}}></div>
+                          <div className="progress" style={{width: `${(roomStats.available / roomStats.total) * 100}%`}}></div>
                         </div>
-                        <span className="percentage">{Math.round((roomStats.availableRooms / roomStats.totalRooms) * 100)}% Available</span>
+                        <span className="percentage">{Math.round((roomStats.available / roomStats.total) * 100)}% Available</span>
                       </div>
                     </div>
                   </div>
@@ -662,6 +670,11 @@ const CustodianRoomAssignmentPage = () => {
                   </div>
                 </div>
               </div>
+              
+              {/* Notifications Display */}
+              <div className="notifications-container">
+                {/* Notifications will be displayed here */}
+              </div>
             </div>
           </div>
         </div>
@@ -706,40 +719,50 @@ const CustodianRoomAssignmentPage = () => {
 
             <form className="modal-form-enhanced" onSubmit={handleConfirmAssignment}>
               <div className="hotels-overview">
-                {Object.entries(hotelData).map(([hotelName, hotel]) => (
+                {Object.entries(
+                  rooms.reduce((acc, room) => {
+                    const hotelName = room.hotel || 'University Hotel A';
+                    const floorNumber = room.floor || '1';
+                    
+                    if (!acc[hotelName]) acc[hotelName] = {};
+                    if (!acc[hotelName][floorNumber]) acc[hotelName][floorNumber] = [];
+                    
+                    acc[hotelName][floorNumber].push(room);
+                    return acc;
+                  }, {})
+                ).map(([hotelName, floors]) => (
                   <div className="hotel-section" key={hotelName}>
                     <div className="hotel-header">
                       <h4><i className="fas fa-building"></i> {hotelName}</h4>
                       <div className="hotel-stats">
                         <span className="stat">
                           <i className="fas fa-door-open"></i>
-                          {Object.values(hotel.floors).flat().filter(r => r.isAvailable || r.occupied < r.capacity).length} Available
+                          {Object.values(floors).flat().filter(r => r.status === 'Available').length} Available
                         </span>
                         <span className="stat">
                           <i className="fas fa-users"></i>
-                          {Object.values(hotel.floors).flat().filter(r => r.occupied > 0).length} Occupied
+                          {Object.values(floors).flat().filter(r => r.status === 'Occupied').length} Occupied
                         </span>
                       </div>
                     </div>
                     
                     <div className="floors-container">
-                      {Object.entries(hotel.floors).map(([floorNumber, rooms]) => (
+                      {Object.entries(floors).map(([floorNumber, floorRooms]) => (
                         <div className="floor-section" key={floorNumber}>
                           <div className="floor-header">
                             <h5><i className="fas fa-layer-group"></i> Floor {floorNumber}</h5>
                             <span className="floor-occupancy">
-                              {rooms.filter(r => r.occupied > 0).length}/{rooms.length} occupied
+                              {floorRooms.filter(r => r.status === 'Occupied').length}/{floorRooms.length} occupied
                             </span>
                           </div>
                           
                           <div className="rooms-grid-enhanced">
-                            {rooms.map(room => {
-                              const isAvailable = room.occupied < room.capacity;
-                              const isPartiallyBooked = room.occupied > 0 && room.occupied < room.capacity;
-                              const statusClass = !isAvailable ? 'occupied' : (isPartiallyBooked ? 'partially-occupied' : 'available');
+                            {floorRooms.map(room => {
+                              const isAvailable = room.status === 'Available' || room.status === 'Partially Occupied';
+                              const statusClass = room.status.toLowerCase().replace(' ', '-');
                               
                               return (
-                                <div className={`room-card-enhanced status-${statusClass}`} key={room.id} onClick={() => handleRoomClick(room)}>
+                                <div className={`room-card-enhanced status-${statusClass}`} key={room.id}>
                                   {isAvailable && (
                                     <label className="room-selection-enhanced" onClick={(e) => e.stopPropagation()}>
                                       <input type="radio" name="availableRooms" value={room.id} required />
@@ -749,25 +772,25 @@ const CustodianRoomAssignmentPage = () => {
                                   
                                   <div className="room-header-enhanced">
                                     <div className="room-number-enhanced">{room.id}</div>
-                                    <i className={`fas ${room.type === 'Single' ? 'fa-bed' : 'fa-users'} room-type-icon-enhanced`}></i>
+                                    <i className={`fas ${room.roomType === 'Single' ? 'fa-bed' : 'fa-users'} room-type-icon-enhanced`}></i>
                                   </div>
                                   
                                   <div className="room-body-enhanced">
                                     <div className={`room-status-enhanced status-${statusClass}`}>
-                                      {isAvailable ? (isPartiallyBooked ? 'Partially Occupied' : 'Available') : 'Occupied'}
+                                      {room.status}
                                     </div>
                                     <div className="room-occupancy-enhanced">
                                       <i className="fas fa-users"></i>
-                                      <span>{room.occupied}/{room.capacity}</span>
+                                      <span>{room.occupancy}</span>
                                     </div>
                                   </div>
                                   
                                   <div className="room-footer-enhanced">
-                                    <span className="room-type-enhanced">{room.type}</span>
-                                    {room.occupants.length > 0 && (
+                                    <span className="room-type-enhanced">{room.roomType}</span>
+                                    {room.occupant !== 'None' && (
                                       <div className="occupants-indicator">
                                         <i className="fas fa-info-circle"></i>
-                                        <span>{room.occupants.length} occupant{room.occupants.length > 1 ? 's' : ''}</span>
+                                        <span>{room.occupant}</span>
                                       </div>
                                     )}
                                   </div>
@@ -1029,110 +1052,67 @@ const CustodianRoomAssignmentPage = () => {
         </div>
       )}
 
-      {/* Secure Token Display Modal */}
+      {/* Success Notification */}
       {isTokenModalOpen && currentToken && assignedStudent && (
-        <div 
-          className="modal-overlay is-visible draggable-overlay"
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-        >
-          <div 
-            className="modal-content secure-token-modal animate-on-scroll draggable-modal"
-            style={{
-              transform: `translate(${modalPosition.x}px, ${modalPosition.y}px)`,
-              cursor: isDragging ? 'grabbing' : 'grab'
+        <div className="modal-overlay is-visible">
+          <RoomAssignmentNotification
+            notification={{
+              data: {
+                studentName: assignedStudent.name,
+                roomNumber: assignedStudent.roomId,
+                hostelName: assignedStudent.hostelName,
+                accessCode: currentToken
+              }
             }}
-            onMouseDown={handleMouseDown}
-          >
-            <div className="modal-header-secure">
-              <div className="security-badge">
-                <i className="fas fa-shield-alt"></i>
-                <span>CONFIDENTIAL</span>
-              </div>
-              <h3><i className="fas fa-key"></i> Secure Access Token</h3>
-              <p>This token is confidential and should only be shared with the assigned student</p>
+            onClose={() => {
+              setIsTokenModalOpen(false);
+              setCurrentToken(null);
+              setAssignedStudent(null);
+            }}
+            onShare={(data) => {
+              setMessageData({
+                recipient: data.studentName,
+                subject: `Room Assignment - ${data.roomNumber}`,
+                message: `Hi ${data.studentName},\n\nYour room has been assigned successfully!\n\nRoom: ${data.roomNumber}\nHostel: ${data.hostelName}\nAccess Code: ${data.accessCode}\n\nPlease use this code for room access.\n\nBest regards,\nHostel Management`
+              });
+              setShowMessageModal(true);
+            }}
+          />
+        </div>
+      )}
+
+      {/* Message Modal */}
+      {showMessageModal && (
+        <div className="modal-overlay">
+          <div className="modal-content message-modal">
+            <div className="modal-header">
+              <h3>📤 Send Message to Student</h3>
+              <button className="close-btn" onClick={() => setShowMessageModal(false)}>×</button>
             </div>
-            
-            <div className="assignment-success-info">
-              <div className="success-icon">
-                <i className="fas fa-check-circle"></i>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>To:</label>
+                <input type="text" value={messageData.recipient} readOnly />
               </div>
-              <h4>Room Assignment Successful!</h4>
-              <div className="assignment-details">
-                <div className="detail-row">
-                  <span className="label">Student:</span>
-                  <span className="value">{assignedStudent.name}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="label">Student ID:</span>
-                  <span className="value">{assignedStudent.studentId}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="label">Room:</span>
-                  <span className="value">{assignedStudent.roomId}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="label">Email Status:</span>
-                  <span className={`value ${assignedStudent.emailSent ? 'success' : 'warning'}`}>
-                    {assignedStudent.emailSent ? '✅ Sent successfully' : '⚠️ Failed to send'}
-                  </span>
-                </div>
+              <div className="form-group">
+                <label>Subject:</label>
+                <input type="text" value={messageData.subject} readOnly />
               </div>
-            </div>
-            
-            <div className="token-display-section">
-              <div className="token-label">
-                <i className="fas fa-key"></i>
-                <span>Access Token (Keep Confidential)</span>
-              </div>
-              <div className="token-container">
-                <div className="token-value" id="tokenValue">{currentToken}</div>
-                <button className="copy-token-btn" onClick={() => {
-                  navigator.clipboard.writeText(currentToken);
-                  alert('Token copied to clipboard!');
-                }}>
-                  <i className="fas fa-copy"></i>
-                  Copy
-                </button>
+              <div className="form-group">
+                <label>Message:</label>
+                <textarea 
+                  value={messageData.message} 
+                  onChange={(e) => setMessageData({...messageData, message: e.target.value})}
+                  rows="8"
+                />
               </div>
             </div>
-            
-            <div className="security-instructions">
-              <h5><i className="fas fa-exclamation-triangle"></i> Security Instructions</h5>
-              <ul>
-                <li>This token is for <strong>{assignedStudent.name}</strong> only</li>
-                <li>Do not share via email, SMS, or unsecured channels</li>
-                <li>Provide token directly to student in person or via secure method</li>
-                <li>Token expires after successful check-in</li>
-              </ul>
-            </div>
-            
-            <div className="modal-actions-secure">
-              <button className="btn secondary" onClick={() => {
-                setIsTokenModalOpen(false);
-                setCurrentToken(null);
-                setAssignedStudent(null);
-                setIsAssignRoomModalOpen(false);
-                setSelectedStudent(null);
-                setModalPosition({ x: 0, y: 0 });
-                setIsDragging(false);
-              }}>
-                <i className="fas fa-times"></i>
-                Close & Clear
-              </button>
+            <div className="modal-footer">
+              <button className="btn secondary" onClick={() => setShowMessageModal(false)}>Cancel</button>
               <button className="btn primary" onClick={() => {
-                const message = `Room Assignment - ${assignedStudent.name}\n\nRoom: ${assignedStudent.roomId}\nAccess Token: ${currentToken}\n\nPlease keep this token secure and present it during check-in.`;
-                if (navigator.share) {
-                  navigator.share({ title: 'Room Assignment Token', text: message });
-                } else {
-                  navigator.clipboard.writeText(message);
-                  alert('Assignment details copied to clipboard!');
-                }
-              }}>
-                <i className="fas fa-share"></i>
-                Share Securely
-              </button>
+                alert('Message sent successfully!');
+                setShowMessageModal(false);
+              }}>Send Message</button>
             </div>
           </div>
         </div>

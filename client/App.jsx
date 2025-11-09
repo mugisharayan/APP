@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { RoomDataProvider } from './src/contexts/RoomDataContext';
 import { CustodianProvider } from './src/contexts/CustodianContext';
+import { NotificationProvider } from './src/contexts/NotificationContext';
+import { MessageProvider } from './src/contexts/MessageContext';
 
 // Import layout components
 import Header from './src/components/layout/Header';
@@ -55,8 +57,10 @@ function App() {
   const shouldHideHeaderFooter = studentDashboardRoutes.includes(location.pathname);
 
   return (
-    <RoomDataProvider>
-      <CustodianProvider>
+    <NotificationProvider>
+      <MessageProvider>
+        <RoomDataProvider>
+          <CustodianProvider>
       {!shouldHideHeaderFooter && (
         <Header
           onOpenAuthModal={(redirectTo = null) => {
@@ -95,7 +99,6 @@ function App() {
             <Route path="/custodian-room-assignment" element={<CustodianRoomAssignmentPage />} />
             <Route path="/custodian-room-management" element={<CustodianRoomManagementPage />} />
             <Route path="/custodian-students" element={<CustodianStudentsPage />} />
-            <Route path="/custodian-hostel-registration" element={<HostelRegistrationPage />} />
             <Route path="/custodian-analytics" element={<CustodianAnalyticsPage />} />
             <Route path="/custodian-maintenance" element={<CustodianMaintenancePage />} />
             <Route path="/custodian-audit-log" element={<CustodianAuditLogPage />} />
@@ -123,8 +126,10 @@ function App() {
 
       <ToastContainer />
       <BackToTop />
-      </CustodianProvider>
-    </RoomDataProvider>
+          </CustodianProvider>
+        </RoomDataProvider>
+      </MessageProvider>
+    </NotificationProvider>
   );
 }
 

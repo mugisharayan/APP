@@ -39,6 +39,20 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'API connection successful', timestamp: new Date().toISOString() });
 });
 
+// Debug endpoint to check bookings
+app.get('/api/debug/bookings', async (req, res) => {
+  try {
+    const Booking = (await import('./models/booking.model.js')).default;
+    const allBookings = await Booking.find({}).populate('student', 'name email');
+    res.json({
+      total: allBookings.length,
+      bookings: allBookings
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // API Routes
 app.use('/api/users', userRoutes);
 app.use('/api/hostels', hostelRoutes);

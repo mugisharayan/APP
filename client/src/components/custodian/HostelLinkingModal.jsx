@@ -8,6 +8,7 @@ const HostelLinkingModal = ({ isOpen, onClose, onSuccess }) => {
 
   // Common hostel names for suggestions
   const commonHostels = [
+    'Lyn Modern Hostel',
     'Muhika Hostel',
     'Olympia Hostel', 
     'Akamwesi Hostel',
@@ -33,11 +34,18 @@ const HostelLinkingModal = ({ isOpen, onClose, onSuccess }) => {
     if (!hostelName.trim()) return;
 
     try {
-      await linkToHostel(hostelName.trim());
-      onSuccess();
+      // Store hostel link data
+      const hostelData = {
+        name: hostelName.trim(),
+        id: hostelName.toLowerCase().replace(/\s+/g, '-'),
+        linkedAt: new Date().toISOString()
+      };
+      
+      localStorage.setItem('linkedHostel', JSON.stringify(hostelData));
+      onSuccess(hostelData);
       onClose();
     } catch (err) {
-      // Error is handled by context
+      console.error('Failed to link hostel:', err);
     }
   };
 
@@ -58,7 +66,7 @@ const HostelLinkingModal = ({ isOpen, onClose, onSuccess }) => {
               type="text"
               value={hostelName}
               onChange={(e) => handleInputChange(e.target.value)}
-              placeholder="Enter hostel name (e.g., Muhika Hostel)"
+              placeholder="Enter hostel name (e.g., Lyn Modern Hostel)"
               required
               autoFocus
             />

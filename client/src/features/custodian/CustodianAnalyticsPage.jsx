@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../auth/AuthContext';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
 import { useRoomData } from '../../contexts/RoomDataContext';
@@ -26,6 +27,7 @@ try {
 
 const CustodianAnalyticsPage = () => {
   const navigate = useNavigate();
+  const { userProfile } = useContext(AuthContext);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [dateRange, setDateRange] = useState('All Time');
   const { rooms, getRoomStats, getRoomTypeStats, getMaintenanceStats } = useRoomData();
@@ -59,9 +61,9 @@ const CustodianAnalyticsPage = () => {
   }, [rooms, hostelData, analytics, getRoomStats, getRoomTypeStats, getMaintenanceStats, loadDashboardData]);
 
   const custodianProfile = {
-    fullName: 'John Kamau',
-    course: 'Lead Custodian',
-    profilePicture: 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+    fullName: userProfile?.name || 'Custodian',
+    course: userProfile?.role || 'Custodian',
+    profilePicture: userProfile?.profilePicture || 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
   };
 
 

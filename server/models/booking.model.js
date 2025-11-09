@@ -30,8 +30,21 @@ const bookingSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['active', 'cancelled', 'completed'],
+      enum: ['active', 'cancelled', 'completed', 'pending'],
       default: 'active',
+    },
+    // Additional fields for custodian dashboard
+    roomName: {
+      type: String,
+    },
+    hostelName: {
+      type: String,
+    },
+    totalAmount: {
+      type: Number,
+    },
+    paymentMethod: {
+      type: String,
     },
     cancellationReason: {
       type: String,

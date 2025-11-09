@@ -9,7 +9,7 @@ import SupportTicketSystem from '../../components/support/SupportTicketSystem';
 import StudentDirectory from '../../components/communication/StudentDirectory';
 import PaymentReminder from '../../components/communication/PaymentReminder';
 import BookingManagement from '../../components/booking/BookingManagement';
-import HostelRegistration from '../../components/hostel/HostelRegistration';
+
 import RoomLevelManager from '../../components/hostel/RoomLevelManager';
 import IntegrationPanel from '../../components/integrations/IntegrationPanel';
 import Breadcrumb from '../../components/navigation/Breadcrumb';
@@ -18,7 +18,9 @@ import HeatMap from '../../components/charts/HeatMap';
 import Timeline from '../../components/charts/Timeline';
 import { AuthContext } from '../auth/AuthContext';
 import { useCustodian } from '../../contexts/CustodianContext';
+import { useRoomData } from '../../contexts/RoomDataContext';
 import HostelLinkingModal from '../../components/custodian/HostelLinkingModal';
+import apiService from '../../service/api.service';
 import '../../styles/modern-dashboard.css';
 import '../../styles/mobile-responsive.css';
 import '../../styles/minimalist-dashboard.css';
@@ -29,6 +31,8 @@ const CustodianDashboardPage = () => {
   const navigate = useNavigate();
   const { userProfile, logout, loading } = useContext(AuthContext);
   const { hostelData, analytics, loadDashboardData } = useCustodian();
+  const { rooms, getRoomStats } = useRoomData();
+  const roomStats = getRoomStats();
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [isLinked, setIsLinked] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -38,15 +42,71 @@ const CustodianDashboardPage = () => {
   const [isStudentDirectoryOpen, setIsStudentDirectoryOpen] = useState(false);
   const [isPaymentReminderOpen, setIsPaymentReminderOpen] = useState(false);
   const [isBookingManagementOpen, setIsBookingManagementOpen] = useState(false);
-  const [isHostelRegistrationOpen, setIsHostelRegistrationOpen] = useState(false);
+
   const [isRoomManagerOpen, setIsRoomManagerOpen] = useState(false);
   const [isIntegrationPanelOpen, setIsIntegrationPanelOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
-  const [notifications, setNotifications] = useState([
-    { id: 1, type: 'payment', message: 'New payment received from Jane Doe', time: '2m ago', unread: true },
-    { id: 2, type: 'maintenance', message: 'Maintenance request for Room A-105', time: '5m ago', unread: true },
-    { id: 3, type: 'booking', message: 'New booking confirmation needed', time: '10m ago', unread: false }
-  ]);
+  const [notifications, setNotifications] = useState([]);
+
+
+
+
+  // Generate real notifications based on system state
+  useEffect(() => {
+    const generateNotifications = () => {
+      const realNotifications = [];
+      
+
+      // Check for pending payments
+      const pendingPayments = JSON.parse(localStorage.getItem('pendingPayments') || '[]');
+      if (pendingPayments.length > 0) {
+        realNotifications.push({
+          id: 'payments',
+          type: 'payment',
+          message: `${pendingPayments.length} payment${pendingPayments.length > 1 ? 's' : ''} awaiting approval`,
+          time: 'Now',
+          unread: true,
+          priority: 'high',
+          action: () => navigate('/custodian-payment-management')
+        });
+      }
+      
+      // Check for maintenance rooms
+      const maintenanceRooms = rooms.filter(r => r.status === 'Maintenance');
+      if (maintenanceRooms.length > 0) {
+        realNotifications.push({
+          id: 'maintenance',
+          type: 'maintenance',
+          message: `${maintenanceRooms.length} room${maintenanceRooms.length > 1 ? 's' : ''} need maintenance attention`,
+          time: 'Now',
+          unread: true,
+          priority: 'high',
+          action: () => navigate('/custodian-room-management')
+        });
+      }
+      
+      // Check for pending room assignments
+      const pendingAssignments = JSON.parse(localStorage.getItem('pendingAssignments') || '[]');
+      if (pendingAssignments.length > 0) {
+        realNotifications.push({
+          id: 'assignments',
+          type: 'booking',
+          message: `${pendingAssignments.length} student${pendingAssignments.length > 1 ? 's' : ''} waiting for room assignment`,
+          time: 'Now',
+          unread: true,
+          priority: 'medium',
+          action: () => navigate('/custodian-room-assignment')
+        });
+      }
+      
+      setNotifications(realNotifications);
+    };
+    
+    generateNotifications();
+    // Refresh notifications every 30 seconds
+    const interval = setInterval(generateNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [rooms, navigate]);
   const [weather, setWeather] = useState({ temp: 24, condition: 'Sunny', humidity: 65 });
   const [widgets, setWidgets] = useState({
     occupancy: true,
@@ -61,14 +121,26 @@ const CustodianDashboardPage = () => {
   }, []);
 
   const checkHostelLink = async () => {
-    const data = await loadDashboardData();
-    if (data && data.hostel) {
+    const linkedHostel = localStorage.getItem('linkedHostel');
+    if (linkedHostel) {
       setIsLinked(true);
+    } else {
+      const data = await loadDashboardData();
+      if (data && data.hostel) {
+        setIsLinked(true);
+      }
     }
   };
 
-  const handleLinkSuccess = () => {
+  const handleLinkSuccess = (hostelData) => {
     setIsLinked(true);
+    // Store linked hostel data
+    localStorage.setItem('linkedHostel', JSON.stringify({
+      name: 'Lyn Modern Hostel',
+      id: 'lyn-modern-001',
+      custodianId: userProfile?.id || 'custodian-001',
+      linkedAt: new Date().toISOString()
+    }));
   };
 
   // Counter animation effect
@@ -108,9 +180,9 @@ const CustodianDashboardPage = () => {
   }
 
   const custodianProfile = {
-    fullName: 'John Kamau',
+    fullName: userProfile?.name || 'Custodian',
     course: userProfile?.role || 'Custodian',
-    profilePicture: 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+    profilePicture: userProfile?.profilePicture || 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
   };
 
   const handleLogout = () => {
@@ -142,7 +214,7 @@ const CustodianDashboardPage = () => {
     <>
       <section className="custodian-hero">
         <div className="hero-content">
-          <h1>Welcome back, <span className="dashboard-animated">John Kamau</span></h1>
+          <h1>Welcome back, <span className="dashboard-animated">{userProfile?.name || 'Custodian'}</span></h1>
           <p>Manage hostel operations and oversee daily activities</p>
         </div>
         <div className="header-actions">
@@ -161,15 +233,33 @@ const CustodianDashboardPage = () => {
                 <h4>Notifications</h4>
                 <button className="mark-all-read">Mark all read</button>
               </div>
-              {notifications.map(notification => (
-                <div key={notification.id} className={`notification-item ${notification.unread ? 'unread' : ''}`} onClick={() => markNotificationRead(notification.id)}>
-                  <i className={`fa-solid ${notification.type === 'payment' ? 'fa-dollar-sign' : notification.type === 'maintenance' ? 'fa-wrench' : 'fa-bed'}`}></i>
+              {notifications.length === 0 ? (
+                <div className="notification-item">
+                  <i className="fa-solid fa-check-circle" style={{color: '#10b981'}}></i>
                   <div className="notification-content">
-                    <p>{notification.message}</p>
-                    <span className="notification-time">{notification.time}</span>
+                    <p>All caught up! No urgent items.</p>
                   </div>
                 </div>
-              ))}
+              ) : (
+                notifications.map(notification => (
+                  <div 
+                    key={notification.id} 
+                    className={`notification-item ${notification.unread ? 'unread' : ''} ${notification.priority === 'high' ? 'high-priority' : ''}`} 
+                    onClick={() => {
+                      markNotificationRead(notification.id);
+                      if (notification.action) notification.action();
+                    }}
+                    style={{cursor: 'pointer'}}
+                  >
+                    <i className={`fa-solid ${notification.type === 'payment' ? 'fa-dollar-sign' : notification.type === 'maintenance' ? 'fa-wrench' : 'fa-bed'}`}></i>
+                    <div className="notification-content">
+                      <p>{notification.message}</p>
+                      <span className="notification-time">{notification.time}</span>
+                      {notification.priority === 'high' && <span className="priority-badge">URGENT</span>}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
           <button className="icon-btn" onClick={() => setIsMessageCenterOpen(true)} title="Messages">
@@ -212,10 +302,10 @@ const CustodianDashboardPage = () => {
                     <div className="stat-card-compact blue">
                       <div className="stat-icon"><i className="fa-solid fa-users"></i></div>
                       <div className="stat-info">
-                        <h3 className="counter-animation" data-target={analytics?.occupancyRate || 0}>{analytics?.occupancyRate || 0}</h3>
+                        <h3 className="counter-animation" data-target={roomStats.occupancyRate}>{roomStats.occupancyRate}</h3>
                         <p>Occupancy %</p>
                         <div className="stat-progress">
-                          <div className="progress-bar-mini" style={{width: `${analytics?.occupancyRate || 0}%`}}></div>
+                          <div className="progress-bar-mini" style={{width: `${roomStats.occupancyRate}%`}}></div>
                         </div>
                       </div>
                     </div>
@@ -232,9 +322,9 @@ const CustodianDashboardPage = () => {
                     <div className="stat-card-compact orange">
                       <div className="stat-icon"><i className="fa-solid fa-bed"></i></div>
                       <div className="stat-info">
-                        <h3 className="counter-animation" data-target={analytics?.activeBookings || 0}>{analytics?.activeBookings || 0}</h3>
+                        <h3 className="counter-animation" data-target={roomStats.occupied + roomStats.booked}>{roomStats.occupied + roomStats.booked}</h3>
                         <p>Active Bookings</p>
-                        <div className="stat-trend">{analytics?.totalBookings || 0} total bookings</div>
+                        <div className="stat-trend">{roomStats.total} total rooms</div>
                       </div>
                     </div>
                   </div>
@@ -245,19 +335,15 @@ const CustodianDashboardPage = () => {
                   <h3><i className="fas fa-bolt"></i> Quick Actions</h3>
                   <div className="actions-grid-compact">
                     <Link to="/custodian-payment-management" className="action-card-compact">
-                      <div className="action-icon blue"><i className="fa-solid fa-credit-card"></i></div>
+                      <div className="action-icon green"><i className="fa-solid fa-credit-card"></i></div>
                       <span>Payments</span>
                     </Link>
                     <Link to="/custodian-room-management" className="action-card-compact">
                       <div className="action-icon orange"><i className="fa-solid fa-door-open"></i></div>
                       <span>Rooms</span>
                     </Link>
-                    <Link to="/custodian-maintenance" className="action-card-compact">
-                      <div className="action-icon purple"><i className="fa-solid fa-wrench"></i></div>
-                      <span>Maintenance</span>
-                    </Link>
                     <button className="action-card-compact" onClick={() => setIsMessageCenterOpen(true)}>
-                      <div className="action-icon green"><i className="fa-solid fa-comments"></i></div>
+                      <div className="action-icon purple"><i className="fa-solid fa-comments"></i></div>
                       <span>Messages</span>
                     </button>
                   </div>
@@ -324,14 +410,7 @@ const CustodianDashboardPage = () => {
         isOpen={isBookingManagementOpen}
         onClose={() => setIsBookingManagementOpen(false)}
       />
-      <HostelRegistration 
-        isOpen={isHostelRegistrationOpen}
-        onClose={() => setIsHostelRegistrationOpen(false)}
-        onSubmit={(hostelData) => {
-          console.log('Hostel registered:', hostelData);
-          // Here you would save to database
-        }}
-      />
+
       <RoomLevelManager 
         isOpen={isRoomManagerOpen}
         onClose={() => setIsRoomManagerOpen(false)}

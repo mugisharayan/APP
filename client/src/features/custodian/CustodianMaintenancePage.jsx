@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../auth/AuthContext';
+import { useRoomData } from '../../contexts/RoomDataContext';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
 import '../../styles/modern-dashboard.css';
@@ -7,39 +9,51 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 const CustodianMaintenancePage = () => {
   const navigate = useNavigate();
+  const { userProfile } = useContext(AuthContext);
+  const { rooms, getMaintenanceStats } = useRoomData();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isCreateTicketModalOpen, setIsCreateTicketModalOpen] = useState(false);
   const [isUpdateStatusModalOpen, setIsUpdateStatusModalOpen] = useState(false);
   const [activeTicket, setActiveTicket] = useState(null); // The ticket being updated
 
   const custodianProfile = {
-    fullName: 'John K.',
-    course: 'Lead Custodian',
-    profilePicture: 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+    fullName: userProfile?.name || 'Custodian',
+    course: userProfile?.role || 'Custodian',
+    profilePicture: userProfile?.profilePicture || 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
   };
 
-  // Dummy data for tickets (this would come from a backend)
-  const [columns, setColumns] = useState({
-    'new-requests': {
-      name: 'New Requests',
-      icon: 'fa-inbox',
-      items: [
-        { id: '1', room: 'A-105', issue: 'Leaking Pipe', priority: 'High', description: '"The pipe under the sink is constantly dripping..."', submittedBy: 'Mark Otim', submittedOn: '29 Jul 2024' },
-        { id: '2', room: 'A-210', issue: 'Broken Wi-Fi', priority: 'Medium', description: '"The Wi-Fi has not been working in my room..."', submittedBy: 'Sandra Nabiryo', submittedOn: '28 Jul 2024' },
-      ]
-    },
-    'in-progress': {
-      name: 'In Progress',
-      icon: 'fa-tasks',
-      items: [
-        { id: '3', room: 'B-02', issue: 'Jammed Door', priority: 'Low', description: '"The main door to my room is difficult to open."', submittedBy: 'Peter Jones', submittedOn: '27 Jul 2024', assignedTo: 'Handyman' },
-      ]
-    },
-    'resolved': {
-      name: 'Resolved',
-      icon: 'fa-check-circle',
-      items: []
-    }
+  // Generate maintenance tickets from rooms with maintenance status
+  const [columns, setColumns] = useState(() => {
+    const maintenanceRooms = rooms.filter(room => room.status === 'Maintenance');
+    const newRequests = maintenanceRooms
+      .filter(room => !room.maintenanceStatus || room.maintenanceStatus === 'Pending')
+      .map((room, index) => ({
+        id: `${room.id}-${index}`,
+        room: room.id,
+        issue: 'Maintenance Required',
+        priority: 'Medium',
+        description: room.maintenanceDescription || 'Room requires maintenance attention',
+        submittedBy: room.occupant !== 'None' ? room.occupant : 'System',
+        submittedOn: new Date().toLocaleDateString('en-GB')
+      }));
+    
+    return {
+      'new-requests': {
+        name: 'New Requests',
+        icon: 'fa-inbox',
+        items: newRequests
+      },
+      'in-progress': {
+        name: 'In Progress',
+        icon: 'fa-tasks',
+        items: []
+      },
+      'resolved': {
+        name: 'Resolved',
+        icon: 'fa-check-circle',
+        items: []
+      }
+    };
   });
 
   const handleDragEnd = (result) => {

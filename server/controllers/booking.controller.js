@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
  * @access  Private
  */
 const createBooking = asyncHandler(async (req, res) => {
-  const { hostel, room, startDate, endDate } = req.body;
+  const { hostel, room, startDate, endDate, totalAmount, paymentMethod } = req.body;
 
   if (!hostel || !room || !startDate || !endDate) {
     res.status(400);
@@ -30,6 +30,8 @@ const createBooking = asyncHandler(async (req, res) => {
   // Handle both ObjectId and string inputs
   let hostelId = hostel;
   let roomId = room;
+  let hostelName = hostel;
+  let roomName = room;
   
   // If hostel is a string (name), try to find by name
   if (typeof hostel === 'string' && !hostel.match(/^[0-9a-fA-F]{24}$/)) {
@@ -37,24 +39,33 @@ const createBooking = asyncHandler(async (req, res) => {
     const hostelDoc = await Hostel.findOne({ name: new RegExp(hostel, 'i') });
     if (hostelDoc) {
       hostelId = hostelDoc._id;
+      hostelName = hostelDoc.name;
     }
   }
   
-  // If room is a string (name), create a temporary room reference
+  // If room is a string (name), store it directly
   if (typeof room === 'string' && !room.match(/^[0-9a-fA-F]{24}$/)) {
-    // For now, store room name directly - in production, you'd resolve to room ID
     roomId = room;
+    roomName = room;
   }
 
   const booking = new Booking({
     student: req.user._id,
     hostel: hostelId,
     room: roomId,
+    hostelName: hostelName,
+    roomName: roomName,
+    totalAmount: totalAmount,
+    paymentMethod: paymentMethod,
     startDate: new Date(startDate),
     endDate: new Date(endDate),
   });
 
   const createdBooking = await booking.save();
+  
+  // Populate user data for response
+  await createdBooking.populate('student', 'name email phone');
+  
   res.status(201).json(createdBooking);
 });
 

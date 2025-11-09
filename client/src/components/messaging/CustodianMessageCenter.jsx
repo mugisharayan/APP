@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useMessages } from '../../contexts/MessageContext';
 
 const CustodianMessageCenter = ({ isOpen, onClose }) => {
   const [selectedConversation, setSelectedConversation] = useState(null);
@@ -6,72 +7,13 @@ const CustodianMessageCenter = ({ isOpen, onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
 
-  const conversations = [
-    { 
-      id: 1, 
-      student: 'Sarah Johnson', 
-      studentId: 'ST001',
-      room: 'A-104',
-      lastMessage: 'Payment confirmation needed for Room A-104', 
-      time: '2 min ago', 
-      unread: true,
-      type: 'payment',
-      priority: 'high'
-    },
-    { 
-      id: 2, 
-      student: 'Michael Chen', 
-      studentId: 'ST002',
-      room: 'B-205',
-      lastMessage: 'Maintenance request - broken faucet', 
-      time: '1 hour ago', 
-      unread: false,
-      type: 'maintenance',
-      priority: 'medium'
-    },
-    { 
-      id: 3, 
-      student: 'Emma Wilson', 
-      studentId: 'ST003',
-      room: 'C-301',
-      lastMessage: 'Check-in instructions needed', 
-      time: '3 hours ago', 
-      unread: true,
-      type: 'booking',
-      priority: 'low'
-    }
-  ];
+  const { conversations, sendMessage, markAsRead } = useMessages();
 
-  const messages = selectedConversation ? [
-    { 
-      id: 1, 
-      sender: selectedConversation.student, 
-      message: 'Hi, I need help with my payment confirmation for Room A-104', 
-      time: '10:30 AM', 
-      isStudent: true,
-      type: 'text'
-    },
-    { 
-      id: 2, 
-      sender: 'You', 
-      message: 'I can help you with that. Let me check your payment status.', 
-      time: '10:35 AM', 
-      isStudent: false,
-      type: 'text'
-    },
-    { 
-      id: 3, 
-      sender: 'You', 
-      message: 'Your payment has been received and processed. You should receive a confirmation email shortly.', 
-      time: '10:37 AM', 
-      isStudent: false,
-      type: 'text'
-    }
-  ] : [];
+  const messages = selectedConversation ? selectedConversation.messages || [] : [];
 
   const handleSendMessage = () => {
     if (newMessage.trim() && selectedConversation) {
-      // Add message logic here
+      sendMessage(selectedConversation.id, newMessage.trim(), 'custodian');
       setNewMessage('');
     }
   };
@@ -154,7 +96,10 @@ const CustodianMessageCenter = ({ isOpen, onClose }) => {
               .map(conv => (
                 <div 
                   key={conv.id}
-                  onClick={() => setSelectedConversation(conv)}
+                  onClick={() => {
+                    setSelectedConversation(conv);
+                    markAsRead(conv.id);
+                  }}
                   className={`conversation-item ${selectedConversation?.id === conv.id ? 'active' : ''}`}
                 >
                   <div className="conversation-avatar">
@@ -172,7 +117,7 @@ const CustodianMessageCenter = ({ isOpen, onClose }) => {
                           className={`fas ${getTypeIcon(conv.type)}`}
                           style={{ color: getPriorityColor(conv.priority) }}
                         ></i>
-                        <span className="time">{conv.time}</span>
+                        <span className="time">{new Date(conv.lastMessageTime).toLocaleTimeString()}</span>
                       </div>
                     </div>
                     <div className="conversation-preview">
@@ -215,10 +160,10 @@ const CustodianMessageCenter = ({ isOpen, onClose }) => {
               
               <div className="messages-container">
                 {messages.map(msg => (
-                  <div key={msg.id} className={`message ${msg.isStudent ? 'student' : 'custodian'}`}>
+                  <div key={msg.id} className={`message ${msg.senderType === 'student' ? 'student' : 'custodian'}`}>
                     <div className="message-content">
                       <p>{msg.message}</p>
-                      <span className="message-time">{msg.time}</span>
+                      <span className="message-time">{new Date(msg.timestamp).toLocaleTimeString()}</span>
                     </div>
                   </div>
                 ))}

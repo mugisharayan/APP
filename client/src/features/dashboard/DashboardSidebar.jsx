@@ -14,7 +14,6 @@ const custodianLinks = [
     { to: "/custodian-room-assignment", icon: "fa-key", text: "Room Assignment" },
     { to: "/custodian-room-management", icon: "fa-bed", text: "Room Management" },
     { to: "/custodian-students", icon: "fa-users", text: "Student Management" },
-    { to: "/custodian-hostel-registration", icon: "fa-building", text: "Hostel Registration" },
     { to: "/custodian-analytics", icon: "fa-chart-line", text: "Analytics & Reports" },
     { to: "/custodian-maintenance", icon: "fa-screwdriver-wrench", text: "Maintenance" },
     { to: "/custodian-profile", icon: "fa-user-pen", text: "My Profile" },

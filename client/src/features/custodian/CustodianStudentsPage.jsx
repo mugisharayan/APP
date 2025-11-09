@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../auth/AuthContext';
+import { useRoomData } from '../../contexts/RoomDataContext';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
 import '../../styles/modern-dashboard.css';
@@ -8,6 +10,8 @@ import '../../styles/students-modern.css';
 
 const CustodianStudentsPage = () => {
   const navigate = useNavigate();
+  const { userProfile } = useContext(AuthContext);
+  const { rooms } = useRoomData();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
   const [isViewProfileModalOpen, setIsViewProfileModalOpen] = useState(false);
@@ -15,18 +19,26 @@ const CustodianStudentsPage = () => {
   const [studentSearchTerm, setStudentSearchTerm] = useState('');
 
   const custodianProfile = {
-    fullName: 'John K.',
-    course: 'Lead Custodian',
-    profilePicture: 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+    fullName: userProfile?.name || 'Custodian',
+    course: userProfile?.role || 'Custodian',
+    profilePicture: userProfile?.profilePicture || 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
   };
 
-  // Dummy student data
-  const [students, setStudents] = useState([
-    { id: 1, name: 'Jane Doe', studentId: '2100712345', room: 'A-102', status: 'Checked-in', avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', contact: '0771234567', email: 'jane.doe@student.mak.ac.ug', course: 'B.Sc. Computer Science' },
-    { id: 2, name: 'Peter Jones', studentId: '2100712346', room: 'A-103', status: 'Checked-in', avatar: 'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', contact: '0771234568', email: 'peter.jones@student.mak.ac.ug', course: 'B.Sc. Software Engineering' },
-    { id: 3, name: 'Amelia Nakamya', studentId: '2100712347', room: 'A-201', status: 'Booked', avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', contact: '0771234569', email: 'amelia.n@student.mak.ac.ug', course: 'B.Sc. Information Technology' },
-    { id: 4, name: 'Sandra Nabiryo', studentId: '2100712349', room: '-', status: 'Checked-out', avatar: 'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', contact: '0771234570', email: 'sandra.n@student.mak.ac.ug', course: 'B.Sc. Data Science' },
-  ]);
+  // Generate student data based on occupied rooms
+  const [students, setStudents] = useState(() => {
+    const occupiedRooms = rooms.filter(room => room.status === 'Occupied' || room.status === 'Booked');
+    return occupiedRooms.map((room, index) => ({
+      id: index + 1,
+      name: room.occupant !== 'None' ? room.occupant : `Student ${index + 1}`,
+      studentId: `210071234${index}`,
+      room: room.id,
+      status: room.status === 'Occupied' ? 'Checked-in' : 'Booked',
+      avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+      contact: `077123456${index}`,
+      email: `student${index + 1}@student.mak.ac.ug`,
+      course: 'B.Sc. Computer Science'
+    }));
+  });
 
   const filteredStudents = students.filter(student =>
     student.name.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||

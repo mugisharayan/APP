@@ -219,6 +219,11 @@ const BookingPage = () => {
       const bookingData = {
         hostel: hostelId || hostelName,
         room: roomId || roomName,
+        hostelName: hostelName,
+        roomName: roomName,
+        totalAmount: totalPrice,
+        paymentMethod: paymentMethod === 'mobile-money' ? 'Mobile Money' : 
+                      paymentMethod === 'credit-card' ? 'Credit Card' : 'Bank Transfer',
         startDate: new Date(),
         endDate: new Date(new Date().setMonth(new Date().getMonth() + 4))
       };
@@ -234,6 +239,39 @@ const BookingPage = () => {
       };
       
       await paymentService.createPayment(createdBooking._id, paymentData);
+      
+      // Store booking for custodian dashboard (real-time simulation)
+      const custodianBooking = {
+        _id: createdBooking._id || Date.now().toString(),
+        studentName: userProfile?.fullName || userProfile?.name,
+        studentEmail: userProfile?.email,
+        hostelName: hostelName,
+        roomName: roomName,
+        totalAmount: totalPrice,
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        bookingDate: new Date().toISOString(),
+        paymentMethod: paymentMethod === 'mobile-money' ? 'Mobile Money' : 
+                      paymentMethod === 'credit-card' ? 'Credit Card' : 'Bank Transfer',
+        user: {
+          name: userProfile?.fullName || userProfile?.name,
+          email: userProfile?.email
+        }
+      };
+      
+      // Add to custodian bookings for real-time display
+      const existingBookings = JSON.parse(localStorage.getItem('custodianBookings') || '[]');
+      const recentBookings = JSON.parse(localStorage.getItem('recentBookings') || '[]');
+      
+      existingBookings.unshift(custodianBooking);
+      recentBookings.unshift(custodianBooking);
+      
+      localStorage.setItem('custodianBookings', JSON.stringify(existingBookings));
+      localStorage.setItem('recentBookings', JSON.stringify(recentBookings.slice(0, 10)));
+      
+      console.log('Booking created in database:', createdBooking);
+      console.log('Booking stored for custodian:', custodianBooking);
+      console.log('Total custodian bookings:', existingBookings.length);
       
       // Get payment result from session
       const storedPaymentResult = JSON.parse(sessionStorage.getItem('paymentResult') || '{}');

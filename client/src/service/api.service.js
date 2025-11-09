@@ -151,13 +151,51 @@ const apiService = {
       axios.get(`${API_BASE_URL}/dashboard/activity`)
   },
 
+  // Room endpoints
+  rooms: {
+    getAll: () => 
+      axios.get(`${API_BASE_URL}/rooms`),
+    
+    getByHostel: (hostelId) => 
+      axios.get(`${API_BASE_URL}/rooms/hostel/${hostelId}`),
+    
+    create: (roomData) => 
+      axios.post(`${API_BASE_URL}/rooms`, roomData),
+    
+    update: (id, roomData) => 
+      axios.put(`${API_BASE_URL}/rooms/${id}`, roomData),
+    
+    delete: (id) => 
+      axios.delete(`${API_BASE_URL}/rooms/${id}`)
+  },
+
   // Custodian endpoints
   custodian: {
     linkHostel: (hostelName) => 
       axios.post(`${API_BASE_URL}/custodian/link-hostel`, { hostelName }),
     
     getDashboardData: () => 
-      axios.get(`${API_BASE_URL}/custodian/dashboard-data`)
+      axios.get(`${API_BASE_URL}/custodian/dashboard-data`),
+    
+    getProfile: () => 
+      axios.get(`${API_BASE_URL}/custodian/profile`),
+    
+    updateProfile: (profileData) => 
+      axios.put(`${API_BASE_URL}/custodian/profile`, profileData),
+    
+    changePassword: (passwordData) => 
+      axios.put(`${API_BASE_URL}/custodian/change-password`, passwordData),
+    
+
+    
+    getPendingPayments: () => 
+      axios.get(`${API_BASE_URL}/custodian/payments/pending`),
+    
+    approvePayment: (paymentId) => 
+      axios.put(`${API_BASE_URL}/custodian/payments/${paymentId}/approve`),
+    
+    rejectPayment: (paymentId) => 
+      axios.put(`${API_BASE_URL}/custodian/payments/${paymentId}/reject`)
   }
 };
 

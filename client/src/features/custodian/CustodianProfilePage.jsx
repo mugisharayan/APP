@@ -1,21 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
+import { AuthContext } from '../auth/AuthContext';
+import custodianService from '../../service/custodian.service';
 import '../../styles/modern-dashboard.css';
 import '../../styles/custodian-profile-modern.css';
 
 const CustodianProfilePage = () => {
+  const { userProfile, logout, updateProfile } = useContext(AuthContext);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [profileData, setProfileData] = useState({
-    fullName: 'John K.',
-    email: 'john.k@bookmyhostel.com',
-    role: 'Lead Custodian',
-    profilePicture: 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    name: '',
+    email: '',
+    phone: '',
+    role: 'Custodian',
+    profilePicture: '',
   });
   const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
+  const [message, setMessage] = useState({ text: '', type: '' });
 
   useEffect(() => {
     if (darkMode) {
@@ -25,16 +32,75 @@ const CustodianProfilePage = () => {
     }
   }, [darkMode]);
 
-  const handleEditChange = (e) => {
-    const { id, value } = e.target;
-    setProfileData(prev => ({ ...prev, [id.replace('edit', '').toLowerCase()]: value }));
+  useEffect(() => {
+    loadProfile();
+  }, [userProfile]);
+
+  const loadProfile = async () => {
+    // Use AuthContext data first for instant loading
+    if (userProfile) {
+      setProfileData({
+        name: userProfile.name || '',
+        email: userProfile.email || '',
+        phone: userProfile.phone || '',
+        role: 'Custodian',
+        profilePicture: userProfile.profilePicture || 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+      });
+      setLoading(false);
+      return;
+    }
+
+    // Fallback to API call only if no cached data
+    try {
+      setLoading(true);
+      const response = await custodianService.getProfile();
+      setProfileData({
+        name: response.data.name || '',
+        email: response.data.email || '',
+        phone: response.data.phone || '',
+        role: 'Custodian',
+        profilePicture: response.data.profilePicture || 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+      });
+    } catch (error) {
+      setMessage({ text: error.message, type: 'error' });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSaveProfile = (e) => {
+  const showMessage = (text, type = 'success') => {
+    setMessage({ text, type });
+    setTimeout(() => setMessage({ text: '', type: '' }), 3000);
+  };
+
+  const handleEditChange = (e) => {
+    const { id, value } = e.target;
+    const fieldName = id.replace('edit', '').toLowerCase();
+    setProfileData(prev => ({ ...prev, [fieldName]: value }));
+  };
+
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
-    // In a real app, you'd send this to a backend
-    // showToast('Profile updated successfully!');
-    setIsEditing(false);
+    try {
+      setSaving(true);
+      const updatedData = {
+        name: profileData.name,
+        email: profileData.email,
+        phone: profileData.phone,
+        profilePicture: profileData.profilePicture
+      };
+      await custodianService.updateProfile(updatedData);
+      
+      // Update AuthContext to sync across all pages
+      updateProfile(updatedData);
+      
+      showMessage('Profile updated successfully!');
+      setIsEditing(false);
+    } catch (error) {
+      showMessage(error.message, 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleProfilePicChange = (e) => {
@@ -46,7 +112,7 @@ const CustodianProfilePage = () => {
           const result = event.target.result;
           if (typeof result === 'string' && result.startsWith('data:image/')) {
             setProfileData(prev => ({ ...prev, profilePicture: result }));
-            // showToast('Profile picture updated!');
+            showMessage('Profile picture updated! Remember to save changes.');
           }
         };
         reader.readAsDataURL(file);
@@ -54,18 +120,31 @@ const CustodianProfilePage = () => {
     }
   };
 
-  const handlePasswordChange = (e) => {
+  const handlePasswordChange = async (e) => {
     e.preventDefault();
     const form = e.target;
+    const currentPassword = form.currentPassword.value;
     const newPassword = form.newPassword.value;
     const confirmPassword = form.confirmPassword.value;
 
     if (newPassword !== confirmPassword) {
-      // showToast('New passwords do not match.', true);
+      showMessage('New passwords do not match.', 'error');
       return;
     }
-    // showToast('Password updated successfully!');
-    form.reset();
+
+    try {
+      setSaving(true);
+      await custodianService.changePassword({
+        currentPassword,
+        newPassword
+      });
+      showMessage('Password updated successfully!');
+      form.reset();
+    } catch (error) {
+      showMessage(error.message, 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const togglePasswordVisibility = (e) => {
@@ -105,9 +184,23 @@ const CustodianProfilePage = () => {
   };
 
   const handleLogout = () => {
+    logout();
     setIsLogoutModalOpen(false);
     navigate('/');
   };
+
+  if (loading) {
+    return (
+      <main className="dashboard-page">
+        <div className="container">
+          <div className="dashboard-panel active" style={{ textAlign: 'center', padding: '50px' }}>
+            <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '48px', color: '#0ea5e9', marginBottom: '20px' }}></i>
+            <h2>Loading Profile...</h2>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <>
@@ -130,12 +223,16 @@ const CustodianProfilePage = () => {
         <div className="container">
           <div className="dashboard-layout">
             <DashboardSidebar
-              user={{ fullName: profileData.fullName, course: profileData.role, profilePicture: profileData.profilePicture }}
+              user={{ fullName: profileData.name, course: profileData.role, profilePicture: profileData.profilePicture }}
               role="custodian"
               onLogout={() => setIsLogoutModalOpen(true)}
             />
             <div className="dashboard-content">
-
+              {message.text && (
+                <div className={`alert ${message.type === 'error' ? 'alert-error' : 'alert-success'}`} style={{ marginBottom: '20px' }}>
+                  {message.text}
+                </div>
+              )}
               <div className="modern-dashboard-container">
                 {/* Profile Header Card */}
                 <div className="profile-header-card">
@@ -151,8 +248,8 @@ const CustodianProfilePage = () => {
                     </div>
                     <div className="profile-info-section">
                       <div className="profile-name-row">
-                        <h2 className="profile-name">{profileData.fullName}</h2>
-                        <button className="edit-profile-btn" onClick={handleEditProfile}>
+                        <h2 className="profile-name">{profileData.name}</h2>
+                        <button className="edit-profile-btn" onClick={handleEditProfile} disabled={isEditing}>
                           <i className="fas fa-edit"></i> Edit Profile
                         </button>
                       </div>
@@ -161,6 +258,12 @@ const CustodianProfilePage = () => {
                         <i className="fas fa-envelope"></i>
                         <span>{profileData.email}</span>
                       </div>
+                      {profileData.phone && (
+                        <div className="profile-contact">
+                          <i className="fas fa-phone"></i>
+                          <span>{profileData.phone}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -182,21 +285,26 @@ const CustodianProfilePage = () => {
                       <form className="settings-form" onSubmit={handleSaveProfile}>
                         <div className="form-group">
                           <label>Full Name</label>
-                          <input type="text" id="editFullName" value={profileData.fullName} onChange={handleEditChange} />
+                          <input type="text" id="editName" value={profileData.name} onChange={handleEditChange} required />
                         </div>
                         <div className="form-group">
                           <label>Email Address</label>
-                          <input type="email" id="editEmail" value={profileData.email} onChange={handleEditChange} />
+                          <input type="email" id="editEmail" value={profileData.email} onChange={handleEditChange} required />
+                        </div>
+                        <div className="form-group">
+                          <label>Phone Number</label>
+                          <input type="tel" id="editPhone" value={profileData.phone} onChange={handleEditChange} placeholder="+256 700 000 000" />
                         </div>
                         <div className="form-group">
                           <label>Role</label>
                           <input type="text" id="editRole" value={profileData.role} readOnly className="readonly" />
                         </div>
                         <div className="form-actions">
-                          <button type="submit" className="btn primary">
-                            <i className="fas fa-save"></i> Save Changes
+                          <button type="submit" className="btn primary" disabled={saving}>
+                            <i className={`fas ${saving ? 'fa-spinner fa-spin' : 'fa-save'}`}></i> 
+                            {saving ? 'Saving...' : 'Save Changes'}
                           </button>
-                          <button type="button" className="btn outline" onClick={handleCancelEdit}>
+                          <button type="button" className="btn outline" onClick={handleCancelEdit} disabled={saving}>
                             <i className="fas fa-times"></i> Cancel
                           </button>
                         </div>
@@ -205,11 +313,15 @@ const CustodianProfilePage = () => {
                       <div className="settings-content">
                         <div className="info-row">
                           <span className="info-label">Full Name</span>
-                          <span className="info-value">{profileData.fullName}</span>
+                          <span className="info-value">{profileData.name}</span>
                         </div>
                         <div className="info-row">
                           <span className="info-label">Email</span>
                           <span className="info-value">{profileData.email}</span>
+                        </div>
+                        <div className="info-row">
+                          <span className="info-label">Phone</span>
+                          <span className="info-value">{profileData.phone || 'Not provided'}</span>
                         </div>
                         <div className="info-row">
                           <span className="info-label">Role</span>
@@ -252,8 +364,9 @@ const CustodianProfilePage = () => {
                           <i className="fas fa-eye-slash toggle-password" onClick={togglePasswordVisibility}></i>
                         </div>
                       </div>
-                      <button type="submit" className="btn primary">
-                        <i className="fas fa-key"></i> Update Password
+                      <button type="submit" className="btn primary" disabled={saving}>
+                        <i className={`fas ${saving ? 'fa-spinner fa-spin' : 'fa-key'}`}></i> 
+                        {saving ? 'Updating...' : 'Update Password'}
                       </button>
                     </form>
                   </div>

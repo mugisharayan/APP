@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import apiService from '../../service/api.service';
+import { AuthContext } from '../auth/AuthContext';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
 import useRealTimeUpdates from '../../hooks/useRealTimeUpdates';
@@ -16,6 +18,7 @@ import '../../styles/payment-enhanced.css';
 
 const CustodianPaymentManagementPage = () => {
   const navigate = useNavigate();
+  const { userProfile } = useContext(AuthContext);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isFilterSectionVisible, setIsFilterSectionVisible] = useState(false);
   const [isViewProofModalOpen, setIsViewProofModalOpen] = useState(false);
@@ -25,10 +28,10 @@ const CustodianPaymentManagementPage = () => {
   const [pendingAction, setPendingAction] = useState(null);
 
   const custodianProfile = {
-    fullName: 'John Kamau',
-    course: 'Lead Custodian',
+    fullName: userProfile?.name || 'Custodian',
+    course: userProfile?.role || 'Custodian',
     role: ROLES.SENIOR_CUSTODIAN,
-    profilePicture: 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+    profilePicture: userProfile?.profilePicture || 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
   };
 
   // Real-time data for payments
@@ -36,21 +39,72 @@ const CustodianPaymentManagementPage = () => {
     { id: 1, studentName: 'John Doe', studentId: '22/U/12345', avatar: 'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', amount: '850,000', method: 'Mobile Money', date: '2024-07-28 10:30 AM', status: 'Pending', selected: false },
     { id: 2, studentName: 'Aisha Bello', studentId: '22/U/98765', avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', amount: '850,000', method: 'Mobile Money', date: '2024-07-27 02:11 PM', status: 'Flagged', selected: false },
   ];
-  const { data: pendingPayments, setData: setPendingPayments, lastUpdated } = useRealTimeUpdates(initialPayments);
+  const [pendingPayments, setPendingPayments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+  
+  // Load pending payments from database
+  useEffect(() => {
+    loadPendingPayments();
+  }, []);
+  
+  const loadPendingPayments = async () => {
+    try {
+      setLoading(true);
+      const response = await apiService.custodian.getPendingPayments();
+      setPendingPayments(response.data || []);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Failed to load pending payments:', error);
+      // Fallback to sample data if API fails
+      setPendingPayments([
+        { id: 1, studentName: 'John Doe', studentId: '22/U/12345', avatar: 'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', amount: '850,000', method: 'Mobile Money', date: '2024-07-28 10:30 AM', status: 'Pending', selected: false },
+        { id: 2, studentName: 'Aisha Bello', studentId: '22/U/98765', avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', amount: '850,000', method: 'Mobile Money', date: '2024-07-27 02:11 PM', status: 'Flagged', selected: false }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
   const [selectedPayments, setSelectedPayments] = useState([]);
 
-  const [paymentHistory, setPaymentHistory] = useState([
-    { id: 3, studentName: 'Michael Chen', studentId: '22/U/54321', method: 'Credit Card', amount: '1,200,000', dateVerified: '2024-07-26', status: 'Approved', refundStatus: 'N/A' },
-    { id: 4, studentName: 'Sarah K.', studentId: '22/U/11223', method: 'Bank Transfer', amount: '950,000', dateVerified: '2024-07-25', status: 'Approved', refundStatus: 'N/A' },
-    { id: 5, studentName: 'David Okello', studentId: '22/U/44556', method: 'Mobile Money', amount: '700,000', dateVerified: '2024-07-25', status: 'Rejected', refundStatus: 'Pending' },
-  ]);
+  const [paymentHistory, setPaymentHistory] = useState(() => {
+    return JSON.parse(localStorage.getItem('paymentHistory') || '[]');
+  });
 
-  const handleApprovePayment = (id) => {
+  const handleApprovePayment = async (id) => {
+    try {
     setPendingPayments(prev => prev.filter(p => p.id !== id));
     const approvedPayment = pendingPayments.find(p => p.id === id);
     if (approvedPayment) {
-      setPaymentHistory(prev => [{ ...approvedPayment, status: 'Approved', dateVerified: new Date().toLocaleDateString('en-GB') }, ...prev]);
-      // showToast(`Payment for ${approvedPayment.studentName} approved.`);
+      const historyEntry = { ...approvedPayment, status: 'Approved', dateVerified: new Date().toLocaleDateString('en-GB'), refundStatus: 'N/A' };
+      setPaymentHistory(prev => {
+        const updated = [historyEntry, ...prev];
+        localStorage.setItem('paymentHistory', JSON.stringify(updated));
+        return updated;
+      });
+      
+      // Add approved student to pending assignments
+      const pendingStudent = {
+        id: Date.now(),
+        name: approvedPayment.studentName,
+        studentId: approvedPayment.studentId,
+        email: `${approvedPayment.studentId.toLowerCase().replace('/', '')}@university.edu`,
+        paidOn: new Date().toLocaleDateString('en-GB'),
+        avatar: approvedPayment.avatar,
+        preferences: 'Single room, Any floor',
+        priority: 'high',
+        paymentAmount: approvedPayment.amount
+      };
+      
+      // Store in localStorage to pass to room assignment page
+      const existingPending = JSON.parse(localStorage.getItem('pendingAssignments') || '[]');
+      localStorage.setItem('pendingAssignments', JSON.stringify([...existingPending, pendingStudent]));
+      
+      // Redirect to room assignment page
+      navigate('/custodian-room-assignment');
+    }
+    } catch (error) {
+      console.error('Failed to approve payment:', error);
     }
   };
 
@@ -58,7 +112,12 @@ const CustodianPaymentManagementPage = () => {
     setPendingPayments(prev => prev.filter(p => p.id !== id));
     const rejectedPayment = pendingPayments.find(p => p.id === id);
     if (rejectedPayment) {
-      setPaymentHistory(prev => [{ ...rejectedPayment, status: 'Rejected', dateVerified: new Date().toLocaleDateString('en-GB'), refundStatus: 'Pending' }, ...prev]);
+      const historyEntry = { ...rejectedPayment, status: 'Rejected', dateVerified: new Date().toLocaleDateString('en-GB'), refundStatus: 'Pending' };
+      setPaymentHistory(prev => {
+        const updated = [historyEntry, ...prev];
+        localStorage.setItem('paymentHistory', JSON.stringify(updated));
+        return updated;
+      });
       // showToast(`Payment for ${rejectedPayment.studentName} rejected.`);
     }
   };
@@ -82,20 +141,44 @@ const CustodianPaymentManagementPage = () => {
   const executeBulkApprove = () => {
     const approvedPayments = pendingPayments.filter(p => selectedPayments.includes(p.id));
     setPendingPayments(prev => prev.filter(p => !selectedPayments.includes(p.id)));
-    setPaymentHistory(prev => [
-      ...approvedPayments.map(p => ({ ...p, status: 'Approved', dateVerified: new Date().toLocaleDateString('en-GB') })),
-      ...prev
-    ]);
+    const historyEntries = approvedPayments.map(p => ({ ...p, status: 'Approved', dateVerified: new Date().toLocaleDateString('en-GB'), refundStatus: 'N/A' }));
+    setPaymentHistory(prev => {
+      const updated = [...historyEntries, ...prev];
+      localStorage.setItem('paymentHistory', JSON.stringify(updated));
+      return updated;
+    });
+    
+    // Add all approved students to pending assignments
+    const pendingStudents = approvedPayments.map(payment => ({
+      id: Date.now() + Math.random(),
+      name: payment.studentName,
+      studentId: payment.studentId,
+      email: `${payment.studentId.toLowerCase().replace('/', '')}@university.edu`,
+      paidOn: new Date().toLocaleDateString('en-GB'),
+      avatar: payment.avatar,
+      preferences: 'Single room, Any floor',
+      priority: 'high',
+      paymentAmount: payment.amount
+    }));
+    
+    // Store in localStorage to pass to room assignment page
+    const existingPending = JSON.parse(localStorage.getItem('pendingAssignments') || '[]');
+    localStorage.setItem('pendingAssignments', JSON.stringify([...existingPending, ...pendingStudents]));
+    
     setSelectedPayments([]);
+    // Redirect to room assignment page after bulk approval
+    navigate('/custodian-room-assignment');
   };
 
   const handleBulkReject = () => {
     const rejectedPayments = pendingPayments.filter(p => selectedPayments.includes(p.id));
     setPendingPayments(prev => prev.filter(p => !selectedPayments.includes(p.id)));
-    setPaymentHistory(prev => [
-      ...rejectedPayments.map(p => ({ ...p, status: 'Rejected', dateVerified: new Date().toLocaleDateString('en-GB'), refundStatus: 'Pending' })),
-      ...prev
-    ]);
+    const historyEntries = rejectedPayments.map(p => ({ ...p, status: 'Rejected', dateVerified: new Date().toLocaleDateString('en-GB'), refundStatus: 'Pending' }));
+    setPaymentHistory(prev => {
+      const updated = [...historyEntries, ...prev];
+      localStorage.setItem('paymentHistory', JSON.stringify(updated));
+      return updated;
+    });
     setSelectedPayments([]);
   };
 
@@ -195,30 +278,7 @@ const CustodianPaymentManagementPage = () => {
                     </div>
                   </div>
 
-                  <div className="overview-card quick-actions">
-                    <div className="card-header">
-                      <div className="card-icon"><i className="fa-solid fa-bolt"></i></div>
-                      <span className="card-title">Quick Actions</span>
-                    </div>
-                    <div className="quick-actions-grid">
-                      <button className="quick-action-btn" onClick={() => setIsAdvancedSearchOpen(true)}>
-                        <i className="fa-solid fa-search"></i>
-                        <span>Advanced Search</span>
-                      </button>
-                      <button className="quick-action-btn" onClick={handleExportData}>
-                        <i className="fa-solid fa-download"></i>
-                        <span>Export Data</span>
-                      </button>
-                      <button className="quick-action-btn" onClick={() => setIsFilterSectionVisible(!isFilterSectionVisible)}>
-                        <i className="fa-solid fa-filter"></i>
-                        <span>Filters</span>
-                      </button>
-                      <button className="quick-action-btn" onClick={selectAllPayments}>
-                        <i className="fa-solid fa-check-double"></i>
-                        <span>Select All</span>
-                      </button>
-                    </div>
-                  </div>
+
                 </div>
 
                 {/* Enhanced Payment Management Header */}
