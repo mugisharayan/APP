@@ -1,24 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import communicationService from '../../service/communication.service';
 
 const StudentMessageCenter = ({ isOpen, onClose }) => {
-  const [messages, setMessages] = useState([
-    { id: 1, from: 'custodian', message: 'Your maintenance request has been received', time: '10:30 AM', read: true },
-    { id: 2, from: 'student', message: 'When will the plumber arrive?', time: '11:15 AM', read: true },
-    { id: 3, from: 'custodian', message: 'The plumber will arrive tomorrow at 2 PM', time: '2:45 PM', read: false }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const sendMessage = () => {
+  useEffect(() => {
+    if (isOpen) {
+      loadMessages();
+    }
+  }, [isOpen]);
+
+  const loadMessages = async () => {
+    try {
+      setLoading(true);
+      const data = await communicationService.getMessages();
+      setMessages(data);
+    } catch (err) {
+      setError('Failed to load messages');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sendMessage = async () => {
     if (!newMessage.trim()) return;
-    const message = {
-      id: Date.now(),
-      from: 'student',
-      message: newMessage,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      read: true
-    };
-    setMessages([...messages, message]);
-    setNewMessage('');
+    
+    try {
+      setLoading(true);
+      const messageData = await communicationService.sendMessage({
+        message: newMessage.trim(),
+        recipientType: 'custodian'
+      });
+      
+      const formattedMessage = {
+        id: messageData._id,
+        from: 'student',
+        message: messageData.message,
+        time: new Date(messageData.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        read: true
+      };
+      
+      setMessages([...messages, formattedMessage]);
+      setNewMessage('');
+      setError('');
+    } catch (err) {
+      setError('Failed to send message');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;

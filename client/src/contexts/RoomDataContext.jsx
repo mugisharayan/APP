@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import apiService from '../service/api.service.js';
 
 const RoomDataContext = createContext();
 
@@ -12,15 +13,67 @@ export const useRoomData = () => {
 
 export const RoomDataProvider = ({ children }) => {
   const [rooms, setRooms] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const addRoom = (room) => {
-    setRooms(prev => [...prev, room]);
+  // Load rooms from database on mount
+  useEffect(() => {
+    loadRooms();
+  }, []);
+
+  const loadRooms = async () => {
+    try {
+      setLoading(true);
+      const response = await apiService.hostels.getAll();
+      const hostels = response.data;
+      
+      // Extract all rooms from all hostels
+      const allRooms = [];
+      hostels.forEach(hostel => {
+        if (hostel.rooms) {
+          hostel.rooms.forEach(room => {
+            allRooms.push({
+              ...room,
+              hostelId: hostel._id,
+              hostelName: hostel.name
+            });
+          });
+        }
+      });
+      
+      setRooms(allRooms);
+      setError(null);
+    } catch (err) {
+      setError('Failed to load rooms');
+      console.error('Error loading rooms:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const updateRoom = (roomId, updates) => {
-    setRooms(prev => prev.map(room => 
-      room.id === roomId ? { ...room, ...updates } : room
-    ));
+  const addRoom = async (room) => {
+    try {
+      // In a real implementation, this would create a room via API
+      // For now, just add to local state
+      setRooms(prev => [...prev, { ...room, id: Date.now().toString() }]);
+      return true;
+    } catch (error) {
+      console.error('Error adding room:', error);
+      return false;
+    }
+  };
+
+  const updateRoom = async (roomId, updates) => {
+    try {
+      // In a real implementation, this would update room via API
+      setRooms(prev => prev.map(room => 
+        room.id === roomId ? { ...room, ...updates } : room
+      ));
+      return true;
+    } catch (error) {
+      console.error('Error updating room:', error);
+      return false;
+    }
   };
 
   const getRoomStats = () => {
@@ -65,7 +118,10 @@ export const RoomDataProvider = ({ children }) => {
       updateRoom,
       getRoomStats,
       getRoomTypeStats,
-      getMaintenanceStats
+      getMaintenanceStats,
+      loadRooms,
+      loading,
+      error
     }}>
       {children}
     </RoomDataContext.Provider>

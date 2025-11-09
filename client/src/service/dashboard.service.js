@@ -1,4 +1,28 @@
+import apiService from './api.service.js';
+
 const dashboardService = {
+  // Get dashboard statistics from API
+  getDashboardStats: async () => {
+    try {
+      const response = await apiService.dashboard.getStats();
+      return response.data;
+    } catch (error) {
+      // Fallback to calculating from bookings if API not available
+      console.warn('Dashboard stats API not available, using fallback');
+      return null;
+    }
+  },
+
+  // Get recent activity from API
+  getRecentActivity: async () => {
+    try {
+      const response = await apiService.dashboard.getRecentActivity();
+      return response.data;
+    } catch (error) {
+      console.warn('Recent activity API not available, using fallback');
+      return [];
+    }
+  },
   // Calculate booking statistics
   calculateBookingStats: (bookings) => {
     const totalBookings = bookings.length;
@@ -44,8 +68,8 @@ const dashboardService = {
     return roomPrices[roomName] || 300000;
   },
 
-  // Get recent activity
-  getRecentActivity: (bookings, limit = 5) => {
+  // Get recent activity (fallback method)
+  getRecentActivityFromBookings: (bookings, limit = 5) => {
     return bookings
       .sort((a, b) => new Date(b.createdAt || b.bookingDate) - new Date(a.createdAt || a.bookingDate))
       .slice(0, limit)

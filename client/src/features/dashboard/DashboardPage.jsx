@@ -15,6 +15,7 @@ import userService from '../../service/user.service';
 import dashboardService from '../../service/dashboard.service';
 import receiptService from '../../service/receipt.service';
 import maintenanceService from '../../service/maintenance.service';
+import communicationService from '../../service/communication.service';
 import '../../styles/student-communication.css';
 
 const DashboardPage = ({ onOpenReviewModal }) => {
@@ -35,30 +36,18 @@ const DashboardPage = ({ onOpenReviewModal }) => {
   useEffect(() => {
     const loadDashboardData = async () => {
       if (!userProfile) {
-        const storedAuth = JSON.parse(localStorage.getItem('auth'));
-        if (storedAuth && storedAuth.token) {
-          try {
-            // Get fresh user profile from backend
-            const profile = await userService.getUserProfile();
-            login({ ...storedAuth, ...profile });
-          } catch (error) {
-            console.error('Failed to load user profile:', error);
-            navigate('/');
-            return;
-          }
-        } else {
-          navigate('/');
-          return;
-        }
+        navigate('/');
+        return;
       }
       
       try {
-        // Load bookings from backend
-        const bookings = await bookingService.getMyBookings();
-        setBookingHistory(bookings);
+        // Load all data from database
+        const [bookings, requests] = await Promise.all([
+          bookingService.getMyBookings(),
+          maintenanceService.getMyMaintenanceRequests()
+        ]);
         
-        // Load maintenance requests from backend
-        const requests = await maintenanceService.getMyMaintenanceRequests();
+        setBookingHistory(bookings);
         setMaintenanceRequests(requests);
       } catch (error) {
         setError('Failed to load dashboard data');
@@ -69,7 +58,7 @@ const DashboardPage = ({ onOpenReviewModal }) => {
     };
     
     loadDashboardData();
-  }, [userProfile, navigate, login, setBookingHistory]);
+  }, [userProfile, navigate, setBookingHistory]);
 
   if (isLoading) {
     return (

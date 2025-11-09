@@ -13,7 +13,7 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // On initial load, check localStorage for existing session
+  // On initial load, check for existing session and load user data from database
   useEffect(() => {
     const checkLoggedIn = async () => {
       const authData = localStorage.getItem('auth');
@@ -21,22 +21,17 @@ export const AuthProvider = ({ children }) => {
         try {
           const userData = JSON.parse(authData);
           if (userData.token) {
-            setUserProfile(userData);
-            setIsAuthenticated(true);
-            
-            // Load favorites and bookings from backend
+            // Verify token is still valid by fetching fresh user data
             try {
-              const favs = await favoriteService.getMyFavorites();
-              setFavorites(favs);
+              const freshUserData = await userService.getUserProfile();
+              setUserProfile({ ...userData, ...freshUserData });
+              setIsAuthenticated(true);
+              
+              // Load all user data from database
+              await loadUserData();
             } catch (error) {
-              console.error('Failed to load favorites:', error);
-            }
-            
-            try {
-              const bookings = await bookingService.getMyBookings();
-              setBookingHistory(bookings);
-            } catch (error) {
-              console.error('Failed to load bookings:', error);
+              console.error('Token expired or invalid:', error);
+              logout();
             }
           }
         } catch (error) {
@@ -50,24 +45,28 @@ export const AuthProvider = ({ children }) => {
     checkLoggedIn();
   }, []);
 
+  // Load user data from database
+  const loadUserData = async () => {
+    try {
+      const [favs, bookings] = await Promise.all([
+        favoriteService.getMyFavorites().catch(() => []),
+        bookingService.getMyBookings().catch(() => [])
+      ]);
+      setFavorites(favs);
+      setBookingHistory(bookings);
+    } catch (error) {
+      console.error('Failed to load user data:', error);
+    }
+  };
+
   const login = async (email, password) => {
     const userData = await authService.login(email, password);
     setUserProfile(userData);
     setIsAuthenticated(true);
-    // Load favorites and bookings from backend on login
-    try {
-      const favs = await favoriteService.getMyFavorites();
-      setFavorites(favs);
-    } catch (error) {
-      console.error('Failed to load favorites:', error);
-    }
     
-    try {
-      const bookings = await bookingService.getMyBookings();
-      setBookingHistory(bookings);
-    } catch (error) {
-      console.error('Failed to load bookings:', error);
-    }
+    // Load all user data from database
+    await loadUserData();
+    
     return userData;
   };
 
@@ -76,22 +75,19 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(true);
     localStorage.setItem('auth', JSON.stringify(userData));
     
-    try {
-      const favs = await favoriteService.getMyFavorites();
-      setFavorites(favs);
-    } catch (error) {
-      console.error('Failed to load favorites:', error);
-    }
-    
-    try {
-      const bookings = await bookingService.getMyBookings();
-      setBookingHistory(bookings);
-    } catch (error) {
-      console.error('Failed to load bookings:', error);
-    }
+    // Load all user data from database
+    await loadUserData();
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      // Call logout API to invalidate token on server
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout API call failed:', error);
+    }
+    
+    // Clear local state and storage
     localStorage.removeItem('auth');
     localStorage.removeItem('user');
     setUserProfile(null);
@@ -134,7 +130,8 @@ export const AuthProvider = ({ children }) => {
     setUserProfile, // Exposing for profile updates
     setIsAuthenticated, // Exposing for direct auth state updates
     bookingHistory,
-    setBookingHistory
+    setBookingHistory,
+    loadUserData
   };
 
   return (

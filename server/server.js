@@ -9,6 +9,8 @@ import maintenanceRoutes from './routes/maintenance.routes.js';
 import userRoutes from './routes/user.routes.js';
 import reviewRoutes from './routes/review.routes.js';
 import favoriteRoutes from './routes/favorite.routes.js';
+import communicationRoutes from './routes/communication.routes.js';
+import dashboardRoutes from './routes/dashboard.routes.js';
 
 // Load environment variables
 dotenv.config();
@@ -44,6 +46,8 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/favorites', favoriteRoutes);
+app.use('/api/communication', communicationRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {

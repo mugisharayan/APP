@@ -1,17 +1,33 @@
 import React, { useState } from 'react';
+import communicationService from '../../service/communication.service';
 
 const PaymentInquiry = ({ isOpen, onClose }) => {
   const [inquiryType, setInquiryType] = useState('');
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Send payment inquiry to custodian
-    console.log('Payment inquiry:', { inquiryType, message });
-    alert('Payment inquiry sent to custodian!');
-    setInquiryType('');
-    setMessage('');
-    onClose();
+    
+    try {
+      setLoading(true);
+      await communicationService.createPaymentInquiry({
+        inquiryType,
+        subject: `Payment Inquiry - ${inquiryType}`,
+        description: message
+      });
+      
+      setInquiryType('');
+      setMessage('');
+      setError('');
+      alert('Payment inquiry sent to custodian!');
+      onClose();
+    } catch (err) {
+      setError('Failed to submit payment inquiry');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -50,7 +66,9 @@ const PaymentInquiry = ({ isOpen, onClose }) => {
           
           <div className="form-actions">
             <button type="button" onClick={onClose} className="btn secondary">Cancel</button>
-            <button type="submit" className="btn primary">Send Inquiry</button>
+            <button type="submit" className="btn primary" disabled={loading}>
+              {loading ? 'Sending...' : 'Send Inquiry'}
+            </button>
           </div>
         </form>
       </div>

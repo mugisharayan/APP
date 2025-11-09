@@ -49,7 +49,10 @@ const apiService = {
       axios.get(`${API_BASE_URL}/users/profile`),
     
     updateProfile: (userData) => 
-      axios.put(`${API_BASE_URL}/users/profile`, userData)
+      axios.put(`${API_BASE_URL}/users/profile`, userData),
+    
+    changePassword: (passwordData) => 
+      axios.put(`${API_BASE_URL}/users/change-password`, passwordData)
   },
 
   // Hostel endpoints
@@ -116,6 +119,36 @@ const apiService = {
     
     update: (id, requestData) => 
       axios.put(`${API_BASE_URL}/maintenance/${id}`, requestData)
+  },
+
+  // Communication endpoints
+  communication: {
+    sendMessage: (messageData) => 
+      axios.post(`${API_BASE_URL}/communication/messages`, messageData),
+    
+    getMessages: () => 
+      axios.get(`${API_BASE_URL}/communication/messages`),
+    
+    createPaymentInquiry: (inquiryData) => 
+      axios.post(`${API_BASE_URL}/communication/payment-inquiry`, inquiryData),
+    
+    createRoomRequest: (requestData) => 
+      axios.post(`${API_BASE_URL}/communication/room-request`, requestData),
+    
+    createSupportTicket: (ticketData) => 
+      axios.post(`${API_BASE_URL}/communication/support-ticket`, ticketData),
+    
+    createEmergencyContact: (emergencyData) => 
+      axios.post(`${API_BASE_URL}/communication/emergency`, emergencyData)
+  },
+
+  // Dashboard endpoints
+  dashboard: {
+    getStats: () => 
+      axios.get(`${API_BASE_URL}/dashboard/stats`),
+    
+    getRecentActivity: () => 
+      axios.get(`${API_BASE_URL}/dashboard/activity`)
   }
 };
 

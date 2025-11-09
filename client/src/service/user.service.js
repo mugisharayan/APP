@@ -1,78 +1,34 @@
-import authService from './auth.service.js';
-
-const API_URL = '/api/users';
-
-/**
- * Gets the auth header with the JWT token.
- * @returns {HeadersInit}
- */
-const authHeader = () => {
-  const user = authService.getCurrentUser();
-  if (user && user.token) {
-    return { Authorization: 'Bearer ' + user.token };
-  } else {
-    return {};
-  }
-};
-
-/**
- * Fetches the user profile from the backend.
- * @returns {Promise<any>}
- */
-const getUserProfile = async () => {
-  const response = await fetch(`${API_URL}/profile`, {
-    headers: authHeader(),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to fetch user profile');
-  }
-
-  return response.json();
-};
-
-// You can add other user-related services here, like updateUserProfile
+import apiService from './api.service.js';
 
 const userService = {
-  getUserProfile,
+  // Get user profile
+  getUserProfile: async () => {
+    try {
+      const response = await apiService.users.getProfile();
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch user profile');
+    }
+  },
   
   // Update user profile
   updateUserProfile: async (profileData) => {
-    const response = await fetch(`${API_URL}/profile`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeader(),
-      },
-      body: JSON.stringify(profileData),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to update profile');
+    try {
+      const response = await apiService.users.updateProfile(profileData);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to update profile');
     }
-
-    return response.json();
   },
   
   // Change password
   changePassword: async (passwordData) => {
-    const response = await fetch(`${API_URL}/change-password`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeader(),
-      },
-      body: JSON.stringify(passwordData),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to change password');
+    try {
+      const response = await apiService.users.changePassword(passwordData);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to change password');
     }
-
-    return response.json();
   },
   
   // Save booking profile data
@@ -91,21 +47,12 @@ const userService = {
       profileCompleted: true
     };
     
-    const response = await fetch(`${API_URL}/profile`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeader(),
-      },
-      body: JSON.stringify(profileData),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to save profile');
+    try {
+      const response = await apiService.users.updateProfile(profileData);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to save profile');
     }
-
-    return response.json();
   }
 };
 
