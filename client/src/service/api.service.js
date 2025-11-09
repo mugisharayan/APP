@@ -149,6 +149,15 @@ const apiService = {
     
     getRecentActivity: () => 
       axios.get(`${API_BASE_URL}/dashboard/activity`)
+  },
+
+  // Custodian endpoints
+  custodian: {
+    linkHostel: (hostelName) => 
+      axios.post(`${API_BASE_URL}/custodian/link-hostel`, { hostelName }),
+    
+    getDashboardData: () => 
+      axios.get(`${API_BASE_URL}/custodian/dashboard-data`)
   }
 };
 

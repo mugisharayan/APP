@@ -17,6 +17,8 @@ import GlobalSearch from '../../components/search/GlobalSearch';
 import HeatMap from '../../components/charts/HeatMap';
 import Timeline from '../../components/charts/Timeline';
 import { AuthContext } from '../auth/AuthContext';
+import { useCustodian } from '../../contexts/CustodianContext';
+import HostelLinkingModal from '../../components/custodian/HostelLinkingModal';
 import '../../styles/modern-dashboard.css';
 import '../../styles/mobile-responsive.css';
 import '../../styles/minimalist-dashboard.css';
@@ -26,6 +28,9 @@ import '../../styles/custodian-modern.css';
 const CustodianDashboardPage = () => {
   const navigate = useNavigate();
   const { userProfile, logout, loading } = useContext(AuthContext);
+  const { hostelData, analytics, loadDashboardData } = useCustodian();
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [isLinked, setIsLinked] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isMessageCenterOpen, setIsMessageCenterOpen] = useState(false);
   const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
@@ -49,6 +54,22 @@ const CustodianDashboardPage = () => {
     maintenance: true,
     weather: true
   });
+
+  // Check hostel link on mount
+  useEffect(() => {
+    checkHostelLink();
+  }, []);
+
+  const checkHostelLink = async () => {
+    const data = await loadDashboardData();
+    if (data && data.hostel) {
+      setIsLinked(true);
+    }
+  };
+
+  const handleLinkSuccess = () => {
+    setIsLinked(true);
+  };
 
   // Counter animation effect
   useEffect(() => {
@@ -171,34 +192,53 @@ const CustodianDashboardPage = () => {
             <div className="dashboard-content">
               <div className="modern-dashboard-container">
                 {/* Stats Overview */}
-                <div className="stats-grid-compact">
-                  <div className="stat-card-compact blue">
-                    <div className="stat-icon"><i className="fa-solid fa-users"></i></div>
-                    <div className="stat-info">
-                      <h3 className="counter-animation" data-target="89">0</h3>
-                      <p>Occupancy</p>
-                      <div className="stat-progress">
-                        <div className="progress-bar-mini" style={{width: '89%'}}></div>
+                {!isLinked ? (
+                  <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                    <i className="fas fa-link" style={{ fontSize: '64px', color: '#0ea5e9', marginBottom: '20px' }}></i>
+                    <h2>Link to Your Hostel</h2>
+                    <p style={{ marginBottom: '30px', color: '#64748b' }}>
+                      Connect to an existing hostel in our database to access all analytics, bookings, and revenue data.
+                    </p>
+                    <button 
+                      className="btn primary" 
+                      onClick={() => setShowLinkModal(true)}
+                      style={{ padding: '15px 30px', fontSize: '16px' }}
+                    >
+                      <i className="fas fa-link"></i> Link to Hostel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="stats-grid-compact">
+                    <div className="stat-card-compact blue">
+                      <div className="stat-icon"><i className="fa-solid fa-users"></i></div>
+                      <div className="stat-info">
+                        <h3 className="counter-animation" data-target={analytics?.occupancyRate || 0}>{analytics?.occupancyRate || 0}</h3>
+                        <p>Occupancy %</p>
+                        <div className="stat-progress">
+                          <div className="progress-bar-mini" style={{width: `${analytics?.occupancyRate || 0}%`}}></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="stat-card-compact green">
+                      <div className="stat-icon"><i className="fa-solid fa-money-bill-wave"></i></div>
+                      <div className="stat-info">
+                        <h3 className="counter-animation" data-target={analytics?.totalRevenue ? (analytics.totalRevenue / 1000000).toFixed(1) : 0}>
+                          {analytics?.totalRevenue ? (analytics.totalRevenue / 1000000).toFixed(1) : 0}
+                        </h3>
+                        <p>Revenue (M)</p>
+                        <div className="stat-trend positive">UGX {analytics?.monthlyRevenue?.toLocaleString() || 0} this month</div>
+                      </div>
+                    </div>
+                    <div className="stat-card-compact orange">
+                      <div className="stat-icon"><i className="fa-solid fa-bed"></i></div>
+                      <div className="stat-info">
+                        <h3 className="counter-animation" data-target={analytics?.activeBookings || 0}>{analytics?.activeBookings || 0}</h3>
+                        <p>Active Bookings</p>
+                        <div className="stat-trend">{analytics?.totalBookings || 0} total bookings</div>
                       </div>
                     </div>
                   </div>
-                  <div className="stat-card-compact green">
-                    <div className="stat-icon"><i className="fa-solid fa-money-bill-wave"></i></div>
-                    <div className="stat-info">
-                      <h3 className="counter-animation" data-target="25.4">0</h3>
-                      <p>Revenue (M)</p>
-                      <div className="stat-trend positive">+12% this month</div>
-                    </div>
-                  </div>
-                  <div className="stat-card-compact orange">
-                    <div className="stat-icon"><i className="fa-solid fa-tools"></i></div>
-                    <div className="stat-info">
-                      <h3 className="counter-animation" data-target="3">0</h3>
-                      <p>Open Tickets</p>
-                      <div className="stat-trend urgent">Needs attention</div>
-                    </div>
-                  </div>
-                </div>
+                )}
 
                 {/* Quick Actions Grid */}
                 <div className="quick-actions-compact">
@@ -299,6 +339,11 @@ const CustodianDashboardPage = () => {
       <IntegrationPanel 
         isOpen={isIntegrationPanelOpen}
         onClose={() => setIsIntegrationPanelOpen(false)}
+      />
+      <HostelLinkingModal 
+        isOpen={showLinkModal}
+        onClose={() => setShowLinkModal(false)}
+        onSuccess={handleLinkSuccess}
       />
     </>
   );

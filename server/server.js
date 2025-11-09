@@ -11,6 +11,7 @@ import reviewRoutes from './routes/review.routes.js';
 import favoriteRoutes from './routes/favorite.routes.js';
 import communicationRoutes from './routes/communication.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
+import custodianRoutes from './routes/custodian.routes.js';
 
 // Load environment variables
 dotenv.config();
@@ -48,6 +49,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/communication', communicationRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/custodian', custodianRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
 import { useRoomData } from '../../contexts/RoomDataContext';
+import { useCustodian } from '../../contexts/CustodianContext';
 import '../../styles/modern-dashboard.css';
 import '../../styles/analytics-modern.css';
 import {
@@ -28,19 +29,34 @@ const CustodianAnalyticsPage = () => {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [dateRange, setDateRange] = useState('All Time');
   const { rooms, getRoomStats, getRoomTypeStats, getMaintenanceStats } = useRoomData();
+  const { hostelData, analytics, loadDashboardData } = useCustodian();
   const [roomStats, setRoomStats] = useState({ total: 0, available: 0, occupied: 0, booked: 0, maintenance: 0, partiallyOccupied: 0, occupancyRate: 0 });
   const [roomTypeStats, setRoomTypeStats] = useState({ single: 0, double: 0 });
   const [maintenanceStats, setMaintenanceStats] = useState({ pending: 0, inProgress: 0, resolved: 0, total: 0 });
 
   useEffect(() => {
+    loadDashboardData();
     try {
-      setRoomStats(getRoomStats());
+      if (hostelData && hostelData.rooms) {
+        const dbRoomStats = {
+          total: hostelData.rooms.length,
+          available: hostelData.rooms.filter(r => r.status === 'available').length,
+          occupied: hostelData.rooms.filter(r => r.status === 'occupied').length,
+          booked: hostelData.rooms.filter(r => r.status === 'booked').length,
+          maintenance: hostelData.rooms.filter(r => r.status === 'maintenance').length,
+          partiallyOccupied: hostelData.rooms.filter(r => r.status === 'partially_occupied').length,
+          occupancyRate: analytics?.occupancyRate || 0
+        };
+        setRoomStats(dbRoomStats);
+      } else {
+        setRoomStats(getRoomStats());
+      }
       setRoomTypeStats(getRoomTypeStats());
       setMaintenanceStats(getMaintenanceStats());
     } catch (error) {
       console.error('Error updating stats:', error);
     }
-  }, [rooms, getRoomStats, getRoomTypeStats, getMaintenanceStats]);
+  }, [rooms, hostelData, analytics, getRoomStats, getRoomTypeStats, getMaintenanceStats, loadDashboardData]);
 
   const custodianProfile = {
     fullName: 'John Kamau',

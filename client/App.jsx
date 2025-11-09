@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { RoomDataProvider } from './src/contexts/RoomDataContext';
+import { CustodianProvider } from './src/contexts/CustodianContext';
 
 // Import layout components
 import Header from './src/components/layout/Header';
@@ -55,6 +56,7 @@ function App() {
 
   return (
     <RoomDataProvider>
+      <CustodianProvider>
       {!shouldHideHeaderFooter && (
         <Header
           onOpenAuthModal={(redirectTo = null) => {
@@ -121,6 +123,7 @@ function App() {
 
       <ToastContainer />
       <BackToTop />
+      </CustodianProvider>
     </RoomDataProvider>
   );
 }
