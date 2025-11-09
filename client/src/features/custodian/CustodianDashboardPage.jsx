@@ -1,21 +1,76 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
 import NotificationBell from '../../components/notifications/NotificationBell';
-import MessageCenter from '../../components/messaging/MessageCenter';
+import CustodianMessageCenter from '../../components/messaging/CustodianMessageCenter';
+import NotificationCenter from '../../components/notifications/NotificationCenter';
+import SupportTicketSystem from '../../components/support/SupportTicketSystem';
+import StudentDirectory from '../../components/communication/StudentDirectory';
+import PaymentReminder from '../../components/communication/PaymentReminder';
+import BookingManagement from '../../components/booking/BookingManagement';
+import HostelRegistration from '../../components/hostel/HostelRegistration';
+import RoomLevelManager from '../../components/hostel/RoomLevelManager';
 import IntegrationPanel from '../../components/integrations/IntegrationPanel';
+import Breadcrumb from '../../components/navigation/Breadcrumb';
+import GlobalSearch from '../../components/search/GlobalSearch';
+import HeatMap from '../../components/charts/HeatMap';
+import Timeline from '../../components/charts/Timeline';
 import { AuthContext } from '../auth/AuthContext';
 import '../../styles/modern-dashboard.css';
 import '../../styles/mobile-responsive.css';
 import '../../styles/minimalist-dashboard.css';
+import '../../styles/communication-components.css';
+import '../../styles/custodian-modern.css';
 
 const CustodianDashboardPage = () => {
   const navigate = useNavigate();
   const { userProfile, logout, loading } = useContext(AuthContext);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isMessageCenterOpen, setIsMessageCenterOpen] = useState(false);
+  const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
+  const [isSupportTicketOpen, setIsSupportTicketOpen] = useState(false);
+  const [isStudentDirectoryOpen, setIsStudentDirectoryOpen] = useState(false);
+  const [isPaymentReminderOpen, setIsPaymentReminderOpen] = useState(false);
+  const [isBookingManagementOpen, setIsBookingManagementOpen] = useState(false);
+  const [isHostelRegistrationOpen, setIsHostelRegistrationOpen] = useState(false);
+  const [isRoomManagerOpen, setIsRoomManagerOpen] = useState(false);
   const [isIntegrationPanelOpen, setIsIntegrationPanelOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
+  const [notifications, setNotifications] = useState([
+    { id: 1, type: 'payment', message: 'New payment received from Jane Doe', time: '2m ago', unread: true },
+    { id: 2, type: 'maintenance', message: 'Maintenance request for Room A-105', time: '5m ago', unread: true },
+    { id: 3, type: 'booking', message: 'New booking confirmation needed', time: '10m ago', unread: false }
+  ]);
+  const [weather, setWeather] = useState({ temp: 24, condition: 'Sunny', humidity: 65 });
+  const [widgets, setWidgets] = useState({
+    occupancy: true,
+    revenue: true,
+    maintenance: true,
+    weather: true
+  });
+
+  // Counter animation effect
+  useEffect(() => {
+    const counters = document.querySelectorAll('.counter-animation');
+    counters.forEach(counter => {
+      const target = parseFloat(counter.getAttribute('data-target'));
+      const increment = target / 100;
+      let current = 0;
+      
+      const updateCounter = () => {
+        if (current < target) {
+          current += increment;
+          counter.textContent = target % 1 === 0 ? Math.ceil(current) : current.toFixed(1);
+          setTimeout(updateCounter, 20);
+        } else {
+          counter.textContent = target % 1 === 0 ? target : target.toFixed(1);
+        }
+      };
+      
+      setTimeout(updateCounter, 500);
+    });
+  }, []);
 
   if (loading || !userProfile) {
     return (
@@ -32,9 +87,9 @@ const CustodianDashboardPage = () => {
   }
 
   const custodianProfile = {
-    fullName: userProfile?.name || 'Custodian',
+    fullName: 'John Kamau',
     course: userProfile?.role || 'Custodian',
-    profilePicture: userProfile?.profilePicture || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Ccircle cx='75' cy='75' r='75' fill='%23f0f0f0'/%3E%3Cpath d='M75 45c-11 0-20 9-20 20s9 20 20 20 20-9 20-20-9-20-20-20zm0 90c-25 0-45-12-45-27 0-15 20-27 45-27s45 12 45 27c0 15-20 27-45 27z' fill='%23ccc'/%3E%3C/svg%3E"
+    profilePicture: 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
   };
 
   const handleLogout = () => {
@@ -43,125 +98,158 @@ const CustodianDashboardPage = () => {
     navigate('/');
   };
 
+  const toggleTheme = () => {
+    const newTheme = !darkMode;
+    setDarkMode(newTheme);
+    localStorage.setItem('theme', newTheme ? 'dark' : 'light');
+    document.body.classList.toggle('dark-theme', newTheme);
+  };
+
+  const markNotificationRead = (id) => {
+    setNotifications(prev => prev.map(n => n.id === id ? {...n, unread: false} : n));
+  };
+
+  const toggleWidget = (widget) => {
+    setWidgets(prev => ({...prev, [widget]: !prev[widget]}));
+  };
+
+  useEffect(() => {
+    document.body.classList.toggle('dark-theme', darkMode);
+  }, [darkMode]);
+
   return (
-    <div className="minimalist-dashboard">
-      <DashboardSidebar
-        user={custodianProfile}
-        role="custodian"
-        onLogout={() => setIsLogoutModalOpen(true)}
-      />
+    <>
+      <section className="custodian-hero">
+        <div className="hero-content">
+          <h1>Welcome back, <span className="dashboard-animated">John Kamau</span></h1>
+          <p>Manage hostel operations and oversee daily activities</p>
+        </div>
+        <div className="header-actions">
+          <button className="icon-btn" onClick={toggleTheme} title={darkMode ? 'Light Mode' : 'Dark Mode'}>
+            <i className={`fa-solid ${darkMode ? 'fa-sun' : 'fa-moon'}`}></i>
+          </button>
+          <div className="notification-dropdown">
+            <button className="icon-btn notification-btn" title="Notifications" onClick={() => setIsNotificationCenterOpen(true)}>
+              <i className="fa-solid fa-bell"></i>
+              {notifications.filter(n => n.unread).length > 0 && (
+                <span className="notification-badge">{notifications.filter(n => n.unread).length}</span>
+              )}
+            </button>
+            <div className="notification-dropdown-content">
+              <div className="notification-header">
+                <h4>Notifications</h4>
+                <button className="mark-all-read">Mark all read</button>
+              </div>
+              {notifications.map(notification => (
+                <div key={notification.id} className={`notification-item ${notification.unread ? 'unread' : ''}`} onClick={() => markNotificationRead(notification.id)}>
+                  <i className={`fa-solid ${notification.type === 'payment' ? 'fa-dollar-sign' : notification.type === 'maintenance' ? 'fa-wrench' : 'fa-bed'}`}></i>
+                  <div className="notification-content">
+                    <p>{notification.message}</p>
+                    <span className="notification-time">{notification.time}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <button className="icon-btn" onClick={() => setIsMessageCenterOpen(true)} title="Messages">
+            <i className="fa-solid fa-envelope"></i>
+          </button>
+          <button className="icon-btn" onClick={() => setIsStudentDirectoryOpen(true)} title="Student Directory">
+            <i className="fa-solid fa-users"></i>
+          </button>
+        </div>
+      </section>
       
-      <main className="dashboard-main">
-        <header className="dashboard-header">
-          <div className="header-content">
-            <div className="header-text">
-              <h1>Good morning, {userProfile?.name || 'Custodian'}</h1>
-              <p>Here's what's happening today</p>
-            </div>
-            <div className="header-actions">
-              <button className="icon-btn" onClick={() => setIsMessageCenterOpen(true)}>
-                <i className="fa-solid fa-envelope"></i>
-              </button>
-              <NotificationBell />
-            </div>
-          </div>
-        </header>
-
-        <div className="dashboard-grid">
-          <div className="stats-row">
-            <div className="stat-card">
-              <div className="stat-value">127</div>
-              <div className="stat-label">Total Rooms</div>
-              <div className="stat-trend positive">+2.5%</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value">89%</div>
-              <div className="stat-label">Occupancy</div>
-              <div className="stat-trend positive">+5.2%</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value">5</div>
-              <div className="stat-label">Pending</div>
-              <div className="stat-trend neutral">-</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value">3</div>
-              <div className="stat-label">Maintenance</div>
-              <div className="stat-trend negative">+1</div>
-            </div>
-          </div>
-
-          <div className="content-grid">
-            <div className="quick-actions">
-              <h3>Quick Actions</h3>
-              <div className="actions-list">
-                <Link to="/custodian-payment-management" className="action-item">
-                  <div className="action-icon">
-                    <i className="fa-solid fa-credit-card"></i>
+      <main className="dashboard-page">
+        <div className="container">
+          <div className="dashboard-layout">
+            <DashboardSidebar
+              user={custodianProfile}
+              role="custodian"
+              onLogout={() => setIsLogoutModalOpen(true)}
+            />
+            <div className="dashboard-content">
+              <div className="modern-dashboard-container">
+                {/* Stats Overview */}
+                <div className="stats-grid-compact">
+                  <div className="stat-card-compact blue">
+                    <div className="stat-icon"><i className="fa-solid fa-users"></i></div>
+                    <div className="stat-info">
+                      <h3 className="counter-animation" data-target="89">0</h3>
+                      <p>Occupancy</p>
+                      <div className="stat-progress">
+                        <div className="progress-bar-mini" style={{width: '89%'}}></div>
+                      </div>
+                    </div>
                   </div>
-                  <span>Verify Payments</span>
-                  <i className="fa-solid fa-chevron-right"></i>
-                </Link>
-                <Link to="/custodian-room-assignment" className="action-item">
-                  <div className="action-icon">
-                    <i className="fa-solid fa-key"></i>
+                  <div className="stat-card-compact green">
+                    <div className="stat-icon"><i className="fa-solid fa-money-bill-wave"></i></div>
+                    <div className="stat-info">
+                      <h3 className="counter-animation" data-target="25.4">0</h3>
+                      <p>Revenue (M)</p>
+                      <div className="stat-trend positive">+12% this month</div>
+                    </div>
                   </div>
-                  <span>Assign Rooms</span>
-                  <i className="fa-solid fa-chevron-right"></i>
-                </Link>
-                <Link to="/custodian-room-management" className="action-item">
-                  <div className="action-icon">
-                    <i className="fa-solid fa-door-open"></i>
+                  <div className="stat-card-compact orange">
+                    <div className="stat-icon"><i className="fa-solid fa-tools"></i></div>
+                    <div className="stat-info">
+                      <h3 className="counter-animation" data-target="3">0</h3>
+                      <p>Open Tickets</p>
+                      <div className="stat-trend urgent">Needs attention</div>
+                    </div>
                   </div>
-                  <span>Room Management</span>
-                  <i className="fa-solid fa-chevron-right"></i>
-                </Link>
-                <Link to="/custodian-maintenance" className="action-item">
-                  <div className="action-icon">
-                    <i className="fa-solid fa-wrench"></i>
-                  </div>
-                  <span>Maintenance</span>
-                  <i className="fa-solid fa-chevron-right"></i>
-                </Link>
-              </div>
-            </div>
-
-            <div className="recent-activity">
-              <div className="section-header">
-                <h3>Recent Activity</h3>
-                <Link to="/custodian-audit-log" className="view-all">View all</Link>
-              </div>
-              <div className="activity-list">
-                <div className="activity-item">
-                  <div className="activity-icon payment">
-                    <i className="fa-solid fa-dollar-sign"></i>
-                  </div>
-                  <div className="activity-content">
-                    <div className="activity-title">Payment received</div>
-                    <div className="activity-subtitle">Jane Doe • Room A-104</div>
-                  </div>
-                  <div className="activity-time">2m ago</div>
                 </div>
-                <div className="activity-item">
-                  <div className="activity-icon maintenance">
-                    <i className="fa-solid fa-wrench"></i>
+
+                {/* Quick Actions Grid */}
+                <div className="quick-actions-compact">
+                  <h3><i className="fas fa-bolt"></i> Quick Actions</h3>
+                  <div className="actions-grid-compact">
+                    <Link to="/custodian-payment-management" className="action-card-compact">
+                      <div className="action-icon blue"><i className="fa-solid fa-credit-card"></i></div>
+                      <span>Payments</span>
+                    </Link>
+                    <Link to="/custodian-room-management" className="action-card-compact">
+                      <div className="action-icon orange"><i className="fa-solid fa-door-open"></i></div>
+                      <span>Rooms</span>
+                    </Link>
+                    <Link to="/custodian-maintenance" className="action-card-compact">
+                      <div className="action-icon purple"><i className="fa-solid fa-wrench"></i></div>
+                      <span>Maintenance</span>
+                    </Link>
+                    <button className="action-card-compact" onClick={() => setIsMessageCenterOpen(true)}>
+                      <div className="action-icon green"><i className="fa-solid fa-comments"></i></div>
+                      <span>Messages</span>
+                    </button>
                   </div>
-                  <div className="activity-content">
-                    <div className="activity-title">Maintenance request</div>
-                    <div className="activity-subtitle">John Smith • Room B-205</div>
-                  </div>
-                  <div className="activity-time">1h ago</div>
                 </div>
-                <div className="activity-item">
-                  <div className="activity-icon booking">
-                    <i className="fa-solid fa-bed"></i>
+
+                {/* Main Content */}
+                <div className="content-single">
+                  <div className="recent-activity-compact">
+                    <div className="section-header-compact">
+                      <h3><i className="fas fa-clock"></i> Recent Activity</h3>
+                      <Link to="/custodian-audit-log" className="view-all-link">View All</Link>
+                    </div>
+                    <div className="activity-list-compact">
+                      <div className="activity-item-compact">
+                        <div className="activity-dot payment"></div>
+                        <div className="activity-content">
+                          <h5>Payment Received - Jane Doe</h5>
+                          <span className="activity-time">2m ago</span>
+                        </div>
+                      </div>
+                      <div className="activity-item-compact">
+                        <div className="activity-dot maintenance"></div>
+                        <div className="activity-content">
+                          <h5>Maintenance Request - Room B-205</h5>
+                          <span className="activity-time">1h ago</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="activity-content">
-                    <div className="activity-title">New booking</div>
-                    <div className="activity-subtitle">Mary Johnson • Room C-301</div>
-                  </div>
-                  <div className="activity-time">3h ago</div>
                 </div>
+
+
               </div>
             </div>
           </div>
@@ -172,15 +260,47 @@ const CustodianDashboardPage = () => {
         onClose={() => setIsLogoutModalOpen(false)}
         onConfirm={handleLogout}
       />
-      <MessageCenter 
+      <CustodianMessageCenter 
         isOpen={isMessageCenterOpen}
         onClose={() => setIsMessageCenterOpen(false)}
+      />
+      <NotificationCenter 
+        isOpen={isNotificationCenterOpen}
+        onClose={() => setIsNotificationCenterOpen(false)}
+      />
+      <SupportTicketSystem 
+        isOpen={isSupportTicketOpen}
+        onClose={() => setIsSupportTicketOpen(false)}
+      />
+      <StudentDirectory 
+        isOpen={isStudentDirectoryOpen}
+        onClose={() => setIsStudentDirectoryOpen(false)}
+      />
+      <PaymentReminder 
+        isOpen={isPaymentReminderOpen}
+        onClose={() => setIsPaymentReminderOpen(false)}
+      />
+      <BookingManagement 
+        isOpen={isBookingManagementOpen}
+        onClose={() => setIsBookingManagementOpen(false)}
+      />
+      <HostelRegistration 
+        isOpen={isHostelRegistrationOpen}
+        onClose={() => setIsHostelRegistrationOpen(false)}
+        onSubmit={(hostelData) => {
+          console.log('Hostel registered:', hostelData);
+          // Here you would save to database
+        }}
+      />
+      <RoomLevelManager 
+        isOpen={isRoomManagerOpen}
+        onClose={() => setIsRoomManagerOpen(false)}
       />
       <IntegrationPanel 
         isOpen={isIntegrationPanelOpen}
         onClose={() => setIsIntegrationPanelOpen(false)}
       />
-    </div>
+    </>
   );
 };
 

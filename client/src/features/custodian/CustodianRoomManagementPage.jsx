@@ -2,16 +2,22 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
+import RoomLevelManager from '../../components/hostel/RoomLevelManager';
+import { useRoomData } from '../../contexts/RoomDataContext';
 import '../../styles/modern-dashboard.css';
+import '../../styles/custodian-modern.css';
+import '../../styles/room-management-modern.css';
 
 const CustodianRoomManagementPage = () => {
   const navigate = useNavigate();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRoomActionModalOpen, setIsRoomActionModalOpen] = useState(false);
   const [isAddRoomModalOpen, setIsAddRoomModalOpen] = useState(false);
+  const [isRoomManagerOpen, setIsRoomManagerOpen] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [currentFilter, setCurrentFilter] = useState('all');
-  const [newRoom, setNewRoom] = useState({ id: '', roomType: 'Single', block: 'A', floor: '1' });
+  const [newRoom, setNewRoom] = useState({ id: '', roomType: 'Single', hotel: 'University Hotel A', block: 'A', floor: '1' });
+  const [pendingRooms, setPendingRooms] = useState([]);
 
   const custodianProfile = {
     fullName: 'John K.',
@@ -19,29 +25,7 @@ const CustodianRoomManagementPage = () => {
     profilePicture: 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
   };
 
-  // Dummy room data (this would come from a backend)
-  const [rooms, setRooms] = useState([
-    { id: 'A-101', status: 'Available', occupant: 'None', roomType: 'Single', occupancy: '0/1', occupantGender: 'None' },
-    { id: 'A-102', status: 'Partially Occupied', occupant: 'Jane Doe', roomType: 'Double', occupancy: '1/2', occupantGender: 'Female' },
-    { id: 'A-103', status: 'Occupied', occupant: 'Peter Jones, Mike Ross', roomType: 'Double', occupancy: '2/2', occupantGender: 'Male,Male' },
-    { id: 'A-104', status: 'Booked', occupant: 'Pending Check-in', roomType: 'Single', occupancy: '1/1', occupantGender: 'Female' },
-    { id: 'A-105', status: 'Maintenance', occupant: 'N/A', roomType: 'Single', occupancy: '0/1', occupantGender: 'None' },
-    { id: 'A-106', status: 'Available', occupant: 'None', roomType: 'Double', occupancy: '0/2', occupantGender: 'None' },
-    { id: 'A-107', status: 'Available', occupant: 'None', roomType: 'Single', occupancy: '0/1', occupantGender: 'None' },
-    { id: 'A-108', status: 'Occupied', occupant: 'Sarah K.', roomType: 'Single', occupancy: '1/1', occupantGender: 'Female' },
-    { id: 'A-109', status: 'Available', occupant: 'None', roomType: 'Double', occupancy: '0/2', occupantGender: 'None' },
-    { id: 'A-110', status: 'Available', occupant: 'None', roomType: 'Double', occupancy: '0/2', occupantGender: 'None' },
-    { id: 'A-201', status: 'Occupied', occupant: 'Amelia Nakamya', roomType: 'Single', occupancy: '1/1', occupantGender: 'Female' },
-    { id: 'A-202', status: 'Available', occupant: 'None', roomType: 'Single', occupancy: '0/1', occupantGender: 'None' },
-    { id: 'A-203', status: 'Available', occupant: 'None', roomType: 'Double', occupancy: '0/2', occupantGender: 'None' },
-    { id: 'A-204', status: 'Partially Occupied', occupant: 'Mark Otim', roomType: 'Double', occupancy: '1/2', occupantGender: 'Male' },
-    { id: 'A-205', status: 'Booked', occupant: 'Pending Check-in', roomType: 'Single', occupancy: '1/1', occupantGender: 'Male' },
-    { id: 'A-206', status: 'Available', occupant: 'None', roomType: 'Single', occupancy: '0/1', occupantGender: 'None' },
-    { id: 'A-207', status: 'Occupied', occupant: 'David Okello, Ben Carson', roomType: 'Double', occupancy: '2/2', occupantGender: 'Male,Male' },
-    { id: 'A-208', status: 'Available', occupant: 'None', roomType: 'Double', occupancy: '0/2', occupantGender: 'None' },
-    { id: 'A-209', status: 'Available', occupant: 'None', roomType: 'Single', occupancy: '0/1', occupantGender: 'None' },
-    { id: 'A-210', status: 'Maintenance', occupant: 'N/A', roomType: 'Single', occupancy: '0/1', occupantGender: 'None' },
-  ]);
+  const { rooms, setRooms, updateRoom } = useRoomData();
 
   const handleRoomClick = (room) => {
     setSelectedRoom(room);
@@ -51,13 +35,42 @@ const CustodianRoomManagementPage = () => {
   const handleForceAction = (newStatus) => {
     if (!selectedRoom) return;
 
-    // In a real app, you'd send this update to a backend
-    setRooms(prevRooms => prevRooms.map(room =>
-      room.id === selectedRoom.id ? { ...room, status: newStatus } : room
-    ));
-    setSelectedRoom(prev => ({ ...prev, status: newStatus })); // Update selected room's status for modal
-    // showToast(`Room ${selectedRoom.id} status updated to ${newStatus}.`);
+    const updatedRoom = { ...selectedRoom, status: newStatus };
+    
+    // If setting to maintenance, initialize maintenance status
+    if (newStatus === 'Maintenance') {
+      updatedRoom.maintenanceStatus = 'Pending';
+      updatedRoom.maintenanceDate = new Date().toISOString();
+      updatedRoom.maintenanceDescription = 'Maintenance required';
+    } else if (selectedRoom.status === 'Maintenance' && newStatus !== 'Maintenance') {
+      // Clear maintenance data when leaving maintenance status
+      updatedRoom.maintenanceStatus = null;
+      updatedRoom.maintenanceDate = null;
+      updatedRoom.maintenanceDescription = null;
+    }
+
+    updateRoom(selectedRoom.id, updatedRoom);
+    setSelectedRoom(updatedRoom);
     setIsRoomActionModalOpen(false);
+  };
+
+  const handleMaintenanceStatusUpdate = (newMaintenanceStatus) => {
+    if (!selectedRoom) return;
+
+    const updatedRoom = { 
+      ...selectedRoom, 
+      maintenanceStatus: newMaintenanceStatus,
+      maintenanceDate: new Date().toISOString()
+    };
+
+    // If setting maintenance status but room isn't in maintenance, force it to maintenance
+    if (selectedRoom.status !== 'Maintenance' && newMaintenanceStatus !== 'Resolved') {
+      updatedRoom.status = 'Maintenance';
+      updatedRoom.maintenanceDescription = 'Maintenance required';
+    }
+
+    updateRoom(selectedRoom.id, updatedRoom);
+    setSelectedRoom(updatedRoom);
   };
 
   const handleLogout = () => {
@@ -75,18 +88,26 @@ const CustodianRoomManagementPage = () => {
       occupant: 'None',
       roomType: newRoom.roomType,
       occupancy: newRoom.roomType === 'Single' ? '0/1' : '0/2',
-      occupantGender: 'None'
+      occupantGender: 'None',
+      hotel: newRoom.hotel,
+      block: newRoom.block,
+      floor: newRoom.floor,
+      maintenanceStatus: null,
+      maintenanceDescription: null,
+      maintenanceDate: null
     };
     
-    setRooms(prev => [...prev, newRoomData]);
-    setNewRoom({ id: '', roomType: 'Single', block: 'A', floor: '1' });
+    setPendingRooms(prev => [...prev, newRoomData]);
+    setNewRoom({ id: '', roomType: 'Single', hotel: 'University Hotel A', block: 'A', floor: '1' });
     setIsAddRoomModalOpen(false);
   };
 
-  const filteredRooms = rooms.filter(room => {
-    if (currentFilter === 'all') return true;
-    return room.status.toLowerCase().replace(/ /g, '-') === currentFilter;
-  });
+  const confirmRoomsToFloorPlan = () => {
+    setRooms(prev => [...prev, ...pendingRooms]);
+    setPendingRooms([]);
+  };
+
+  const filteredRooms = rooms;
 
   const renderRoomBlocks = (blockRooms) => (
     <div className="room-map-grid">
@@ -118,18 +139,18 @@ const CustodianRoomManagementPage = () => {
 
   return (
     <>
-      <section className="dashboard-hero-section">
-        <div className="floating-home-icons">
-          <i className="fa-solid fa-door-open floating-home-1"></i>
-          <i className="fa-solid fa-bed floating-home-2"></i>
-          <i className="fa-solid fa-building floating-home-3"></i>
-          <i className="fa-solid fa-key floating-home-4"></i>
-          <i className="fa-solid fa-home floating-home-5"></i>
-          <i className="fa-solid fa-door-closed floating-home-6"></i>
+      <section className="custodian-hero">
+        <div className="floating-icons">
+          <i className="fa-solid fa-door-open floating-icon-1"></i>
+          <i className="fa-solid fa-bed floating-icon-2"></i>
+          <i className="fa-solid fa-building floating-icon-3"></i>
+          <i className="fa-solid fa-key floating-icon-4"></i>
+          <i className="fa-solid fa-home floating-icon-5"></i>
+          <i className="fa-solid fa-door-closed floating-icon-6"></i>
         </div>
-        <div className="dashboard-hero-container">
-          <h1 className="dashboard-hero-title">Room <span className="dashboard-animated">Management</span></h1>
-          <p className="dashboard-hero-subtitle">Interactive floor plan and real-time room status</p>
+        <div className="hero-content">
+          <h1>Room <span className="dashboard-animated">Management</span></h1>
+          <p>Interactive floor plan and real-time room status</p>
         </div>
       </section>
       
@@ -142,41 +163,189 @@ const CustodianRoomManagementPage = () => {
               onLogout={() => setIsLogoutModalOpen(true)}
             />
             <div className="dashboard-content">
+              <div className="modern-dashboard-container">
+                {/* Room Stats */}
+                <div className="stats-grid-modern">
+                  <div className="stat-card-modern green">
+                    <div className="stat-icon"><i className="fa-solid fa-check-circle"></i></div>
+                    <div className="stat-info">
+                      <h3>{rooms.filter(r => r.status === 'Available').length}</h3>
+                      <p>Available Rooms</p>
+                      <span className="stat-trend positive">Ready for booking</span>
+                    </div>
+                  </div>
+                  <div className="stat-card-modern blue">
+                    <div className="stat-icon"><i className="fa-solid fa-users"></i></div>
+                    <div className="stat-info">
+                      <h3>{rooms.filter(r => r.status === 'Occupied').length}</h3>
+                      <p>Occupied Rooms</p>
+                      <span className="stat-trend positive">Currently in use</span>
+                    </div>
+                  </div>
+                  <div className="stat-card-modern orange">
+                    <div className="stat-icon"><i className="fa-solid fa-calendar-check"></i></div>
+                    <div className="stat-info">
+                      <h3>{rooms.filter(r => r.status === 'Booked').length}</h3>
+                      <p>Booked Rooms</p>
+                      <span className="stat-trend positive">Pending check-in</span>
+                    </div>
+                  </div>
+                  <div className="stat-card-modern purple">
+                    <div className="stat-icon"><i className="fa-solid fa-tools"></i></div>
+                    <div className="stat-info">
+                      <h3>{rooms.filter(r => r.status === 'Maintenance').length}</h3>
+                      <p>Under Maintenance</p>
+                      <span className="stat-trend negative">Needs attention</span>
+                    </div>
+                  </div>
+                </div>
 
-            <div className="room-management-header">
-              <div className="room-filters-new">
-                {['all', 'available', 'occupied', 'booked', 'maintenance'].map(filter => (
-                  <button
-                    key={filter}
-                    className={`filter-btn ${currentFilter === filter ? 'active' : ''}`}
-                    onClick={() => setCurrentFilter(filter)}
-                  >
-                    <i className={`fas ${filter === 'all' ? 'fa-border-all' : filter === 'available' ? 'fa-check-circle' : filter === 'occupied' ? 'fa-user-check' : filter === 'booked' ? 'fa-calendar-check' : 'fa-tools'}`}></i> {filter.charAt(0).toUpperCase() + filter.slice(1).replace('-', ' ')}
-                  </button>
-                ))}
+                {/* Add Room Section */}
+                <div className="add-room-section-modern">
+                  <div className="section-header">
+                    <h3><i className="fas fa-plus-circle"></i> Add New Room</h3>
+                    <p>Create rooms that will appear on your floor plan</p>
+                  </div>
+                  
+                  <div className="add-room-form">
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Floor</label>
+                        <select value={newRoom.floor} onChange={(e) => setNewRoom(prev => ({...prev, floor: e.target.value}))}>
+                          <option value="1">Ground Floor</option>
+                          <option value="2">First Floor</option>
+                          <option value="3">Second Floor</option>
+                        </select>
+                      </div>
+                      
+                      <div className="form-group">
+                        <label>Room Type</label>
+                        <select value={newRoom.roomType} onChange={(e) => setNewRoom(prev => ({...prev, roomType: e.target.value}))}>
+                          <option value="Single">Single Room</option>
+                          <option value="Double">Double Room</option>
+                        </select>
+                      </div>
+                      
+                      <div className="form-group">
+                        <label>Room Number</label>
+                        <input 
+                          type="number" 
+                          placeholder="01, 02, 03..." 
+                          value={newRoom.id} 
+                          onChange={(e) => setNewRoom(prev => ({...prev, id: e.target.value}))}
+                          min="1"
+                          max="99"
+                        />
+                      </div>
+                      
+                      <div className="form-actions">
+                        <button className="add-room-btn" onClick={handleAddRoom} disabled={!newRoom.id.trim()}>
+                          <i className="fas fa-plus"></i> Add Room
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {pendingRooms.length > 0 && (
+                      <div className="pending-rooms-preview">
+                        <div className="pending-header">
+                          <h4>Pending Rooms ({pendingRooms.length})</h4>
+                          <button className="confirm-all-btn" onClick={confirmRoomsToFloorPlan}>
+                            <i className="fas fa-check-circle"></i> Add All to Floor Plan
+                          </button>
+                        </div>
+                        <div className="pending-rooms-list">
+                          {pendingRooms.map((room, index) => (
+                            <div className="pending-room-item" key={index}>
+                              <div className="room-info">
+                                <span className="room-id">{room.id}</span>
+                                <span className="room-details">{room.hotel} - Block {room.block} - Floor {room.floor}</span>
+                                <span className="room-type">{room.roomType}</span>
+                              </div>
+                              <button className="remove-pending-btn" onClick={() => setPendingRooms(prev => prev.filter((_, i) => i !== index))}>
+                                <i className="fas fa-times"></i>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+
+
+                {/* Room Status Legend */}
+                <div className="room-legend-modern">
+                  <h4>Room Status Legend</h4>
+                  <div className="legend-items">
+                    <div className="legend-item"><div className="legend-dot available"></div>Available</div>
+                    <div className="legend-item"><div className="legend-dot booked"></div>Booked</div>
+                    <div className="legend-item"><div className="legend-dot occupied"></div>Occupied</div>
+                    <div className="legend-item"><div className="legend-dot partially-occupied"></div>Partially Occupied</div>
+                    <div className="legend-item"><div className="legend-dot maintenance"></div>Maintenance</div>
+                  </div>
+                </div>
+
+                {/* Dynamic Floor Plans */}
+                <div className="floor-plans-modern">
+                  {filteredRooms.length === 0 ? (
+                    <div className="empty-floor-state">
+                      <div className="empty-icon">
+                        <i className="fas fa-building"></i>
+                      </div>
+                      <h4>No Rooms Added Yet</h4>
+                      <p>Click "Add Room" to start creating your floor plan</p>
+                    </div>
+                  ) : (
+                    // Group rooms by hotel and floor
+                    Object.entries(
+                      filteredRooms.reduce((acc, room) => {
+                        const hotelKey = room.hotel || 'Unknown Hotel';
+                        const floorKey = `${room.block || 'Unknown'}-${room.floor || '1'}`;
+                        const key = `${hotelKey}|${floorKey}`;
+                        if (!acc[key]) acc[key] = [];
+                        acc[key].push(room);
+                        return acc;
+                      }, {})
+                    ).map(([key, rooms]) => {
+                      const [hotel, floorInfo] = key.split('|');
+                      const [block, floor] = floorInfo.split('-');
+                      const floorName = floor === '1' ? 'Ground Floor' : floor === '2' ? 'First Floor' : `Floor ${floor}`;
+                      
+                      return (
+                        <div className="floor-section-modern" key={key}>
+                          <div className="floor-header">
+                            <h3><i className="fas fa-building"></i> {hotel} - Block {block} - {floorName}</h3>
+                            <span className="room-count">{rooms.length} room{rooms.length > 1 ? 's' : ''}</span>
+                          </div>
+                          <div className="room-grid-modern">
+                            {rooms.map(room => (
+                              <div
+                                className={`room-card-modern status-${room.status.toLowerCase().replace(/ /g, '-')}`}
+                                key={room.id}
+                                onClick={() => handleRoomClick(room)}
+                              >
+                                <div className="room-header">
+                                  <span className="room-number">{room.id}</span>
+                                  <i className={`fas ${room.roomType === 'Single' ? 'fa-bed' : 'fa-users'} room-type-icon`}></i>
+                                </div>
+                                <div className="room-body">
+                                  <div className="room-status">{room.status}</div>
+                                  <div className="room-occupancy">{room.occupancy}</div>
+                                </div>
+                                <div className="room-footer">
+                                  <span className="room-type">{room.roomType}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
-              <button className="btn primary" onClick={() => setIsAddRoomModalOpen(true)}>
-                <i className="fas fa-plus"></i> Add Room
-              </button>
-              <div className="room-status-legend">
-                <span className="legend-item"><span className="legend-color available"></span>Available</span>
-                <span className="legend-item"><span className="legend-color booked"></span>Booked</span>
-                <span className="legend-item"><span className="legend-color occupied"></span>Occupied</span>
-                <span className="legend-item"><span className="legend-color partially-occupied"></span>Partially Occupied</span>
-                <span className="legend-item"><span className="legend-color maintenance"></span>Maintenance</span>
-              </div>
             </div>
-
-            <div className="dashboard-section floor-plan">
-              <h3 className="floor-title">Block A - Ground Floor</h3>
-              {renderRoomBlocks(filteredRooms.filter(room => room.id.startsWith('A-1')))}
-            </div>
-
-            <div className="dashboard-section floor-plan">
-              <h3 className="floor-title">Block A - First Floor</h3>
-              {renderRoomBlocks(filteredRooms.filter(room => room.id.startsWith('A-2')))}
-            </div>
-          </div>
         </div>
       </div>
       </main>
@@ -187,42 +356,194 @@ const CustodianRoomManagementPage = () => {
         onConfirm={handleLogout}
       />
 
-      {/* Room Action Modal */}
+      {/* Enhanced Room Details Modal */}
       {isRoomActionModalOpen && selectedRoom && (
         <div className="modal-overlay is-visible" onClick={(e) => e.target.className.includes('modal-overlay') && setIsRoomActionModalOpen(false)}>
-          <div className="modal-content room-modal-content animate-on-scroll">
+          <div className="modal-content room-details-modal-enhanced animate-on-scroll">
             <button className="close-modal-btn" onClick={() => setIsRoomActionModalOpen(false)}>&times;</button>
-            <h3 id="roomModalTitle">Room {selectedRoom.id} Details</h3>
-            <div className="room-modal-body">
-              <div className="room-modal-detail">
-                <small>Current Status</small>
-                <span id="roomModalStatus" className={`status-badge ${selectedRoom.status.toLowerCase().replace(/ /g, '-')}`}>{selectedRoom.status}</span>
+            
+            <div className="room-details-header">
+              <div className="room-title-section">
+                <h3><i className="fas fa-door-open"></i> Room {selectedRoom.id}</h3>
+                <div className="room-meta">
+                  <span className="room-type-badge">{selectedRoom.roomType}</span>
+                  <span className="room-location">{selectedRoom.hotel || 'Hotel'} - Block {selectedRoom.block || 'A'} - Floor {selectedRoom.floor || '1'}</span>
+                </div>
               </div>
-              <div className="room-modal-detail">
-                <small>Current Occupant</small>
-                <p id="roomModalOccupant">{selectedRoom.occupant}</p>
+              <div className={`room-status-indicator status-${selectedRoom.status.toLowerCase().replace(/ /g, '-')}`}>
+                <i className={`fas ${selectedRoom.status === 'Available' ? 'fa-check-circle' : selectedRoom.status === 'Occupied' ? 'fa-users' : selectedRoom.status === 'Maintenance' ? 'fa-tools' : 'fa-calendar-check'}`}></i>
+                <span>{selectedRoom.status}</span>
               </div>
+            </div>
+            
+            <div className="room-details-content">
+              <div className="room-info-grid">
+                <div className="info-card">
+                  <div className="info-header">
+                    <i className="fas fa-info-circle"></i>
+                    <h4>Room Information</h4>
+                  </div>
+                  <div className="info-details">
+                    <div className="detail-row">
+                      <span className="label">Room Type:</span>
+                      <span className="value">{selectedRoom.roomType}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="label">Occupancy:</span>
+                      <span className="value">{selectedRoom.occupancy}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="label">Current Status:</span>
+                      <span className={`value status-${selectedRoom.status.toLowerCase().replace(/ /g, '-')}`}>{selectedRoom.status}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="info-card">
+                  <div className="info-header">
+                    <i className="fas fa-user"></i>
+                    <h4>Occupant Details</h4>
+                  </div>
+                  <div className="info-details">
+                    {selectedRoom.occupant === 'None' ? (
+                      <div className="empty-occupant">
+                        <i className="fas fa-bed"></i>
+                        <span>No current occupant</span>
+                      </div>
+                    ) : (
+                      <div className="occupant-info">
+                        <div className="occupant-name">{selectedRoom.occupant}</div>
+                        <div className="occupant-gender">Gender: {selectedRoom.occupantGender || 'Not specified'}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="maintenance-status-section">
+                <div className="section-header">
+                  <i className="fas fa-tools"></i>
+                  <h4>Maintenance Force Actions</h4>
+                  <p>Force maintenance status changes for any room</p>
+                </div>
+                {selectedRoom.status === 'Maintenance' && (
+                  <div className="maintenance-info">
+                    <div className="current-status">
+                      <span className="label">Current Status:</span>
+                      <span className={`status-badge ${selectedRoom.maintenanceStatus?.toLowerCase() || 'pending'}`}>
+                        {selectedRoom.maintenanceStatus || 'Pending'}
+                      </span>
+                    </div>
+                    <div className="maintenance-date">
+                      <span className="label">Last Updated:</span>
+                      <span className="date">
+                        {selectedRoom.maintenanceDate ? new Date(selectedRoom.maintenanceDate).toLocaleDateString() : 'Not set'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                <div className="maintenance-actions">
+                  <button 
+                    className="maintenance-btn pending" 
+                    onClick={() => handleMaintenanceStatusUpdate('Pending')}
+                  >
+                    <i className="fas fa-clock"></i> Force Pending
+                  </button>
+                  <button 
+                    className="maintenance-btn in-progress" 
+                    onClick={() => handleMaintenanceStatusUpdate('In Progress')}
+                  >
+                    <i className="fas fa-cog"></i> Force In Progress
+                  </button>
+                  <button 
+                    className="maintenance-btn resolved" 
+                    onClick={() => handleMaintenanceStatusUpdate('Resolved')}
+                  >
+                    <i className="fas fa-check-circle"></i> Force Resolved
+                  </button>
+                </div>
+              </div>
+              
               {selectedRoom.roomType === 'Double' && (selectedRoom.status === 'Available' || selectedRoom.status === 'Partially Occupied') && (
-                <div className="room-modal-assign" id="roomModalAssignSection">
-                  <h4>Assign New Student</h4>
-                  <div className="form-group">
-                    <label htmlFor="newStudentGender" aria-label="New Student's Gender">New Student's Gender</label>
-                    <select id="newStudentGender">
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                    </select>
+                <div className="assignment-section">
+                  <div className="section-header">
+                    <i className="fas fa-user-plus"></i>
+                    <h4>Quick Assignment</h4>
+                  </div>
+                  <div className="assignment-form">
+                    <div className="form-group">
+                      <label>Student Gender</label>
+                      <select id="newStudentGender">
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                      </select>
+                    </div>
+                    <button className="assign-student-btn">
+                      <i className="fas fa-plus"></i> Assign Student
+                    </button>
                   </div>
                 </div>
               )}
-              <div className="room-modal-actions">
-                <h4>Force Actions</h4>
-                <p className="muted">Manually override the current room status.</p>
-                <div className="force-actions-grid">
-                  <button className="btn outline small" onClick={() => handleForceAction('Available')}><i className="fas fa-check-circle"></i> Mark as Available</button>
-                  <button className="btn outline small" onClick={() => handleForceAction('Maintenance')}><i className="fas fa-tools"></i> Mark for Maintenance</button>
-                  <button className="btn outline small" onClick={() => handleForceAction('Booked')}><i className="fas fa-calendar-check"></i> Mark as Booked</button>
-                  <button className="btn outline small" onClick={() => handleForceAction('Occupied')}><i className="fas fa-user-check"></i> Mark as Occupied</button>
-                  <button className="btn outline small" onClick={() => handleForceAction('Partially Occupied')}><i className="fas fa-user-friends"></i> Mark as Partially Occupied</button>
+              
+              <div className="force-actions-section">
+                <div className="section-header">
+                  <i className="fas fa-cog"></i>
+                  <h4>Room Status Management</h4>
+                  <p>Override the current room status manually</p>
+                </div>
+                
+                <div className="status-actions-grid">
+                  <button className="status-action-btn available" onClick={() => handleForceAction('Available')}>
+                    <div className="action-icon">
+                      <i className="fas fa-check-circle"></i>
+                    </div>
+                    <div className="action-content">
+                      <span className="action-title">Available</span>
+                      <span className="action-desc">Ready for booking</span>
+                    </div>
+                  </button>
+                  
+                  <button className="status-action-btn occupied" onClick={() => handleForceAction('Occupied')}>
+                    <div className="action-icon">
+                      <i className="fas fa-users"></i>
+                    </div>
+                    <div className="action-content">
+                      <span className="action-title">Occupied</span>
+                      <span className="action-desc">Currently in use</span>
+                    </div>
+                  </button>
+                  
+                  <button className="status-action-btn booked" onClick={() => handleForceAction('Booked')}>
+                    <div className="action-icon">
+                      <i className="fas fa-calendar-check"></i>
+                    </div>
+                    <div className="action-content">
+                      <span className="action-title">Booked</span>
+                      <span className="action-desc">Reserved for student</span>
+                    </div>
+                  </button>
+                  
+                  <button className="status-action-btn maintenance" onClick={() => handleForceAction('Maintenance')}>
+                    <div className="action-icon">
+                      <i className="fas fa-tools"></i>
+                    </div>
+                    <div className="action-content">
+                      <span className="action-title">Maintenance</span>
+                      <span className="action-desc">Needs repair/cleaning</span>
+                    </div>
+                  </button>
+                  
+                  {selectedRoom.roomType === 'Double' && (
+                    <button className="status-action-btn partial" onClick={() => handleForceAction('Partially Occupied')}>
+                      <div className="action-icon">
+                        <i className="fas fa-user-friends"></i>
+                      </div>
+                      <div className="action-content">
+                        <span className="action-title">Partially Occupied</span>
+                        <span className="action-desc">One bed available</span>
+                      </div>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -237,6 +558,14 @@ const CustodianRoomManagementPage = () => {
             <button className="close-modal-btn" onClick={() => setIsAddRoomModalOpen(false)}>&times;</button>
             <h3>Add New Room</h3>
             <div className="room-modal-body">
+              <div className="form-group">
+                <label>Hotel</label>
+                <select value={newRoom.hotel} onChange={(e) => setNewRoom(prev => ({...prev, hotel: e.target.value}))}>
+                  <option value="University Hotel A">University Hotel A</option>
+                  <option value="University Hotel B">University Hotel B</option>
+                  <option value="University Hotel C">University Hotel C</option>
+                </select>
+              </div>
               <div className="form-group">
                 <label>Block</label>
                 <select value={newRoom.block} onChange={(e) => setNewRoom(prev => ({...prev, block: e.target.value}))}>
@@ -281,6 +610,11 @@ const CustodianRoomManagementPage = () => {
           </div>
         </div>
       )}
+
+      <RoomLevelManager 
+        isOpen={isRoomManagerOpen}
+        onClose={() => setIsRoomManagerOpen(false)}
+      />
     </>
   );
 };

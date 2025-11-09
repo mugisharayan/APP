@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
 import '../../styles/modern-dashboard.css';
+import '../../styles/custodian-modern.css';
+import '../../styles/students-modern.css';
 
 const CustodianStudentsPage = () => {
   const navigate = useNavigate();
@@ -68,18 +70,18 @@ const CustodianStudentsPage = () => {
 
   return (
     <>
-      <section className="dashboard-hero-section">
-        <div className="floating-home-icons">
-          <i className="fa-solid fa-users floating-home-1"></i>
-          <i className="fa-solid fa-user-graduate floating-home-2"></i>
-          <i className="fa-solid fa-id-card floating-home-3"></i>
-          <i className="fa-solid fa-address-book floating-home-4"></i>
-          <i className="fa-solid fa-user-friends floating-home-5"></i>
-          <i className="fa-solid fa-user-check floating-home-6"></i>
+      <section className="custodian-hero">
+        <div className="floating-icons">
+          <i className="fa-solid fa-users floating-icon-1"></i>
+          <i className="fa-solid fa-user-graduate floating-icon-2"></i>
+          <i className="fa-solid fa-id-card floating-icon-3"></i>
+          <i className="fa-solid fa-address-book floating-icon-4"></i>
+          <i className="fa-solid fa-user-friends floating-icon-5"></i>
+          <i className="fa-solid fa-user-check floating-icon-6"></i>
         </div>
-        <div className="dashboard-hero-container">
-          <h1 className="dashboard-hero-title">Student <span className="dashboard-animated">Directory</span></h1>
-          <p className="dashboard-hero-subtitle">Search and manage all registered students</p>
+        <div className="hero-content">
+          <h1>Student <span className="dashboard-animated">Directory</span></h1>
+          <p>Search and manage all registered students</p>
         </div>
       </section>
       
@@ -92,46 +94,123 @@ const CustodianStudentsPage = () => {
               onLogout={() => setIsLogoutModalOpen(true)}
             />
             <div className="dashboard-content">
-              <div className="section-actions">
-                <div className="search-wrapper modern">
-                  <input
-                    type="search"
-                    className="sidebar-search"
-                    placeholder="Search by name, ID, room..."
-                    value={studentSearchTerm}
-                    onChange={(e) => setStudentSearchTerm(e.target.value)}
-                  />
-                  <i className="fa-solid fa-magnifying-glass"></i>
+              <div className="modern-dashboard-container">
+                {/* Student Stats */}
+                <div className="stats-grid-modern">
+                  <div className="stat-card-modern blue">
+                    <div className="stat-icon"><i className="fa-solid fa-users"></i></div>
+                    <div className="stat-info">
+                      <h3>{students.length}</h3>
+                      <p>Total Students</p>
+                      <span className="stat-trend positive">Active residents</span>
+                    </div>
+                  </div>
+                  <div className="stat-card-modern green">
+                    <div className="stat-icon"><i className="fa-solid fa-user-check"></i></div>
+                    <div className="stat-info">
+                      <h3>{students.filter(s => s.status === 'Checked-in').length}</h3>
+                      <p>Checked In</p>
+                      <span className="stat-trend positive">Currently residing</span>
+                    </div>
+                  </div>
+                  <div className="stat-card-modern orange">
+                    <div className="stat-icon"><i className="fa-solid fa-calendar-check"></i></div>
+                    <div className="stat-info">
+                      <h3>{students.filter(s => s.status === 'Booked').length}</h3>
+                      <p>Booked</p>
+                      <span className="stat-trend positive">Pending check-in</span>
+                    </div>
+                  </div>
+                  <div className="stat-card-modern purple">
+                    <div className="stat-icon"><i className="fa-solid fa-door-open"></i></div>
+                    <div className="stat-info">
+                      <h3>{students.filter(s => s.status === 'Checked-out').length}</h3>
+                      <p>Checked Out</p>
+                      <span className="stat-trend negative">Recently departed</span>
+                    </div>
+                  </div>
                 </div>
-                <button className="btn primary small" onClick={() => setIsAddStudentModalOpen(true)}><i className="fas fa-user-plus"></i> Add Student</button>
-              </div>
 
-              <div className="dashboard-section">
-                <div className="student-grid">
-                  {filteredStudents.length === 0 ? (
-                    <p className="muted" style={{ textAlign: 'center', gridColumn: '1 / -1' }}>No students found matching your search.</p>
-                  ) : (
-                    filteredStudents.map(student => (
-                      <div className="student-card-new" key={student.id}>
-                        <div className="student-card-header">
-                          <img src={student.avatar} alt={student.name} />
-                          <div className="student-card-info">
-                            <span className="student-name">{student.name}</span>
-                            <span className="student-id">{student.studentId}</span>
+                {/* Students Management Header */}
+                <div className="students-management-header">
+                  <div className="header-info">
+                    <h3><i className="fas fa-users"></i> Student Directory</h3>
+                    <p>Manage and monitor all registered students</p>
+                  </div>
+                  <div className="header-actions">
+                    <div className="search-wrapper-modern">
+                      <i className="fas fa-search"></i>
+                      <input
+                        type="search"
+                        placeholder="Search by name, ID, room..."
+                        value={studentSearchTerm}
+                        onChange={(e) => setStudentSearchTerm(e.target.value)}
+                      />
+                    </div>
+                    <button className="btn primary" onClick={() => setIsAddStudentModalOpen(true)}>
+                      <i className="fas fa-user-plus"></i> Add Student
+                    </button>
+                  </div>
+                </div>
+
+                {/* Students Grid */}
+                <div className="students-section-modern">
+                  <div className="students-grid-modern">
+                    {filteredStudents.length === 0 ? (
+                      <div className="empty-state">
+                        <i className="fas fa-users"></i>
+                        <h4>No Students Found</h4>
+                        <p>No students match your search criteria.</p>
+                      </div>
+                    ) : (
+                      filteredStudents.map(student => (
+                        <div className="student-card-modern" key={student.id}>
+                          <div className="student-card-header">
+                            <div className="student-avatar">
+                              <img src={student.avatar} alt={student.name} />
+                              <div className={`status-dot ${student.status.toLowerCase().replace('-', '')}`}></div>
+                            </div>
+                            <div className="student-info">
+                              <h5>{student.name}</h5>
+                              <span className="student-id">{student.studentId}</span>
+                            </div>
+                            <div className="student-status">
+                              <span className={`status-badge-modern ${student.status.toLowerCase().replace('-', '')}`}>
+                                {student.status}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="student-details-modern">
+                            <div className="detail-row">
+                              <span className="label">Room</span>
+                              <span className="value">{student.room}</span>
+                            </div>
+                            <div className="detail-row">
+                              <span className="label">Contact</span>
+                              <span className="value">{student.contact || 'N/A'}</span>
+                            </div>
+                            <div className="detail-row">
+                              <span className="label">Course</span>
+                              <span className="value">{student.course || 'N/A'}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="student-actions-modern">
+                            <button className="action-btn view" onClick={() => handleViewProfile(student)} title="View Profile">
+                              <i className="fas fa-eye"></i>
+                            </button>
+                            <button className="action-btn message" title="Send Message">
+                              <i className="fas fa-paper-plane"></i>
+                            </button>
+                            <button className="action-btn remove" onClick={() => handleRemoveStudent(student.id)} title="Remove Student">
+                              <i className="fas fa-trash-alt"></i>
+                            </button>
                           </div>
                         </div>
-                        <div className="student-card-body">
-                          <div className="student-detail"><small>Room No.</small><span>{student.room}</span></div>
-                          <div className="student-detail"><small>Status</small><span className={`status-indicator ${student.status.toLowerCase().replace('-', '')}`}>{student.status}</span></div>
-                        </div>
-                        <div className="student-card-actions">
-                          <button className="btn-icon view" title="View Profile" onClick={() => handleViewProfile(student)}><i className="fas fa-eye"></i></button>
-                          <button className="btn-icon message" title="Send Message"><i className="fas fa-paper-plane"></i></button>
-                          <button className="btn-icon remove" title="Remove Student" onClick={() => handleRemoveStudent(student.id)}><i className="fas fa-trash-alt"></i></button>
-                        </div>
-                      </div>
-                    ))
-                  )}
+                      ))
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { RoomDataProvider } from './src/contexts/RoomDataContext';
 
 // Import layout components
 import Header from './src/components/layout/Header';
@@ -36,8 +37,10 @@ import CustodianAnalyticsPage from './src/features/custodian/CustodianAnalyticsP
 import CustodianAuditLogPage from './src/features/custodian/CustodianAuditLogPage';
 import CustodianProfilePage from './src/features/custodian/CustodianProfilePage';
 import CustodianMaintenancePage from './src/features/custodian/CustodianMaintenancePage';
+import HostelRegistrationPage from './src/features/hostels/HostelRegistrationPage';
 
 function App() {
+  const location = useLocation();
   // State for modals (these would typically be managed by a context or Redux in a larger app)
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authRedirectTo, setAuthRedirectTo] = useState(null);
@@ -46,16 +49,22 @@ function App() {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewHostelName, setReviewHostelName] = useState('');
 
+  // Student dashboard routes where header and footer should be hidden
+  const studentDashboardRoutes = ['/dashboard', '/my-bookings', '/maintenance', '/profile'];
+  const shouldHideHeaderFooter = studentDashboardRoutes.includes(location.pathname);
+
   return (
-    <>
-      <Header
-        onOpenAuthModal={(redirectTo = null) => {
-          setAuthRedirectTo(redirectTo);
-          setIsAuthModalOpen(true);
-        }}
-        onOpenFavorites={() => setIsFavoritesOverlayOpen(true)}
-        onOpenDashboardChoice={() => setIsDashboardChoiceModalOpen(true)}
-      />
+    <RoomDataProvider>
+      {!shouldHideHeaderFooter && (
+        <Header
+          onOpenAuthModal={(redirectTo = null) => {
+            setAuthRedirectTo(redirectTo);
+            setIsAuthModalOpen(true);
+          }}
+          onOpenFavorites={() => setIsFavoritesOverlayOpen(true)}
+          onOpenDashboardChoice={() => setIsDashboardChoiceModalOpen(true)}
+        />
+      )}
       <main>
         <Routes>
           <Route path="/" element={<HomePage />} />
@@ -65,6 +74,7 @@ function App() {
             setAuthRedirectTo('booking');
             setIsAuthModalOpen(true);
           }} />} />
+          <Route path="/register-hostel" element={<HostelRegistrationPage />} />
           <Route path="/booking" element={<BookingPage />} />
           <Route path="/payment" element={<PaymentPage />} />
 
@@ -83,6 +93,7 @@ function App() {
             <Route path="/custodian-room-assignment" element={<CustodianRoomAssignmentPage />} />
             <Route path="/custodian-room-management" element={<CustodianRoomManagementPage />} />
             <Route path="/custodian-students" element={<CustodianStudentsPage />} />
+            <Route path="/custodian-hostel-registration" element={<HostelRegistrationPage />} />
             <Route path="/custodian-analytics" element={<CustodianAnalyticsPage />} />
             <Route path="/custodian-maintenance" element={<CustodianMaintenancePage />} />
             <Route path="/custodian-audit-log" element={<CustodianAuditLogPage />} />
@@ -93,7 +104,7 @@ function App() {
           <Route path="*" element={<div>404 Not Found</div>} />
         </Routes>
       </main>
-      <Footer />
+      {!shouldHideHeaderFooter && <Footer />}
 
       {/* Modals and Overlays */}
       <AuthModal 
@@ -110,7 +121,7 @@ function App() {
 
       <ToastContainer />
       <BackToTop />
-    </>
+    </RoomDataProvider>
   );
 }
 

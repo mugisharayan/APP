@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
 import '../../styles/modern-dashboard.css';
+import '../../styles/custodian-profile-modern.css';
 
 const CustodianProfilePage = () => {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -110,25 +111,18 @@ const CustodianProfilePage = () => {
 
   return (
     <>
-      <section className="dashboard-hero-section">
-        <div className="floating-home-icons">
-          <i className="fa-solid fa-user floating-home-1"></i>
-          <i className="fa-solid fa-user-gear floating-home-2"></i>
-          <i className="fa-solid fa-id-card floating-home-3"></i>
-          <i className="fa-solid fa-user-shield floating-home-4"></i>
-          <i className="fa-solid fa-user-cog floating-home-5"></i>
-          <i className="fa-solid fa-address-card floating-home-6"></i>
+      <section className="custodian-hero">
+        <div className="floating-icons">
+          <i className="fa-solid fa-user floating-icon-1"></i>
+          <i className="fa-solid fa-user-gear floating-icon-2"></i>
+          <i className="fa-solid fa-id-card floating-icon-3"></i>
+          <i className="fa-solid fa-user-shield floating-icon-4"></i>
+          <i className="fa-solid fa-user-cog floating-icon-5"></i>
+          <i className="fa-solid fa-address-card floating-icon-6"></i>
         </div>
-        <div className="dashboard-hero-container">
-          <div className="hero-profile-info">
-            <img src={profileData.profilePicture} alt="Profile" className="hero-profile-pic" />
-            <div className="hero-profile-text">
-              <h2 className="hero-profile-name">{profileData.fullName}</h2>
-              <p className="hero-profile-role">{profileData.role}</p>
-            </div>
-          </div>
-          <h1 className="dashboard-hero-title">My <span className="dashboard-animated">Profile</span></h1>
-          <p className="dashboard-hero-subtitle">Manage your personal information and account settings</p>
+        <div className="hero-content">
+          <h1>My <span className="dashboard-animated">Profile</span></h1>
+          <p>Manage your personal information and account settings</p>
         </div>
       </section>
       
@@ -142,66 +136,183 @@ const CustodianProfilePage = () => {
             />
             <div className="dashboard-content">
 
-            <div className="profile-content-new">
-              <div className="profile-banner-card">
-                <div className="profile-pic-banner-wrapper" onClick={handleProfilePicClick}>
-                  <img src={profileData.profilePicture} alt="Custodian profile" id="mainProfilePic" />
-                  <div className="edit-overlay">Change</div>
-                  <input type="file" id="profilePicInput" style={{ display: 'none' }} accept="image/*" onChange={handleProfilePicChange} />
-                </div>
-                <div className="profile-banner-content">
-                  {!isEditing ? (
-                    <div id="profile-view">
-                      <div className="profile-main-info">
-                        <h2>{profileData.fullName}</h2>
-                        <button className="btn-icon edit-profile-btn" onClick={handleEditProfile} title="Edit Profile"><i className="fas fa-pen"></i></button>
+              <div className="modern-dashboard-container">
+                {/* Profile Header Card */}
+                <div className="profile-header-card">
+                  <div className="profile-header-content">
+                    <div className="profile-avatar-section">
+                      <div className="profile-avatar-wrapper" onClick={handleProfilePicClick}>
+                        <img src={profileData.profilePicture} alt="Profile" className="profile-avatar" />
+                        <div className="avatar-edit-overlay">
+                          <i className="fas fa-camera"></i>
+                        </div>
+                        <input type="file" id="profilePicInput" style={{ display: 'none' }} accept="image/*" onChange={handleProfilePicChange} />
+                      </div>
+                    </div>
+                    <div className="profile-info-section">
+                      <div className="profile-name-row">
+                        <h2 className="profile-name">{profileData.fullName}</h2>
+                        <button className="edit-profile-btn" onClick={handleEditProfile}>
+                          <i className="fas fa-edit"></i> Edit Profile
+                        </button>
                       </div>
                       <p className="profile-role">{profileData.role}</p>
-                      <div className="profile-contact-grid">
-                        <div className="profile-contact-item">
-                          <i className="fas fa-envelope"></i>
-                          <span>{profileData.email}</span>
+                      <div className="profile-contact">
+                        <i className="fas fa-envelope"></i>
+                        <span>{profileData.email}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Settings Grid */}
+                <div className="profile-settings-grid">
+                  {/* Personal Information */}
+                  <div className="settings-card">
+                    <div className="settings-card-header">
+                      <div className="settings-icon">
+                        <i className="fas fa-user"></i>
+                      </div>
+                      <div className="settings-title">
+                        <h3>Personal Information</h3>
+                        <p>Update your personal details</p>
+                      </div>
+                    </div>
+                    {isEditing ? (
+                      <form className="settings-form" onSubmit={handleSaveProfile}>
+                        <div className="form-group">
+                          <label>Full Name</label>
+                          <input type="text" id="editFullName" value={profileData.fullName} onChange={handleEditChange} />
+                        </div>
+                        <div className="form-group">
+                          <label>Email Address</label>
+                          <input type="email" id="editEmail" value={profileData.email} onChange={handleEditChange} />
+                        </div>
+                        <div className="form-group">
+                          <label>Role</label>
+                          <input type="text" id="editRole" value={profileData.role} readOnly className="readonly" />
+                        </div>
+                        <div className="form-actions">
+                          <button type="submit" className="btn primary">
+                            <i className="fas fa-save"></i> Save Changes
+                          </button>
+                          <button type="button" className="btn outline" onClick={handleCancelEdit}>
+                            <i className="fas fa-times"></i> Cancel
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div className="settings-content">
+                        <div className="info-row">
+                          <span className="info-label">Full Name</span>
+                          <span className="info-value">{profileData.fullName}</span>
+                        </div>
+                        <div className="info-row">
+                          <span className="info-label">Email</span>
+                          <span className="info-value">{profileData.email}</span>
+                        </div>
+                        <div className="info-row">
+                          <span className="info-label">Role</span>
+                          <span className="info-value">{profileData.role}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Security Settings */}
+                  <div className="settings-card">
+                    <div className="settings-card-header">
+                      <div className="settings-icon">
+                        <i className="fas fa-shield-alt"></i>
+                      </div>
+                      <div className="settings-title">
+                        <h3>Security</h3>
+                        <p>Manage your password and security</p>
+                      </div>
+                    </div>
+                    <form className="settings-form" onSubmit={handlePasswordChange}>
+                      <div className="form-group">
+                        <label>Current Password</label>
+                        <div className="password-input">
+                          <input type="password" name="currentPassword" required />
+                          <i className="fas fa-eye-slash toggle-password" onClick={togglePasswordVisibility}></i>
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label>New Password</label>
+                        <div className="password-input">
+                          <input type="password" name="newPassword" required />
+                          <i className="fas fa-eye-slash toggle-password" onClick={togglePasswordVisibility}></i>
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label>Confirm New Password</label>
+                        <div className="password-input">
+                          <input type="password" name="confirmPassword" required />
+                          <i className="fas fa-eye-slash toggle-password" onClick={togglePasswordVisibility}></i>
+                        </div>
+                      </div>
+                      <button type="submit" className="btn primary">
+                        <i className="fas fa-key"></i> Update Password
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Preferences */}
+                  <div className="settings-card">
+                    <div className="settings-card-header">
+                      <div className="settings-icon">
+                        <i className="fas fa-cog"></i>
+                      </div>
+                      <div className="settings-title">
+                        <h3>Preferences</h3>
+                        <p>Customize your experience</p>
+                      </div>
+                    </div>
+                    <div className="settings-content">
+                      <div className="preference-item">
+                        <div className="preference-info">
+                          <h4>Dark Mode</h4>
+                          <p>Reduce eye strain in low-light conditions</p>
+                        </div>
+                        <label className="toggle-switch">
+                          <input type="checkbox" checked={darkMode} onChange={handleDarkModeToggle} />
+                          <span className="toggle-slider"></span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Account Stats */}
+                  <div className="settings-card">
+                    <div className="settings-card-header">
+                      <div className="settings-icon">
+                        <i className="fas fa-chart-line"></i>
+                      </div>
+                      <div className="settings-title">
+                        <h3>Account Activity</h3>
+                        <p>Your account statistics</p>
+                      </div>
+                    </div>
+                    <div className="settings-content">
+                      <div className="stats-grid">
+                        <div className="stat-item">
+                          <div className="stat-value">156</div>
+                          <div className="stat-label">Rooms Managed</div>
+                        </div>
+                        <div className="stat-item">
+                          <div className="stat-value">42</div>
+                          <div className="stat-label">Maintenance Tasks</div>
+                        </div>
+                        <div className="stat-item">
+                          <div className="stat-value">8</div>
+                          <div className="stat-label">Months Active</div>
                         </div>
                       </div>
                     </div>
-                  ) : (
-                    <form id="profile-edit-form" onSubmit={handleSaveProfile}>
-                      <div className="form-group"><label aria-label="Full Name">Full Name</label><input type="text" id="editFullName" value={profileData.fullName} onChange={handleEditChange} /></div>
-                      <div className="form-group"><label aria-label="Email Address">Email Address</label><input type="email" id="editEmail" value={profileData.email} onChange={handleEditChange} /></div>
-                      <div className="form-group"><label>Role</label><input type="text" id="editRole" value={profileData.role} readOnly /></div>
-                      <div className="form-actions" style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                        <button type="submit" className="btn primary">Save Changes</button>
-                        <button type="button" className="btn outline" onClick={handleCancelEdit}>Cancel</button>
-                      </div>
-                    </form>
-                  )}
-                </div>
-              </div>
-
-              <div className="profile-page-grid">
-                <div className="content-section">
-                  <div className="section-header"><h2>Display Settings</h2></div>
-                  <div className="notification-toggle">
-                    <div><strong>Dark Mode</strong><p className="muted">Reduce eye strain in low-light conditions.</p></div>
-                    <label className="switch"><input type="checkbox" id="darkModeToggle" checked={darkMode} onChange={handleDarkModeToggle} /><span className="slider round"></span></label>
-                  </div>
-                </div>
-                <div className="content-section">
-                  <div className="section-header"><h2>Security Settings</h2></div>
-                  <div className="security-sections-wrapper">
-                    <div className="security-section">
-                      <div className="security-section-header"><h4>Change Password</h4><small className="muted">Last updated: 3 months ago</small></div>
-                      <form id="password-change-form" onSubmit={handlePasswordChange}>
-                        <div className="form-group"><label htmlFor="currentPassword" aria-label="Current Password">Current Password</label><div className="password-wrapper"><input type="password" id="currentPassword" name="currentPassword" required /><i className="fas fa-eye-slash toggle-password" onClick={togglePasswordVisibility}></i></div></div>
-                        <div className="form-group"><label htmlFor="newPassword" aria-label="New Password">New Password</label><div className="password-wrapper"><input type="password" id="newPassword" name="newPassword" required /><i className="fas fa-eye-slash toggle-password" onClick={togglePasswordVisibility}></i></div></div>
-                        <div className="form-group"><label htmlFor="confirmPassword" aria-label="Confirm New Password">Confirm New Password</label><div className="password-wrapper"><input type="password" id="confirmPassword" name="confirmPassword" required /><i className="fas fa-eye-slash toggle-password" onClick={togglePasswordVisibility}></i></div></div>
-                        <button type="submit" className="btn primary" style={{ marginTop: '10px' }}>Update Password</button>
-                      </form>
-                    </div>
                   </div>
                 </div>
               </div>
-            </div>
           </div>
         </div>
       </div>

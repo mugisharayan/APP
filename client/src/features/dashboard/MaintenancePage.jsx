@@ -224,6 +224,22 @@ const MaintenancePage = () => {
                             <span>{new Date(req.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                           </div>
                           <p className="request-description">{req.description}</p>
+                          {req.custodianNotes && (
+                            <div className="custodian-notes">
+                              <i className="fas fa-comment"></i>
+                              <span>Custodian: {req.custodianNotes}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="request-actions">
+                          <button className="btn-small primary" onClick={() => setIsMessageCenterOpen(true)}>
+                            <i className="fas fa-comments"></i> Chat
+                          </button>
+                          {req.status !== 'Resolved' && (
+                            <button className="btn-small secondary">
+                              <i className="fas fa-camera"></i> Add Photo
+                            </button>
+                          )}
                         </div>
                         <div className="request-progress-bar">
                           <div className="progress-step" style={{width: req.status === 'Pending' ? '33%' : req.status === 'In Progress' ? '66%' : '100%'}}></div>

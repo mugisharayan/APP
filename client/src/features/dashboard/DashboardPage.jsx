@@ -3,11 +3,19 @@ import { Link, useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import { AuthContext } from '../auth/AuthContext';
 import DashboardSidebar from './DashboardSidebar';
+import StudentMessageCenter from '../../components/student/StudentMessageCenter';
+import PaymentInquiry from '../../components/student/PaymentInquiry';
+import RoomRequestForm from '../../components/student/RoomRequestForm';
+import NotificationBell from '../../components/student/NotificationBell';
+import SupportTicketForm from '../../components/student/SupportTicketForm';
+import EmergencyContact from '../../components/student/EmergencyContact';
+import StudentNotificationCenter from '../../components/student/StudentNotificationCenter';
 import bookingService from '../../service/booking.service';
 import userService from '../../service/user.service';
 import dashboardService from '../../service/dashboard.service';
 import receiptService from '../../service/receipt.service';
 import maintenanceService from '../../service/maintenance.service';
+import '../../styles/student-communication.css';
 
 const DashboardPage = ({ onOpenReviewModal }) => {
   const navigate = useNavigate();
@@ -17,6 +25,12 @@ const DashboardPage = ({ onOpenReviewModal }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [downloadingReceipt, setDownloadingReceipt] = useState(null);
+  const [isMessageCenterOpen, setIsMessageCenterOpen] = useState(false);
+  const [isPaymentInquiryOpen, setIsPaymentInquiryOpen] = useState(false);
+  const [isRoomRequestOpen, setIsRoomRequestOpen] = useState(false);
+  const [isSupportTicketOpen, setIsSupportTicketOpen] = useState(false);
+  const [isEmergencyContactOpen, setIsEmergencyContactOpen] = useState(false);
+  const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -153,6 +167,15 @@ const DashboardPage = ({ onOpenReviewModal }) => {
           <h1 className="dashboard-hero-title">Welcome Back, <span className="dashboard-animated">{userProfile?.fullName || 'Student'}</span>!</h1>
           <p className="dashboard-hero-subtitle">Here's what's happening with your bookings today</p>
         </div>
+        <div className="hero-actions">
+          <NotificationBell onClick={() => setIsNotificationCenterOpen(true)} />
+          <button className="icon-btn" onClick={() => setIsMessageCenterOpen(true)} title="Message Custodian">
+            <i className="fas fa-comments"></i>
+          </button>
+          <button className="icon-btn emergency-btn" onClick={() => setIsEmergencyContactOpen(true)} title="Emergency Contact">
+            <i className="fas fa-exclamation-triangle"></i>
+          </button>
+        </div>
       </section>
       
       <main className="dashboard-page">
@@ -256,13 +279,23 @@ const DashboardPage = ({ onOpenReviewModal }) => {
                     <span>Maintenance</span>
                     <i className="fa-solid fa-arrow-right arrow"></i>
                   </Link>
-                  <Link to="/profile" className="action-card-modern">
-                    <div className="action-icon green"><i className="fa-solid fa-user-pen"></i></div>
-                    <span>My Profile</span>
+                  <button onClick={() => setIsPaymentInquiryOpen(true)} className="action-card-modern">
+                    <div className="action-icon green"><i className="fa-solid fa-credit-card"></i></div>
+                    <span>Payment Inquiry</span>
                     <i className="fa-solid fa-arrow-right arrow"></i>
-                  </Link>
+                  </button>
+                  <button onClick={() => setIsRoomRequestOpen(true)} className="action-card-modern">
+                    <div className="action-icon purple"><i className="fa-solid fa-door-open"></i></div>
+                    <span>Room Request</span>
+                    <i className="fa-solid fa-arrow-right arrow"></i>
+                  </button>
+                  <button onClick={() => setIsSupportTicketOpen(true)} className="action-card-modern">
+                    <div className="action-icon red"><i className="fa-solid fa-life-ring"></i></div>
+                    <span>Get Support</span>
+                    <i className="fa-solid fa-arrow-right arrow"></i>
+                  </button>
                   <Link to="/hostels" className="action-card-modern">
-                    <div className="action-icon purple"><i className="fa-solid fa-search"></i></div>
+                    <div className="action-icon teal"><i className="fa-solid fa-search"></i></div>
                     <span>Browse Hostels</span>
                     <i className="fa-solid fa-arrow-right arrow"></i>
                   </Link>
@@ -368,6 +401,30 @@ const DashboardPage = ({ onOpenReviewModal }) => {
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
         onConfirm={handleLogout}
+      />
+      <StudentMessageCenter
+        isOpen={isMessageCenterOpen}
+        onClose={() => setIsMessageCenterOpen(false)}
+      />
+      <PaymentInquiry
+        isOpen={isPaymentInquiryOpen}
+        onClose={() => setIsPaymentInquiryOpen(false)}
+      />
+      <RoomRequestForm
+        isOpen={isRoomRequestOpen}
+        onClose={() => setIsRoomRequestOpen(false)}
+      />
+      <SupportTicketForm
+        isOpen={isSupportTicketOpen}
+        onClose={() => setIsSupportTicketOpen(false)}
+      />
+      <EmergencyContact
+        isOpen={isEmergencyContactOpen}
+        onClose={() => setIsEmergencyContactOpen(false)}
+      />
+      <StudentNotificationCenter
+        isOpen={isNotificationCenterOpen}
+        onClose={() => setIsNotificationCenterOpen(false)}
       />
     </>
   );

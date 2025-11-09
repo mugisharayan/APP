@@ -18,15 +18,27 @@ const HostelsPage = () => {
   });
   const [visibleHostelCount, setVisibleHostelCount] = useState(6);
 
-  // Load hostels from MongoDB
+  // Load hostels from localStorage and API
   useEffect(() => {
     const loadHostels = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await apiService.hostels.getAll();
-        const apiHostels = response.data.map(hostel => [hostel._id, hostel]);
-        setHostels(apiHostels);
+        
+        // Load from localStorage first
+        const localHostels = JSON.parse(localStorage.getItem('hostels') || '[]');
+        const localHostelsFormatted = localHostels.map(hostel => [hostel.id, hostel]);
+        
+        // Try to load from API
+        try {
+          const response = await apiService.hostels.getAll();
+          const apiHostels = response.data.map(hostel => [hostel._id, hostel]);
+          setHostels([...localHostelsFormatted, ...apiHostels]);
+        } catch (apiError) {
+          // If API fails, use only localStorage hostels
+          console.warn('API failed, using localStorage hostels only:', apiError);
+          setHostels(localHostelsFormatted);
+        }
       } catch (err) {
         console.error('Failed to load hostels:', err);
         setError('Failed to load hostels. Please check your connection and try again.');
