@@ -157,6 +157,9 @@ const DashboardPage = ({ onOpenReviewModal }) => {
           <p className="dashboard-hero-subtitle">Here's what's happening with your bookings today</p>
         </div>
         <div className="hero-actions">
+          <button className="icon-btn" onClick={() => navigate('/')} title="Back to Home" style={{background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', color: 'white', cursor: 'pointer', marginRight: '10px'}}>
+            <i className="fa-solid fa-arrow-left"></i>
+          </button>
           <NotificationBell onClick={() => setIsNotificationCenterOpen(true)} />
         </div>
       </section>

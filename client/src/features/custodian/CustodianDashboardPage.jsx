@@ -118,6 +118,9 @@ const CustodianDashboardPage = () => {
           <p>Manage hostel operations and oversee daily activities</p>
         </div>
         <div className="header-actions">
+          <button className="icon-btn" onClick={() => navigate('/')} title="Back to Home">
+            <i className="fa-solid fa-arrow-left"></i>
+          </button>
           <button className="icon-btn" onClick={toggleTheme} title={darkMode ? 'Light Mode' : 'Dark Mode'}>
             <i className={`fa-solid ${darkMode ? 'fa-sun' : 'fa-moon'}`}></i>
           </button>
