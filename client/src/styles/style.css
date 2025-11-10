@@ -1393,6 +1393,7 @@ input[type=range]::-webkit-slider-thumb {
 }
 .modal-content.auth-modal {
   max-width: 800px;
+  max-height: 90vh;
   display: flex;
   padding: 0;
   overflow: hidden;
@@ -1415,6 +1416,8 @@ input[type=range]::-webkit-slider-thumb {
   flex-basis: 55%;
   padding: 40px;
   position: relative;
+  overflow-y: auto;
+  max-height: 90vh;
 }
 .close-modal-btn {
   position: absolute;
@@ -1525,8 +1528,15 @@ input[type=range]::-webkit-slider-thumb {
 }
 @media(max-width: 768px) {
   .auth-image-panel { display: none; }
-  .auth-form-panel { flex-basis: 100%; }
-  .modal-content.auth-modal { max-width: 420px; }
+  .auth-form-panel { 
+    flex-basis: 100%; 
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .modal-content.auth-modal { 
+    max-width: 420px;
+    max-height: 90vh;
+  }
 }
 
 /* Toast Notification Styles */

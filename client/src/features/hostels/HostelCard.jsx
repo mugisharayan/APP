@@ -1,6 +1,7 @@
 import React, { useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../auth/AuthContext';
+import '../../styles/modern-hostel-card.css';
 
 const HostelCard = ({ hostelId, hostel }) => {
   const { isFavorited, toggleFavorite } = useContext(AuthContext);
@@ -14,6 +15,10 @@ const HostelCard = ({ hostelId, hostel }) => {
   // Get default image if no images provided
   const defaultImage = 'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&dpr=1';
   const hostelImage = hostel.images && hostel.images[0] ? hostel.images[0] : defaultImage;
+
+  const handleImageError = (e) => {
+    e.target.src = defaultImage;
+  };
 
   const handleFavoriteClick = async (e) => {
     e.preventDefault();
@@ -32,6 +37,7 @@ const HostelCard = ({ hostelId, hostel }) => {
           src={hostelImage}
           alt={hostel.name}
           className="hostel-image"
+          onError={handleImageError}
         />
         <div className="image-overlay">
           <button
@@ -64,31 +70,43 @@ const HostelCard = ({ hostelId, hostel }) => {
         </div>
 
         <div className="amenities-grid">
-          {hostel.amenities && hostel.amenities.slice(0, 4).map((amenity, index) => (
-            <div key={index} className="amenity-item" title={amenity.name}>
-              <i className={`fas ${amenity.icon}`}></i>
-              <span className="amenity-name">{amenity.name}</span>
-            </div>
-          ))}
-          {hostel.amenities && hostel.amenities.length > 4 && (
-            <div className="amenity-item more-amenities">
+          {hostel.amenities && hostel.amenities.slice(0, 6).map((amenity, index) => {
+            const amenityName = typeof amenity === 'string' ? amenity : amenity.name;
+            const amenityIcon = typeof amenity === 'string' ? 'fa-check' : (amenity.icon || 'fa-check');
+            
+            return (
+              <div key={index} className="amenity-item" title={amenityName}>
+                <i className={`fas ${amenityIcon}`}></i>
+              </div>
+            );
+          })}
+          {hostel.amenities && hostel.amenities.length > 6 && (
+            <div className="amenity-item" title={`${hostel.amenities.length - 6} more amenities`}>
               <i className="fas fa-plus"></i>
-              <span className="amenity-name">+{hostel.amenities.length - 4} more</span>
             </div>
           )}
         </div>
 
-        <div className="room-info">
+        <div className="hostel-stats">
           <div className="room-count">
             <i className="fas fa-bed"></i>
-            <span>{hostel.rooms ? hostel.rooms.length : 0} room types</span>
+            <span>{hostel.rooms ? hostel.rooms.length : 0} types</span>
           </div>
           <div className="contact-info">
             <i className="fas fa-phone"></i>
-            <span>{hostel.contact}</span>
+            <span>{hostel.contact?.slice(0, 8)}...</span>
           </div>
         </div>
 
+        <div className="rating-info">
+          <div className="rating-stars">
+            {[...Array(5)].map((_, i) => (
+              <i key={i} className={i < Math.round(hostel.averageRating || 0) ? 'fas fa-star' : 'far fa-star'}></i>
+            ))}
+          </div>
+          <span className="rating-text">{(hostel.averageRating || 0).toFixed(1)} ({hostel.reviewCount || 0})</span>
+        </div>
+        
         <div className="card-actions">
           <Link to={`/hostel/${hostelId}`} className="view-details-btn">
             <span>View Details</span>

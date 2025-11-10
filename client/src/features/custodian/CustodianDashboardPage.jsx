@@ -2,39 +2,31 @@ import React, { useState, useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
-import NotificationBell from '../../components/notifications/NotificationBell';
 import CustodianMessageCenter from '../../components/messaging/CustodianMessageCenter';
 import NotificationCenter from '../../components/notifications/NotificationCenter';
 import SupportTicketSystem from '../../components/support/SupportTicketSystem';
 import StudentDirectory from '../../components/communication/StudentDirectory';
 import PaymentReminder from '../../components/communication/PaymentReminder';
 import BookingManagement from '../../components/booking/BookingManagement';
-
 import RoomLevelManager from '../../components/hostel/RoomLevelManager';
 import IntegrationPanel from '../../components/integrations/IntegrationPanel';
-import Breadcrumb from '../../components/navigation/Breadcrumb';
-import GlobalSearch from '../../components/search/GlobalSearch';
-import HeatMap from '../../components/charts/HeatMap';
-import Timeline from '../../components/charts/Timeline';
 import { AuthContext } from '../auth/AuthContext';
 import { useCustodian } from '../../contexts/CustodianContext';
-import { useRoomData } from '../../contexts/RoomDataContext';
-import HostelLinkingModal from '../../components/custodian/HostelLinkingModal';
-import apiService from '../../service/api.service';
+import HostelCreationModal from '../../components/custodian/HostelCreationModal';
 import '../../styles/modern-dashboard.css';
 import '../../styles/mobile-responsive.css';
 import '../../styles/minimalist-dashboard.css';
 import '../../styles/communication-components.css';
 import '../../styles/custodian-modern.css';
+import '../../styles/hostel-creation.css';
 
 const CustodianDashboardPage = () => {
   const navigate = useNavigate();
   const { userProfile, logout, loading } = useContext(AuthContext);
-  const { hostelData, analytics, loadDashboardData } = useCustodian();
-  const { rooms, getRoomStats } = useRoomData();
-  const roomStats = getRoomStats();
-  const [showLinkModal, setShowLinkModal] = useState(false);
-  const [isLinked, setIsLinked] = useState(false);
+  const { hostelData, analytics, bookings, payments, roomStats, loadDashboardData } = useCustodian();
+  
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [hasHostel, setHasHostel] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isMessageCenterOpen, setIsMessageCenterOpen] = useState(false);
   const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
@@ -42,128 +34,40 @@ const CustodianDashboardPage = () => {
   const [isStudentDirectoryOpen, setIsStudentDirectoryOpen] = useState(false);
   const [isPaymentReminderOpen, setIsPaymentReminderOpen] = useState(false);
   const [isBookingManagementOpen, setIsBookingManagementOpen] = useState(false);
-
   const [isRoomManagerOpen, setIsRoomManagerOpen] = useState(false);
   const [isIntegrationPanelOpen, setIsIntegrationPanelOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
-  const [notifications, setNotifications] = useState([]);
 
-
-
-
-  // Generate real notifications based on system state
+  // Check if custodian has hostel on mount - ONLY ONCE
   useEffect(() => {
-    const generateNotifications = () => {
-      const realNotifications = [];
-      
-
-      // Check for pending payments
-      const pendingPayments = JSON.parse(localStorage.getItem('pendingPayments') || '[]');
-      if (pendingPayments.length > 0) {
-        realNotifications.push({
-          id: 'payments',
-          type: 'payment',
-          message: `${pendingPayments.length} payment${pendingPayments.length > 1 ? 's' : ''} awaiting approval`,
-          time: 'Now',
-          unread: true,
-          priority: 'high',
-          action: () => navigate('/custodian-payment-management')
-        });
-      }
-      
-      // Check for maintenance rooms
-      const maintenanceRooms = rooms.filter(r => r.status === 'Maintenance');
-      if (maintenanceRooms.length > 0) {
-        realNotifications.push({
-          id: 'maintenance',
-          type: 'maintenance',
-          message: `${maintenanceRooms.length} room${maintenanceRooms.length > 1 ? 's' : ''} need maintenance attention`,
-          time: 'Now',
-          unread: true,
-          priority: 'high',
-          action: () => navigate('/custodian-room-management')
-        });
-      }
-      
-      // Check for pending room assignments
-      const pendingAssignments = JSON.parse(localStorage.getItem('pendingAssignments') || '[]');
-      if (pendingAssignments.length > 0) {
-        realNotifications.push({
-          id: 'assignments',
-          type: 'booking',
-          message: `${pendingAssignments.length} student${pendingAssignments.length > 1 ? 's' : ''} waiting for room assignment`,
-          time: 'Now',
-          unread: true,
-          priority: 'medium',
-          action: () => navigate('/custodian-room-assignment')
-        });
-      }
-      
-      setNotifications(realNotifications);
-    };
-    
-    generateNotifications();
-    // Refresh notifications every 30 seconds
-    const interval = setInterval(generateNotifications, 30000);
-    return () => clearInterval(interval);
-  }, [rooms, navigate]);
-  const [weather, setWeather] = useState({ temp: 24, condition: 'Sunny', humidity: 65 });
-  const [widgets, setWidgets] = useState({
-    occupancy: true,
-    revenue: true,
-    maintenance: true,
-    weather: true
-  });
-
-  // Check hostel link on mount
-  useEffect(() => {
-    checkHostelLink();
-  }, []);
-
-  const checkHostelLink = async () => {
-    const linkedHostel = localStorage.getItem('linkedHostel');
-    if (linkedHostel) {
-      setIsLinked(true);
-    } else {
-      const data = await loadDashboardData();
-      if (data && data.hostel) {
-        setIsLinked(true);
-      }
-    }
-  };
-
-  const handleLinkSuccess = (hostelData) => {
-    setIsLinked(true);
-    // Store linked hostel data
-    localStorage.setItem('linkedHostel', JSON.stringify({
-      name: 'Lyn Modern Hostel',
-      id: 'lyn-modern-001',
-      custodianId: userProfile?.id || 'custodian-001',
-      linkedAt: new Date().toISOString()
-    }));
-  };
-
-  // Counter animation effect
-  useEffect(() => {
-    const counters = document.querySelectorAll('.counter-animation');
-    counters.forEach(counter => {
-      const target = parseFloat(counter.getAttribute('data-target'));
-      const increment = target / 100;
-      let current = 0;
-      
-      const updateCounter = () => {
-        if (current < target) {
-          current += increment;
-          counter.textContent = target % 1 === 0 ? Math.ceil(current) : current.toFixed(1);
-          setTimeout(updateCounter, 20);
+    const checkHostelStatus = async () => {
+      try {
+        const response = await loadDashboardData();
+        if (response && response.hostel) {
+          setHasHostel(true);
         } else {
-          counter.textContent = target % 1 === 0 ? target : target.toFixed(1);
+          setHasHostel(false);
         }
-      };
-      
-      setTimeout(updateCounter, 500);
-    });
-  }, []);
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+        setHasHostel(false);
+      }
+    };
+
+    checkHostelStatus();
+  }, []); // Empty dependency array - run only once
+
+  // Update hasHostel when hostelData changes
+  useEffect(() => {
+    if (hostelData) {
+      setHasHostel(true);
+    }
+  }, [hostelData]);
+
+  // Handle theme changes
+  useEffect(() => {
+    document.body.classList.toggle('dark-theme', darkMode);
+  }, [darkMode]);
 
   if (loading || !userProfile) {
     return (
@@ -195,20 +99,14 @@ const CustodianDashboardPage = () => {
     const newTheme = !darkMode;
     setDarkMode(newTheme);
     localStorage.setItem('theme', newTheme ? 'dark' : 'light');
-    document.body.classList.toggle('dark-theme', newTheme);
   };
 
-  const markNotificationRead = (id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? {...n, unread: false} : n));
+  const handleCreateSuccess = () => {
+    setHasHostel(true);
+    setShowCreateModal(false);
+    // Reload dashboard data
+    loadDashboardData();
   };
-
-  const toggleWidget = (widget) => {
-    setWidgets(prev => ({...prev, [widget]: !prev[widget]}));
-  };
-
-  useEffect(() => {
-    document.body.classList.toggle('dark-theme', darkMode);
-  }, [darkMode]);
 
   return (
     <>
@@ -221,47 +119,9 @@ const CustodianDashboardPage = () => {
           <button className="icon-btn" onClick={toggleTheme} title={darkMode ? 'Light Mode' : 'Dark Mode'}>
             <i className={`fa-solid ${darkMode ? 'fa-sun' : 'fa-moon'}`}></i>
           </button>
-          <div className="notification-dropdown">
-            <button className="icon-btn notification-btn" title="Notifications" onClick={() => setIsNotificationCenterOpen(true)}>
-              <i className="fa-solid fa-bell"></i>
-              {notifications.filter(n => n.unread).length > 0 && (
-                <span className="notification-badge">{notifications.filter(n => n.unread).length}</span>
-              )}
-            </button>
-            <div className="notification-dropdown-content">
-              <div className="notification-header">
-                <h4>Notifications</h4>
-                <button className="mark-all-read">Mark all read</button>
-              </div>
-              {notifications.length === 0 ? (
-                <div className="notification-item">
-                  <i className="fa-solid fa-check-circle" style={{color: '#10b981'}}></i>
-                  <div className="notification-content">
-                    <p>All caught up! No urgent items.</p>
-                  </div>
-                </div>
-              ) : (
-                notifications.map(notification => (
-                  <div 
-                    key={notification.id} 
-                    className={`notification-item ${notification.unread ? 'unread' : ''} ${notification.priority === 'high' ? 'high-priority' : ''}`} 
-                    onClick={() => {
-                      markNotificationRead(notification.id);
-                      if (notification.action) notification.action();
-                    }}
-                    style={{cursor: 'pointer'}}
-                  >
-                    <i className={`fa-solid ${notification.type === 'payment' ? 'fa-dollar-sign' : notification.type === 'maintenance' ? 'fa-wrench' : 'fa-bed'}`}></i>
-                    <div className="notification-content">
-                      <p>{notification.message}</p>
-                      <span className="notification-time">{notification.time}</span>
-                      {notification.priority === 'high' && <span className="priority-badge">URGENT</span>}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+          <button className="icon-btn" onClick={() => setIsNotificationCenterOpen(true)} title="Notifications">
+            <i className="fa-solid fa-bell"></i>
+          </button>
           <button className="icon-btn" onClick={() => setIsMessageCenterOpen(true)} title="Messages">
             <i className="fa-solid fa-envelope"></i>
           </button>
@@ -281,56 +141,63 @@ const CustodianDashboardPage = () => {
             />
             <div className="dashboard-content">
               <div className="modern-dashboard-container">
-                {/* Stats Overview */}
-                {!isLinked ? (
+                {!hasHostel ? (
                   <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-                    <i className="fas fa-link" style={{ fontSize: '64px', color: '#0ea5e9', marginBottom: '20px' }}></i>
-                    <h2>Link to Your Hostel</h2>
+                    <i className="fas fa-plus-circle" style={{ fontSize: '64px', color: '#0ea5e9', marginBottom: '20px' }}></i>
+                    <h2>Create Your Hostel</h2>
                     <p style={{ marginBottom: '30px', color: '#64748b' }}>
-                      Connect to an existing hostel in our database to access all analytics, bookings, and revenue data.
+                      Set up your hostel profile to start managing bookings, payments, and analytics.
                     </p>
                     <button 
+                      type="button"
                       className="btn primary" 
-                      onClick={() => setShowLinkModal(true)}
+                      onClick={() => setShowCreateModal(true)}
                       style={{ padding: '15px 30px', fontSize: '16px' }}
                     >
-                      <i className="fas fa-link"></i> Link to Hostel
+                      <i className="fas fa-plus"></i> Create Hostel
                     </button>
                   </div>
                 ) : (
-                  <div className="stats-grid-compact">
-                    <div className="stat-card-compact blue">
-                      <div className="stat-icon"><i className="fa-solid fa-users"></i></div>
-                      <div className="stat-info">
-                        <h3 className="counter-animation" data-target={roomStats.occupancyRate}>{roomStats.occupancyRate}</h3>
-                        <p>Occupancy %</p>
-                        <div className="stat-progress">
-                          <div className="progress-bar-mini" style={{width: `${roomStats.occupancyRate}%`}}></div>
+                  <>
+                    <div className="hostel-info-card" style={{ marginBottom: '20px', padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                      <h3 style={{ margin: '0 0 10px 0', color: '#1e293b' }}>
+                        <i className="fas fa-building" style={{ marginRight: '8px', color: '#0ea5e9' }}></i>
+                        {hostelData?.name}
+                      </h3>
+                      <p style={{ margin: '0', color: '#64748b' }}>
+                        <i className="fas fa-map-marker-alt" style={{ marginRight: '8px' }}></i>
+                        {hostelData?.location} • {bookings?.length || 0} bookings • {payments?.length || 0} payments
+                      </p>
+                    </div>
+                    <div className="stats-grid-compact">
+                      <div className="stat-card-compact blue">
+                        <div className="stat-icon"><i className="fa-solid fa-users"></i></div>
+                        <div className="stat-info">
+                          <h3>{roomStats?.total || 0}</h3>
+                          <p>Total Rooms</p>
+                          <div className="stat-trend">{roomStats?.occupied || 0} occupied</div>
+                        </div>
+                      </div>
+                      <div className="stat-card-compact green">
+                        <div className="stat-icon"><i className="fa-solid fa-money-bill-wave"></i></div>
+                        <div className="stat-info">
+                          <h3>{analytics?.totalRevenue ? (analytics.totalRevenue / 1000000).toFixed(1) : 0}</h3>
+                          <p>Revenue (M)</p>
+                          <div className="stat-trend positive">UGX {analytics?.monthlyRevenue?.toLocaleString() || 0} this month</div>
+                        </div>
+                      </div>
+                      <div className="stat-card-compact orange">
+                        <div className="stat-icon"><i className="fa-solid fa-bed"></i></div>
+                        <div className="stat-info">
+                          <h3>{bookings?.length || 0}</h3>
+                          <p>Total Bookings</p>
+                          <div className="stat-trend">{roomStats?.available || 0} rooms available</div>
                         </div>
                       </div>
                     </div>
-                    <div className="stat-card-compact green">
-                      <div className="stat-icon"><i className="fa-solid fa-money-bill-wave"></i></div>
-                      <div className="stat-info">
-                        <h3 className="counter-animation" data-target={analytics?.totalRevenue ? (analytics.totalRevenue / 1000000).toFixed(1) : 0}>
-                          {analytics?.totalRevenue ? (analytics.totalRevenue / 1000000).toFixed(1) : 0}
-                        </h3>
-                        <p>Revenue (M)</p>
-                        <div className="stat-trend positive">UGX {analytics?.monthlyRevenue?.toLocaleString() || 0} this month</div>
-                      </div>
-                    </div>
-                    <div className="stat-card-compact orange">
-                      <div className="stat-icon"><i className="fa-solid fa-bed"></i></div>
-                      <div className="stat-info">
-                        <h3 className="counter-animation" data-target={roomStats.occupied + roomStats.booked}>{roomStats.occupied + roomStats.booked}</h3>
-                        <p>Active Bookings</p>
-                        <div className="stat-trend">{roomStats.total} total rooms</div>
-                      </div>
-                    </div>
-                  </div>
+                  </>
                 )}
 
-                {/* Quick Actions Grid */}
                 <div className="quick-actions-compact">
                   <h3><i className="fas fa-bolt"></i> Quick Actions</h3>
                   <div className="actions-grid-compact">
@@ -349,38 +216,43 @@ const CustodianDashboardPage = () => {
                   </div>
                 </div>
 
-                {/* Main Content */}
                 <div className="content-single">
                   <div className="recent-activity-compact">
                     <div className="section-header-compact">
-                      <h3><i className="fas fa-clock"></i> Recent Activity</h3>
-                      <Link to="/custodian-audit-log" className="view-all-link">View All</Link>
+                      <h3><i className="fas fa-users"></i> Recent Bookings</h3>
+                      <Link to="/custodian-room-assignment" className="view-all-link">View All</Link>
                     </div>
                     <div className="activity-list-compact">
-                      <div className="activity-item-compact">
-                        <div className="activity-dot payment"></div>
-                        <div className="activity-content">
-                          <h5>Payment Received - Jane Doe</h5>
-                          <span className="activity-time">2m ago</span>
+                      {bookings && bookings.length > 0 ? (
+                        bookings.slice(0, 3).map((booking, index) => (
+                          <div key={booking.id || index} className="activity-item-compact">
+                            <div className={`activity-dot ${booking.status === 'active' ? 'booking' : booking.status === 'pending' ? 'pending' : 'cancelled'}`}></div>
+                            <div className="activity-content">
+                              <h5>{booking.student?.name || 'Student'} - {booking.roomName || booking.room?.name}</h5>
+                              <span className="activity-time">
+                                {booking.status} • {new Date(booking.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="activity-item-compact">
+                          <div className="activity-dot empty"></div>
+                          <div className="activity-content">
+                            <h5>No bookings yet</h5>
+                            <span className="activity-time">Waiting for first booking</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="activity-item-compact">
-                        <div className="activity-dot maintenance"></div>
-                        <div className="activity-content">
-                          <h5>Maintenance Request - Room B-205</h5>
-                          <span className="activity-time">1h ago</span>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 </div>
-
-
               </div>
             </div>
           </div>
         </div>
       </main>
+
       <LogoutConfirmModal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
@@ -410,7 +282,6 @@ const CustodianDashboardPage = () => {
         isOpen={isBookingManagementOpen}
         onClose={() => setIsBookingManagementOpen(false)}
       />
-
       <RoomLevelManager 
         isOpen={isRoomManagerOpen}
         onClose={() => setIsRoomManagerOpen(false)}
@@ -419,10 +290,10 @@ const CustodianDashboardPage = () => {
         isOpen={isIntegrationPanelOpen}
         onClose={() => setIsIntegrationPanelOpen(false)}
       />
-      <HostelLinkingModal 
-        isOpen={showLinkModal}
-        onClose={() => setShowLinkModal(false)}
-        onSuccess={handleLinkSuccess}
+      <HostelCreationModal 
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={handleCreateSuccess}
       />
     </>
   );

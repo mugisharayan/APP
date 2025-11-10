@@ -14,21 +14,38 @@ export const useCustodian = () => {
 export const CustodianProvider = ({ children }) => {
   const [hostelData, setHostelData] = useState(null);
   const [analytics, setAnalytics] = useState(null);
+  const [bookings, setBookings] = useState([]);
+  const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Link to existing hostel
-  const linkToHostel = async (hostelName) => {
+  // Create new hostel
+  const createHostel = async (hostelData) => {
     try {
       setLoading(true);
-      const data = await custodianService.linkToHostel(hostelName);
-      setHostelData(data.hostel);
-      setAnalytics(data.analytics);
+      const data = await custodianService.createHostel(hostelData);
+      setHostelData(data);
       setError(null);
       return data;
     } catch (err) {
       setError(err.message);
       throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get my hostel
+  const getMyHostel = async () => {
+    try {
+      setLoading(true);
+      const data = await custodianService.getMyHostel();
+      setHostelData(data);
+      setError(null);
+      return data;
+    } catch (err) {
+      setError(err.message);
+      return null;
     } finally {
       setLoading(false);
     }
@@ -41,6 +58,8 @@ export const CustodianProvider = ({ children }) => {
       const data = await custodianService.getDashboardData();
       setHostelData(data.hostel);
       setAnalytics(data.analytics);
+      setBookings(data.bookings || []);
+      setPayments(data.payments || []);
       setError(null);
       return data;
     } catch (err) {
@@ -51,14 +70,43 @@ export const CustodianProvider = ({ children }) => {
     }
   };
 
+  // Load bookings
+  const loadBookings = async () => {
+    try {
+      const data = await custodianService.getBookings();
+      setBookings(data);
+      return data;
+    } catch (err) {
+      setError(err.message);
+      return [];
+    }
+  };
+
+  // Load payments
+  const loadPayments = async () => {
+    try {
+      const data = await custodianService.getPayments();
+      setPayments(data);
+      return data;
+    } catch (err) {
+      setError(err.message);
+      return [];
+    }
+  };
+
   return (
     <CustodianContext.Provider value={{
       hostelData,
       analytics,
+      bookings,
+      payments,
       loading,
       error,
-      linkToHostel,
+      createHostel,
+      getMyHostel,
       loadDashboardData,
+      loadBookings,
+      loadPayments,
       setHostelData,
       setAnalytics
     }}>

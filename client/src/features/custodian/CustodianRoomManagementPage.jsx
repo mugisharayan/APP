@@ -27,7 +27,7 @@ const CustodianRoomManagementPage = () => {
     profilePicture: userProfile?.profilePicture || 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
   };
 
-  const { rooms, setRooms, updateRoom } = useRoomData();
+  const { rooms, setRooms, updateRoom, addRoom } = useRoomData();
 
   const handleRoomClick = (room) => {
     setSelectedRoom(room);
@@ -39,16 +39,10 @@ const CustodianRoomManagementPage = () => {
 
     const updatedRoom = { ...selectedRoom, status: newStatus };
     
-    // If setting to maintenance, initialize maintenance status
     if (newStatus === 'Maintenance') {
       updatedRoom.maintenanceStatus = 'Pending';
       updatedRoom.maintenanceDate = new Date().toISOString();
       updatedRoom.maintenanceDescription = 'Maintenance required';
-    } else if (selectedRoom.status === 'Maintenance' && newStatus !== 'Maintenance') {
-      // Clear maintenance data when leaving maintenance status
-      updatedRoom.maintenanceStatus = null;
-      updatedRoom.maintenanceDate = null;
-      updatedRoom.maintenanceDescription = null;
     }
 
     updateRoom(selectedRoom.id, updatedRoom);
@@ -83,35 +77,29 @@ const CustodianRoomManagementPage = () => {
   const handleAddRoom = async () => {
     if (!newRoom.id.trim()) return;
     
-    const linkedHostel = JSON.parse(localStorage.getItem('linkedHostel') || '{}');
-    const roomId = `LM-${newRoom.floor}${newRoom.id.padStart(2, '0')}`;
-    const newRoomData = {
-      id: roomId,
-      status: 'Available',
-      occupant: 'None',
+    const capacity = {
+      'Single': 1, 'Double': 2, 'Triple': 3,
+      'Shared': 4, 'Private': 1, 'Studio': 1
+    };
+    
+    const roomData = {
+      roomNumber: `${newRoom.floor}${newRoom.id.padStart(2, '0')}`,
+      floor: parseInt(newRoom.floor),
       roomType: newRoom.roomType,
-      occupancy: newRoom.roomType === 'Single' ? '0/1' : '0/2',
-      occupantGender: 'None',
-      hotel: linkedHostel.name || 'Lyn Modern Hostel',
-      block: 'A',
-      floor: newRoom.floor,
-      maintenanceStatus: null,
-      maintenanceDescription: null,
-      maintenanceDate: null
+      capacity: capacity[newRoom.roomType] || 1,
+      price: parseInt(newRoom.price) || 150000,
+      status: 'Available',
+      amenities: ['WiFi', 'Study Desk']
     };
     
     try {
-      // Add room to database
-      await addRoom(newRoomData);
+      await addRoom(roomData);
       alert('Room added successfully!');
+      setNewRoom({ id: '', roomType: 'Single', floor: '1', price: '' });
     } catch (error) {
       console.error('Failed to add room:', error);
-      // Fallback to local state
-      setPendingRooms(prev => [...prev, newRoomData]);
+      alert('Failed to add room: ' + error.message);
     }
-    
-    setNewRoom({ id: '', roomType: 'Single', hotel: 'Lyn Modern Hostel', block: 'A', floor: '1' });
-    setIsAddRoomModalOpen(false);
   };
 
   const confirmRoomsToFloorPlan = async () => {
@@ -246,6 +234,10 @@ const CustodianRoomManagementPage = () => {
                         <select value={newRoom.roomType} onChange={(e) => setNewRoom(prev => ({...prev, roomType: e.target.value}))}>
                           <option value="Single">Single Room</option>
                           <option value="Double">Double Room</option>
+                          <option value="Triple">Triple Room</option>
+                          <option value="Shared">Shared Room</option>
+                          <option value="Private">Private Room</option>
+                          <option value="Studio">Studio</option>
                         </select>
                       </div>
                       
@@ -258,6 +250,16 @@ const CustodianRoomManagementPage = () => {
                           onChange={(e) => setNewRoom(prev => ({...prev, id: e.target.value}))}
                           min="1"
                           max="99"
+                        />
+                      </div>
+                      
+                      <div className="form-group">
+                        <label>Price (UGX)</label>
+                        <input 
+                          type="number" 
+                          placeholder="150000" 
+                          value={newRoom.price} 
+                          onChange={(e) => setNewRoom(prev => ({...prev, price: e.target.value}))}
                         />
                       </div>
                       
@@ -487,7 +489,7 @@ const CustodianRoomManagementPage = () => {
                     </div>
                   </button>
                   
-                  {selectedRoom.roomType === 'Double' && (
+                  {(selectedRoom.roomType === 'Double' || selectedRoom.roomType === 'Triple') && (
                     <>
                       <button className="status-action-btn partial" onClick={() => handleForceAction('Partially Booked')}>
                         <div className="action-icon">
@@ -495,7 +497,7 @@ const CustodianRoomManagementPage = () => {
                         </div>
                         <div className="action-content">
                           <span className="action-title">Partially Booked</span>
-                          <span className="action-desc">One bed booked</span>
+                          <span className="action-desc">Some beds booked</span>
                         </div>
                       </button>
                       <button className="status-action-btn partial" onClick={() => handleForceAction('Partially Available')}>
@@ -504,7 +506,7 @@ const CustodianRoomManagementPage = () => {
                         </div>
                         <div className="action-content">
                           <span className="action-title">Partially Available</span>
-                          <span className="action-desc">One bed available</span>
+                          <span className="action-desc">Some beds available</span>
                         </div>
                       </button>
                     </>

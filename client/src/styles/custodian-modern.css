@@ -263,6 +263,9 @@
 .activity-dot.payment { background: #10b981; }
 .activity-dot.maintenance { background: #f59e0b; }
 .activity-dot.booking { background: #0ea5e9; }
+.activity-dot.pending { background: #f59e0b; }
+.activity-dot.cancelled { background: #ef4444; }
+.activity-dot.empty { background: #cbd5e1; }
 
 .activity-content {
   flex: 1;

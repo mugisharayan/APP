@@ -46,7 +46,7 @@ const AuthModal = ({ isOpen, onClose, redirectTo = null }) => {
   }, [password, view]);
 
   const isPasswordValid = Object.values(passwordValidations).every(Boolean);
-  const passwordsMatch = password === confirmPassword && confirmPassword !== '';
+  const passwordsMatch = password === confirmPassword && confirmPassword !== '' && password !== '';
 
   const handleSignup = async (e) => {
     e.preventDefault();
@@ -251,7 +251,7 @@ const AuthModal = ({ isOpen, onClose, redirectTo = null }) => {
                       </div>
                     )}
                   </div>
-                  <button type="submit" className="btn primary full-width" disabled={!isPasswordValid || !passwordsMatch}>Create Account</button>
+                  <button type="submit" className="btn primary full-width" disabled={!fullName || !email || !password || !confirmPassword || !isPasswordValid || !passwordsMatch || (role === 'Custodian' && (!hostelInfo.hostelName || !hostelInfo.hostelContact))}>Create Account</button>
                 </form>
                 <p className="form-switcher">Already have an account? <a href="#" onClick={(e) => handleFormSwitch(e, 'login')}>Login</a></p>
               </div>

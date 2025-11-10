@@ -18,36 +18,29 @@ const HostelsPage = () => {
   });
   const [visibleHostelCount, setVisibleHostelCount] = useState(6);
 
-  // Load hostels from localStorage and API
+  // Load hostels from API only
+  const loadHostels = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await apiService.hostels.getAll();
+      const apiHostels = response.data.map(hostel => [hostel._id, hostel]);
+      setHostels(apiHostels);
+    } catch (err) {
+      console.error('Failed to load hostels:', err);
+      setError('Failed to load hostels. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadHostels = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Load from localStorage first
-        const localHostels = JSON.parse(localStorage.getItem('hostels') || '[]');
-        const localHostelsFormatted = localHostels.map(hostel => [hostel.id, hostel]);
-        
-        // Try to load from API
-        try {
-          const response = await apiService.hostels.getAll();
-          const apiHostels = response.data.map(hostel => [hostel._id, hostel]);
-          setHostels([...localHostelsFormatted, ...apiHostels]);
-        } catch (apiError) {
-          // If API fails, use only localStorage hostels
-          console.warn('API failed, using localStorage hostels only:', apiError);
-          setHostels(localHostelsFormatted);
-        }
-      } catch (err) {
-        console.error('Failed to load hostels:', err);
-        setError('Failed to load hostels. Please check your connection and try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
     loadHostels();
   }, []);
+
+  // Add function to refresh hostels (can be called after hostel creation)
+  window.refreshHostels = loadHostels;
 
   // Animation on scroll logic
   useEffect(() => {
@@ -349,6 +342,15 @@ const HostelsPage = () => {
                       </button>
                     </div>
                   )}
+                  <div style={{ textAlign: 'center', marginTop: '20px' }}>
+                    <button 
+                      className="btn outline" 
+                      onClick={loadHostels}
+                      style={{ padding: '10px 20px' }}
+                    >
+                      <i className="fas fa-refresh"></i> Refresh Hostels
+                    </button>
+                  </div>
                 </>
               )}
               </section>

@@ -10,21 +10,29 @@ axios.defaults.headers.common['Content-Type'] = 'application/json';
 axios.interceptors.request.use((config) => {
   const auth = localStorage.getItem('auth');
   if (auth) {
-    const userData = JSON.parse(auth);
-    if (userData.token) {
-      config.headers.Authorization = `Bearer ${userData.token}`;
+    try {
+      const userData = JSON.parse(auth);
+      if (userData.token && userData.token !== 'undefined' && userData.token !== 'null') {
+        config.headers.Authorization = `Bearer ${userData.token}`;
+      }
+    } catch (error) {
+      console.error('Invalid auth data in localStorage:', error);
+      localStorage.removeItem('auth');
     }
   }
   return config;
 });
 
 // Response interceptor for error handling
+let isRedirecting = false;
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !isRedirecting) {
+      isRedirecting = true;
+      console.log('401 Unauthorized - clearing auth and redirecting');
       localStorage.removeItem('auth');
-      window.location.href = '/';
+      window.location.replace('/');
     }
     return Promise.reject(error);
   }
@@ -171,11 +179,23 @@ const apiService = {
 
   // Custodian endpoints
   custodian: {
-    linkHostel: (hostelName) => 
-      axios.post(`${API_BASE_URL}/custodian/link-hostel`, { hostelName }),
+    createHostel: (hostelData) => 
+      axios.post(`${API_BASE_URL}/custodian/create-hostel`, hostelData),
+    
+    getMyHostel: () => 
+      axios.get(`${API_BASE_URL}/custodian/my-hostel`),
+    
+    updateHostel: (hostelData) => 
+      axios.put(`${API_BASE_URL}/custodian/update-hostel`, hostelData),
     
     getDashboardData: () => 
       axios.get(`${API_BASE_URL}/custodian/dashboard-data`),
+    
+    getBookings: () => 
+      axios.get(`${API_BASE_URL}/custodian/bookings`),
+    
+    getPayments: () => 
+      axios.get(`${API_BASE_URL}/custodian/payments`),
     
     getProfile: () => 
       axios.get(`${API_BASE_URL}/custodian/profile`),
@@ -185,8 +205,6 @@ const apiService = {
     
     changePassword: (passwordData) => 
       axios.put(`${API_BASE_URL}/custodian/change-password`, passwordData),
-    
-
     
     getPendingPayments: () => 
       axios.get(`${API_BASE_URL}/custodian/payments/pending`),

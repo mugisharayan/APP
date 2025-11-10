@@ -1,13 +1,33 @@
 import apiService from './api.service.js';
 
 const custodianService = {
-  // Link custodian to existing hostel
-  linkToHostel: async (hostelName) => {
+  // Create new hostel
+  createHostel: async (hostelData) => {
     try {
-      const response = await apiService.custodian.linkHostel(hostelName);
+      const response = await apiService.custodian.createHostel(hostelData);
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to link to hostel');
+      throw new Error(error.response?.data?.message || 'Failed to create hostel');
+    }
+  },
+
+  // Get my hostel
+  getMyHostel: async () => {
+    try {
+      const response = await apiService.custodian.getMyHostel();
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch hostel');
+    }
+  },
+
+  // Update hostel
+  updateHostel: async (hostelData) => {
+    try {
+      const response = await apiService.custodian.updateHostel(hostelData);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to update hostel');
     }
   },
 
@@ -18,6 +38,26 @@ const custodianService = {
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Failed to fetch dashboard data');
+    }
+  },
+
+  // Get custodian bookings
+  getBookings: async () => {
+    try {
+      const response = await apiService.custodian.getBookings();
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch bookings');
+    }
+  },
+
+  // Get custodian payments
+  getPayments: async () => {
+    try {
+      const response = await apiService.custodian.getPayments();
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch payments');
     }
   },
 

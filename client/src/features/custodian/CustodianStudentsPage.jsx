@@ -26,24 +26,48 @@ const CustodianStudentsPage = () => {
 
   // Generate student data based on occupied rooms
   const [students, setStudents] = useState(() => {
-    const occupiedRooms = rooms.filter(room => room.status === 'Occupied' || room.status === 'Booked');
-    return occupiedRooms.map((room, index) => ({
-      id: index + 1,
-      name: room.occupant !== 'None' ? room.occupant : `Student ${index + 1}`,
-      studentId: `210071234${index}`,
-      room: room.id,
-      status: room.status === 'Occupied' ? 'Checked-in' : 'Booked',
-      avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-      contact: `077123456${index}`,
-      email: `student${index + 1}@student.mak.ac.ug`,
-      course: 'B.Sc. Computer Science'
-    }));
+    const occupiedRooms = rooms.filter(room => room.status === 'Occupied');
+    const studentList = [];
+    
+    occupiedRooms.forEach((room, index) => {
+      if (room.student) {
+        // Single room with one student
+        studentList.push({
+          id: studentList.length + 1,
+          name: room.student.name,
+          studentId: `2100712${String(index + 1).padStart(3, '0')}`,
+          room: room.number,
+          status: 'Checked-in',
+          avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+          contact: room.student.phone,
+          email: room.student.email,
+          course: room.student.course
+        });
+      } else if (room.students) {
+        // Multiple students in shared room
+        room.students.forEach((student, studentIndex) => {
+          studentList.push({
+            id: studentList.length + 1,
+            name: student.name,
+            studentId: `2100712${String(index + 1)}${studentIndex}`,
+            room: room.number,
+            status: 'Checked-in',
+            avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            contact: student.phone,
+            email: student.email,
+            course: student.course
+          });
+        });
+      }
+    });
+    
+    return studentList;
   });
 
   const filteredStudents = students.filter(student =>
     student.name.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
     student.studentId.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
-    student.room.toLowerCase().includes(studentSearchTerm.toLowerCase())
+    student.room.toString().toLowerCase().includes(studentSearchTerm.toLowerCase())
   );
 
   const handleAddStudent = (e) => {
