@@ -177,6 +177,30 @@ const apiService = {
       axios.delete(`${API_BASE_URL}/rooms/${id}`)
   },
 
+  // Notification endpoints
+  notifications: {
+    getAll: () => 
+      axios.get(`${API_BASE_URL}/notifications`),
+    
+    markAsRead: (notificationId) => 
+      axios.put(`${API_BASE_URL}/notifications/${notificationId}/read`),
+    
+    getUnreadCount: () => 
+      axios.get(`${API_BASE_URL}/notifications/unread-count`)
+  },
+
+  // Message endpoints
+  messages: {
+    getAll: () => 
+      axios.get(`${API_BASE_URL}/messages`),
+    
+    send: (hostelId, content) => 
+      axios.post(`${API_BASE_URL}/messages`, { hostelId, content }),
+    
+    markAsRead: () => 
+      axios.put(`${API_BASE_URL}/messages/mark-read`)
+  },
+
   // Custodian endpoints
   custodian: {
     createHostel: (hostelData) => 
@@ -197,6 +221,18 @@ const apiService = {
     getPayments: () => 
       axios.get(`${API_BASE_URL}/custodian/payments`),
     
+    getRooms: () => 
+      axios.get(`${API_BASE_URL}/custodian/rooms`),
+    
+    createRoom: (roomData) => 
+      axios.post(`${API_BASE_URL}/custodian/rooms`, roomData),
+    
+    updateRoom: (roomId, roomData) => 
+      axios.put(`${API_BASE_URL}/custodian/rooms/${roomId}`, roomData),
+    
+    deleteRoom: (roomId) => 
+      axios.delete(`${API_BASE_URL}/custodian/rooms/${roomId}`),
+    
     getProfile: () => 
       axios.get(`${API_BASE_URL}/custodian/profile`),
     
@@ -213,7 +249,37 @@ const apiService = {
       axios.put(`${API_BASE_URL}/custodian/payments/${paymentId}/approve`),
     
     rejectPayment: (paymentId) => 
-      axios.put(`${API_BASE_URL}/custodian/payments/${paymentId}/reject`)
+      axios.put(`${API_BASE_URL}/custodian/payments/${paymentId}/reject`),
+    
+    seedRooms: () => 
+      axios.post(`${API_BASE_URL}/custodian/seed-rooms`),
+    
+    getPendingAssignments: () => 
+      axios.get(`${API_BASE_URL}/custodian/pending-assignments`),
+    
+    assignRoom: (paymentId, roomId) => 
+      axios.put(`${API_BASE_URL}/custodian/assign-room/${paymentId}`, { roomId }),
+    
+    getAssignmentHistory: () => 
+      axios.get(`${API_BASE_URL}/custodian/assignment-history`),
+    
+    getMaintenanceRequests: () => 
+      axios.get(`${API_BASE_URL}/custodian/maintenance-requests`),
+    
+    updateMaintenanceStatus: (requestId, status) => 
+      axios.put(`${API_BASE_URL}/custodian/maintenance-requests/${requestId}`, { status }),
+    
+    getMessages: () => 
+      axios.get(`${API_BASE_URL}/custodian/messages`),
+    
+    sendMessage: (recipientId, content) => 
+      axios.post(`${API_BASE_URL}/custodian/messages`, { recipientId, content }),
+    
+    markMessagesRead: () => 
+      axios.put(`${API_BASE_URL}/custodian/messages/mark-read`),
+    
+    getNotifications: () => 
+      axios.get(`${API_BASE_URL}/custodian/notifications`)
   }
 };
 

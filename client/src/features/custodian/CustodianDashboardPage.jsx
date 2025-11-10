@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
 import CustodianMessageCenter from '../../components/messaging/CustodianMessageCenter';
-import NotificationCenter from '../../components/notifications/NotificationCenter';
+import CustodianNotificationBell from '../../components/custodian/CustodianNotificationBell';
+import CustodianNotificationCenter from '../../components/custodian/CustodianNotificationCenter';
 import SupportTicketSystem from '../../components/support/SupportTicketSystem';
 import StudentDirectory from '../../components/communication/StudentDirectory';
 import PaymentReminder from '../../components/communication/PaymentReminder';
@@ -23,7 +24,7 @@ import '../../styles/hostel-creation.css';
 const CustodianDashboardPage = () => {
   const navigate = useNavigate();
   const { userProfile, logout, loading } = useContext(AuthContext);
-  const { hostelData, analytics, bookings, payments, roomStats, loadDashboardData } = useCustodian();
+  const { hostelData, analytics, bookings, payments, rooms, roomStats, loadDashboardData } = useCustodian();
   
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [hasHostel, setHasHostel] = useState(false);
@@ -119,15 +120,7 @@ const CustodianDashboardPage = () => {
           <button className="icon-btn" onClick={toggleTheme} title={darkMode ? 'Light Mode' : 'Dark Mode'}>
             <i className={`fa-solid ${darkMode ? 'fa-sun' : 'fa-moon'}`}></i>
           </button>
-          <button className="icon-btn" onClick={() => setIsNotificationCenterOpen(true)} title="Notifications">
-            <i className="fa-solid fa-bell"></i>
-          </button>
-          <button className="icon-btn" onClick={() => setIsMessageCenterOpen(true)} title="Messages">
-            <i className="fa-solid fa-envelope"></i>
-          </button>
-          <button className="icon-btn" onClick={() => setIsStudentDirectoryOpen(true)} title="Student Directory">
-            <i className="fa-solid fa-users"></i>
-          </button>
+          <CustodianNotificationBell onClick={() => setIsNotificationCenterOpen(true)} />
         </div>
       </section>
       
@@ -171,9 +164,9 @@ const CustodianDashboardPage = () => {
                     </div>
                     <div className="stats-grid-compact">
                       <div className="stat-card-compact blue">
-                        <div className="stat-icon"><i className="fa-solid fa-users"></i></div>
+                        <div className="stat-icon"><i className="fa-solid fa-door-open"></i></div>
                         <div className="stat-info">
-                          <h3>{roomStats?.total || 0}</h3>
+                          <h3>{roomStats?.total || rooms?.length || 0}</h3>
                           <p>Total Rooms</p>
                           <div className="stat-trend">{roomStats?.occupied || 0} occupied</div>
                         </div>
@@ -181,8 +174,8 @@ const CustodianDashboardPage = () => {
                       <div className="stat-card-compact green">
                         <div className="stat-icon"><i className="fa-solid fa-money-bill-wave"></i></div>
                         <div className="stat-info">
-                          <h3>{analytics?.totalRevenue ? (analytics.totalRevenue / 1000000).toFixed(1) : 0}</h3>
-                          <p>Revenue (M)</p>
+                          <h3>UGX {analytics?.totalRevenue ? (analytics.totalRevenue / 1000000).toFixed(1) : 0}M</h3>
+                          <p>Total Revenue</p>
                           <div className="stat-trend positive">UGX {analytics?.monthlyRevenue?.toLocaleString() || 0} this month</div>
                         </div>
                       </div>
@@ -190,8 +183,16 @@ const CustodianDashboardPage = () => {
                         <div className="stat-icon"><i className="fa-solid fa-bed"></i></div>
                         <div className="stat-info">
                           <h3>{bookings?.length || 0}</h3>
-                          <p>Total Bookings</p>
+                          <p>Active Bookings</p>
                           <div className="stat-trend">{roomStats?.available || 0} rooms available</div>
+                        </div>
+                      </div>
+                      <div className="stat-card-compact purple">
+                        <div className="stat-icon"><i className="fa-solid fa-credit-card"></i></div>
+                        <div className="stat-info">
+                          <h3>{payments?.filter(p => p.status === 'Completed')?.length || 0}</h3>
+                          <p>Payments</p>
+                          <div className="stat-trend">{payments?.filter(p => p.status === 'Pending')?.length || 0} pending</div>
                         </div>
                       </div>
                     </div>
@@ -209,10 +210,10 @@ const CustodianDashboardPage = () => {
                       <div className="action-icon orange"><i className="fa-solid fa-door-open"></i></div>
                       <span>Rooms</span>
                     </Link>
-                    <button className="action-card-compact" onClick={() => setIsMessageCenterOpen(true)}>
-                      <div className="action-icon purple"><i className="fa-solid fa-comments"></i></div>
-                      <span>Messages</span>
-                    </button>
+                    <Link to="/custodian-analytics" className="action-card-compact">
+                      <div className="action-icon purple"><i className="fa-solid fa-chart-line"></i></div>
+                      <span>Analytics</span>
+                    </Link>
                   </div>
                 </div>
 
@@ -262,7 +263,7 @@ const CustodianDashboardPage = () => {
         isOpen={isMessageCenterOpen}
         onClose={() => setIsMessageCenterOpen(false)}
       />
-      <NotificationCenter 
+      <CustodianNotificationCenter 
         isOpen={isNotificationCenterOpen}
         onClose={() => setIsNotificationCenterOpen(false)}
       />

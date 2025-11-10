@@ -161,12 +161,6 @@ const DashboardPage = ({ onOpenReviewModal }) => {
         </div>
         <div className="hero-actions">
           <NotificationBell onClick={() => setIsNotificationCenterOpen(true)} />
-          <button className="icon-btn" onClick={() => setIsMessageCenterOpen(true)} title="Message Custodian">
-            <i className="fas fa-comments"></i>
-          </button>
-          <button className="icon-btn emergency-btn" onClick={() => setIsEmergencyContactOpen(true)} title="Emergency Contact">
-            <i className="fas fa-exclamation-triangle"></i>
-          </button>
         </div>
       </section>
       

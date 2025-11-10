@@ -1150,6 +1150,68 @@
   margin: 0;
 }
 
+/* Success Popup */
+.success-popup {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  animation: slideInRight 0.3s ease-out;
+}
+
+.success-content {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  padding: 16px 20px;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 300px;
+  max-width: 400px;
+}
+
+.success-content i {
+  font-size: 20px;
+  color: white;
+}
+
+.success-content span {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Empty History State */
+.empty-history {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+}
+
+.empty-history i {
+  font-size: 48px;
+  color: #cbd5e1;
+  margin-bottom: 16px;
+}
+
+.empty-history p {
+  font-size: 14px;
+  margin: 0;
+}
+
 /* Responsive Design */
 @media (max-width: 1200px) {
   .assignment-layout-modern {
@@ -1203,6 +1265,17 @@
   
   .card-content h3 {
     font-size: 24px;
+  }
+  
+  .success-popup {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+  }
+  
+  .success-content {
+    min-width: auto;
+    max-width: none;
   }
 }
 

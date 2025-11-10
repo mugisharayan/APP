@@ -1,8 +1,9 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../auth/AuthContext';
-import { useRoomData } from '../../contexts/RoomDataContext';
+import { useCustodian } from '../../contexts/CustodianContext';
 import { useNotifications } from '../../contexts/NotificationContext';
+import custodianService from '../../service/custodian.service';
 import RoomAssignmentNotification from '../../components/notifications/RoomAssignmentNotification';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
@@ -37,7 +38,12 @@ const ROLES = {
 const CustodianRoomAssignmentPage = () => {
   const navigate = useNavigate();
   const { userProfile } = useContext(AuthContext);
-  const { rooms, getRoomStats, setRooms } = useRoomData();
+  const { rooms, roomStats, loadRooms, updateRoom } = useCustodian();
+
+  // Load rooms on component mount
+  useEffect(() => {
+    loadRooms();
+  }, []);
   const { addNotification } = useNotifications();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isAssignRoomModalOpen, setIsAssignRoomModalOpen] = useState(false);
@@ -67,23 +73,42 @@ const CustodianRoomAssignmentPage = () => {
     profilePicture: userProfile?.profilePicture || 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
   };
 
-  // Load pending assignments from localStorage and merge with initial data
-  const getInitialPendingAssignments = () => {
-    const storedPending = JSON.parse(localStorage.getItem('pendingAssignments') || '[]');
-    const initialPendingAssignments = [
-      { id: 1, name: 'John Doe', studentId: '22/U/12345', email: 'john.doe@university.edu', paidOn: '28 Jul 2024', avatar: 'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', preferences: 'Single room, Ground floor', priority: 'high', paymentAmount: '850,000' },
-      { id: 2, name: 'Aisha Bello', studentId: '22/U/98765', email: 'aisha.bello@university.edu', paidOn: '27 Jul 2024', avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', preferences: 'Double room, Any floor', priority: 'medium', paymentAmount: '650,000' },
-      { id: 3, name: 'David Wilson', studentId: '22/U/54321', email: 'david.wilson@university.edu', paidOn: '26 Jul 2024', avatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', preferences: 'Single room, Upper floor', priority: 'low', paymentAmount: '850,000' },
-      { id: 4, name: 'Maria Garcia', studentId: '22/U/67890', email: 'maria.garcia@university.edu', paidOn: '25 Jul 2024', avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', preferences: 'Double room, Ground floor', priority: 'medium', paymentAmount: '650,000' },
-      { id: 5, name: 'James Smith', studentId: '22/U/11111', email: 'james.smith@university.edu', paidOn: '24 Jul 2024', avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', preferences: 'Single room, Any floor', priority: 'high', paymentAmount: '850,000' },
-      { id: 6, name: 'Lisa Johnson', studentId: '22/U/22222', email: 'lisa.johnson@university.edu', paidOn: '23 Jul 2024', avatar: 'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', preferences: 'Double room, Upper floor', priority: 'low', paymentAmount: '650,000' },
-    ];
-    return [...storedPending, ...initialPendingAssignments];
+  const [pendingAssignments, setPendingAssignments] = useState([]);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+
+  // Load pending assignments from database
+  const loadPendingAssignments = async () => {
+    try {
+      const assignments = await custodianService.getPendingAssignments();
+      setPendingAssignments(assignments);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Failed to load pending assignments:', error);
+      setPendingAssignments([]);
+    }
   };
-  const { data: pendingAssignments, setData: setPendingAssignments, lastUpdated } = useRealTimeUpdates(getInitialPendingAssignments());
+
+  // Load assignment history from database
+  const loadAssignmentHistory = async () => {
+    try {
+      const response = await custodianService.getAssignmentHistory();
+      setAssignmentHistory(response.data.data || []);
+    } catch (error) {
+      console.error('Failed to load assignment history:', error);
+      setAssignmentHistory([]);
+    }
+  };
+
+  // Load pending assignments and history on mount
+  useEffect(() => {
+    loadPendingAssignments();
+    loadAssignmentHistory();
+  }, []);
 
   // Real assignment history from actual assignments
   const [assignmentHistory, setAssignmentHistory] = useState([]);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   // Enhanced room and hotel data with detailed occupant information
   const [hotelData, setHotelData] = useState({
@@ -251,6 +276,11 @@ const CustodianRoomAssignmentPage = () => {
   const getAllRooms = () => {
     return rooms.map(room => ({
       ...room,
+      id: room.roomNumber,
+      hotel: 'University Hotel A',
+      floor: room.floor,
+      occupancy: `${room.currentOccupants}/${room.capacity}`,
+      occupant: room.currentOccupants > 0 ? 'Occupied' : 'None',
       isAvailable: room.status === 'Available' || room.status === 'Partially Available',
       isPartiallyBooked: room.status === 'Partially Booked' || room.status === 'Partially Available'
     }));
@@ -286,15 +316,18 @@ const CustodianRoomAssignmentPage = () => {
     const accessToken = EmailService.generateAccessToken();
     
     // Find room details for email
-    const roomDetails = getAllRooms().find(room => room.id === roomId);
+    const roomDetails = getAllRooms().find(room => room.roomNumber === roomId);
     
     try {
+      // Assign room using database
+      await custodianService.assignRoom(selectedStudent.paymentId, roomDetails._id);
+      
       // Prepare assignment data for email service
       const assignmentData = {
         student: {
           name: selectedStudent.name,
           studentId: selectedStudent.studentId,
-          email: selectedStudent.email || `${selectedStudent.studentId}@university.edu`
+          email: selectedStudent.email
         },
         room: roomDetails,
         accessToken: accessToken,
@@ -305,31 +338,15 @@ const CustodianRoomAssignmentPage = () => {
       // Send email notification
       const emailResult = await EmailService.sendRoomAssignmentNotification(assignmentData);
       
-      // Update room status in RoomDataContext
-      const assignedRoom = rooms.find(r => r.id === roomId);
-      if (assignedRoom) {
-        const updatedRoom = {
-          ...assignedRoom,
-          status: assignedRoom.roomType === 'Double' && assignedRoom.status === 'Available' ? 'Partially Booked' : 'Booked',
-          occupant: selectedStudent.name,
-          occupantGender: 'Unknown',
-          occupancy: assignedRoom.roomType === 'Single' ? '1/1' : '1/2'
-        };
-        
-        // Update room in context
-        setRooms(prev => prev.map(room => 
-          room.id === roomId ? updatedRoom : room
-        ));
-      }
+      // Remove from pending assignments and reload data
+      setPendingAssignments(prev => prev.filter(s => s.id !== selectedStudent.id));
+      await loadRooms(); // Reload rooms to show updated occupancy
+      await loadAssignmentHistory(); // Reload assignment history
       
-      setPendingAssignments(prev => {
-        const updated = prev.filter(s => s.id !== selectedStudent.id);
-        // Update localStorage
-        const storedPending = JSON.parse(localStorage.getItem('pendingAssignments') || '[]');
-        const updatedStored = storedPending.filter(s => s.id !== selectedStudent.id);
-        localStorage.setItem('pendingAssignments', JSON.stringify(updatedStored));
-        return updated;
-      });
+      // Show success popup
+      setSuccessMessage(`Room ${roomId} successfully assigned to ${selectedStudent.name}!`);
+      setShowSuccessPopup(true);
+      setTimeout(() => setShowSuccessPopup(false), 3000);
       // Send notification to custodian with share callback
       addNotification({
         type: 'room_assignment',
@@ -352,9 +369,9 @@ const CustodianRoomAssignmentPage = () => {
       setAssignmentHistory(prev => [{ 
         id: Date.now(), 
         studentName: selectedStudent.name, 
-        room: roomId, 
+        room: roomDetails.roomNumber, 
         time: 'Just now',
-        type: assignedRoom?.roomType || 'Unknown',
+        type: roomDetails.roomType,
         assignedBy: custodianProfile.fullName,
         accessCode: accessToken,
         emailSent: emailResult.success,
@@ -365,7 +382,7 @@ const CustodianRoomAssignmentPage = () => {
       setCurrentToken(accessToken);
       setAssignedStudent({
         ...selectedStudent,
-        roomId: roomId,
+        roomId: roomDetails.roomNumber,
         emailSent: emailResult.success,
         email: assignmentData.student.email
       });
@@ -413,7 +430,7 @@ const CustodianRoomAssignmentPage = () => {
   };
 
   const filteredRooms = getAvailableRooms();
-  const roomStats = getRoomStats();
+  const stats = roomStats || { total: 0, available: 0, occupied: 0, occupancyRate: 0 };
 
   return (
     <>
@@ -450,15 +467,15 @@ const CustodianRoomAssignmentPage = () => {
                       <span className="card-title">Total Rooms</span>
                     </div>
                     <div className="card-content">
-                      <h3 className="counter-animation" data-target="{roomStats.total}">{roomStats.total}</h3>
+                      <h3 className="counter-animation" data-target="{stats.total}">{stats.total}</h3>
                       <p>Accommodation Units</p>
                       <div className="room-breakdown">
                         <div className="breakdown-item">
-                          <span className="count">{rooms.filter(r => r.roomType === 'Single').length}</span>
+                          <span className="count">{rooms?.filter(r => r.roomType === 'Single').length || 0}</span>
                           <span className="label">Single</span>
                         </div>
                         <div className="breakdown-item">
-                          <span className="count">{rooms.filter(r => r.roomType === 'Double').length}</span>
+                          <span className="count">{rooms?.filter(r => r.roomType === 'Double').length || 0}</span>
                           <span className="label">Double</span>
                         </div>
                       </div>
@@ -471,13 +488,13 @@ const CustodianRoomAssignmentPage = () => {
                       <span className="card-title">Available Rooms</span>
                     </div>
                     <div className="card-content">
-                      <h3 className="counter-animation" data-target="{roomStats.available}">{roomStats.available}</h3>
+                      <h3 className="counter-animation" data-target="{stats.available}">{stats.available}</h3>
                       <p>Ready for Assignment</p>
                       <div className="availability-indicator">
                         <div className="progress-bar">
                           <div className="progress" style={{width: `${(roomStats.available / roomStats.total) * 100}%`}}></div>
                         </div>
-                        <span className="percentage">{Math.round((roomStats.available / roomStats.total) * 100)}% Available</span>
+                        <span className="percentage">{Math.round((stats.available / stats.total) * 100) || 0}% Available</span>
                       </div>
                     </div>
                   </div>
@@ -509,13 +526,13 @@ const CustodianRoomAssignmentPage = () => {
                       <span className="card-title">Occupancy Rate</span>
                     </div>
                     <div className="card-content">
-                      <h3 className="counter-animation" data-target="{roomStats.occupancyRate}">{roomStats.occupancyRate}%</h3>
+                      <h3 className="counter-animation" data-target="{stats.occupancyRate}">{stats.occupancyRate}%</h3>
                       <p>Current Utilization</p>
                       <div className="occupancy-chart">
                         <div className="chart-circle">
                           <svg viewBox="0 0 36 36" className="circular-chart">
                             <path className="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                            <path className="circle" strokeDasharray={`${roomStats.occupancyRate}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path className="circle" strokeDasharray={`${stats.occupancyRate}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                           </svg>
                         </div>
                       </div>
@@ -642,30 +659,37 @@ const CustodianRoomAssignmentPage = () => {
                       <button className="view-all-btn">View All History</button>
                     </div>
                     <div className="assignment-history-grid">
-                      {assignmentHistory.slice(0, 3).map(activity => (
-                        <div className="history-card-grid" key={activity.id}>
-                          <div className="history-icon">
-                            <i className="fas fa-key"></i>
-                          </div>
-                          <div className="history-content">
-                            <div className="history-main">
-                              <strong>{activity.studentName}</strong> assigned to <strong>{activity.room}</strong>
-                              <span className="room-type-badge">{activity.type}</span>
-                            </div>
-                            <div className="history-meta">
-                              <span className="time">{activity.time}</span>
-                              <span className="separator">•</span>
-                              <span className="assignee">by {activity.assignedBy}</span>
-                              {activity.accessCode && (
-                                <>
-                                  <span className="separator">•</span>
-                                  <span className="access-code">Code: {activity.accessCode}</span>
-                                </>
-                              )}
-                            </div>
-                          </div>
+                      {assignmentHistory.length === 0 ? (
+                        <div className="empty-history">
+                          <i className="fas fa-history"></i>
+                          <p>No assignment history yet</p>
                         </div>
-                      ))}
+                      ) : (
+                        assignmentHistory.slice(0, 3).map(activity => (
+                          <div className="history-card-grid" key={activity.id}>
+                            <div className="history-icon">
+                              <i className="fas fa-key"></i>
+                            </div>
+                            <div className="history-content">
+                              <div className="history-main">
+                                <strong>{activity.studentName}</strong> assigned to <strong>{activity.room}</strong>
+                                <span className="room-type-badge">{activity.roomType}</span>
+                              </div>
+                              <div className="history-meta">
+                                <span className="time">{activity.time}</span>
+                                <span className="separator">•</span>
+                                <span className="assignee">by {activity.assignedBy}</span>
+                                {activity.accessCode && (
+                                  <>
+                                    <span className="separator">•</span>
+                                    <span className="access-code">Code: {activity.accessCode}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>
@@ -720,14 +744,19 @@ const CustodianRoomAssignmentPage = () => {
             <form className="modal-form-enhanced" onSubmit={handleConfirmAssignment}>
               <div className="hotels-overview">
                 {Object.entries(
-                  rooms.reduce((acc, room) => {
-                    const hotelName = room.hotel || 'University Hotel A';
-                    const floorNumber = room.floor || '1';
+                  (rooms || []).reduce((acc, room) => {
+                    const hotelName = 'University Hotel A';
+                    const floorNumber = room.floor || 1;
                     
                     if (!acc[hotelName]) acc[hotelName] = {};
                     if (!acc[hotelName][floorNumber]) acc[hotelName][floorNumber] = [];
                     
-                    acc[hotelName][floorNumber].push(room);
+                    acc[hotelName][floorNumber].push({
+                      ...room,
+                      id: room.roomNumber,
+                      occupancy: `${room.currentOccupants}/${room.capacity}`,
+                      occupant: room.currentOccupants > 0 ? 'Occupied' : 'None'
+                    });
                     return acc;
                   }, {})
                 ).map(([hotelName, floors]) => (
@@ -762,16 +791,16 @@ const CustodianRoomAssignmentPage = () => {
                               const statusClass = room.status.toLowerCase().replace(' ', '-');
                               
                               return (
-                                <div className={`room-card-enhanced status-${statusClass}`} key={room.id}>
+                                <div className={`room-card-enhanced status-${statusClass}`} key={room.roomNumber}>
                                   {isAvailable && (
                                     <label className="room-selection-enhanced" onClick={(e) => e.stopPropagation()}>
-                                      <input type="radio" name="availableRooms" value={room.id} required />
+                                      <input type="radio" name="availableRooms" value={room.roomNumber} required />
                                       <div className="radio-indicator-enhanced"></div>
                                     </label>
                                   )}
                                   
                                   <div className="room-header-enhanced">
-                                    <div className="room-number-enhanced">{room.id}</div>
+                                    <div className="room-number-enhanced">{room.roomNumber}</div>
                                     <i className={`fas ${room.roomType === 'Single' ? 'fa-bed' : 'fa-users'} room-type-icon-enhanced`}></i>
                                   </div>
                                   
@@ -781,16 +810,16 @@ const CustodianRoomAssignmentPage = () => {
                                     </div>
                                     <div className="room-occupancy-enhanced">
                                       <i className="fas fa-users"></i>
-                                      <span>{room.occupancy}</span>
+                                      <span>{room.currentOccupants}/{room.capacity}</span>
                                     </div>
                                   </div>
                                   
                                   <div className="room-footer-enhanced">
                                     <span className="room-type-enhanced">{room.roomType}</span>
-                                    {room.occupant !== 'None' && (
+                                    {room.currentOccupants > 0 && (
                                       <div className="occupants-indicator">
                                         <i className="fas fa-info-circle"></i>
-                                        <span>{room.occupant}</span>
+                                        <span>{room.currentOccupants} occupant{room.currentOccupants > 1 ? 's' : ''}</span>
                                       </div>
                                     )}
                                   </div>
@@ -1114,6 +1143,16 @@ const CustodianRoomAssignmentPage = () => {
                 setShowMessageModal(false);
               }}>Send Message</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Popup */}
+      {showSuccessPopup && (
+        <div className="success-popup">
+          <div className="success-content">
+            <i className="fas fa-check-circle"></i>
+            <span>{successMessage}</span>
           </div>
         </div>
       )}

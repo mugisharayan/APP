@@ -1,42 +1,48 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useMessages } from '../../contexts/MessageContext';
 import { AuthContext } from '../../features/auth/AuthContext';
-// Fixed import path
+import apiService from '../../service/api.service';
 
 const StudentMessageCenter = ({ isOpen, onClose }) => {
   const [newMessage, setNewMessage] = useState('');
+  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [conversationId, setConversationId] = useState(null);
-  const { conversations, sendMessage, createConversation } = useMessages();
+  const [hostelId, setHostelId] = useState(null);
   const { userProfile } = useContext(AuthContext);
 
   useEffect(() => {
-    if (isOpen && userProfile) {
-      // Find or create conversation for this student
-      let conv = conversations.find(c => c.studentId === userProfile.studentId);
-      if (!conv) {
-        const newConvId = createConversation(
-          userProfile.name,
-          userProfile.studentId,
-          userProfile.room || 'Not assigned'
-        );
-        setConversationId(newConvId);
-      } else {
-        setConversationId(conv.id);
-      }
+    if (isOpen) {
+      loadMessages();
+      // Find hostel ID from user's bookings or default to first hostel
+      setHostelId('673f8b8b123456789abcdef0'); // Default hostel ID for demo
     }
-  }, [isOpen, userProfile, conversations, createConversation]);
+  }, [isOpen]);
 
-  const handleSendMessage = () => {
-    if (!newMessage.trim() || !conversationId) return;
+  const loadMessages = async () => {
+    try {
+      setLoading(true);
+      const response = await apiService.messages.getAll();
+      setMessages(response.data.data || []);
+    } catch (error) {
+      console.error('Failed to load messages:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !hostelId) return;
     
     try {
-      sendMessage(conversationId, newMessage.trim(), 'student');
+      setLoading(true);
+      await apiService.messages.send(hostelId, newMessage.trim());
       setNewMessage('');
       setError('');
+      await loadMessages(); // Reload messages
     } catch (err) {
       setError('Failed to send message');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -51,14 +57,23 @@ const StudentMessageCenter = ({ isOpen, onClose }) => {
         </div>
         
         <div className="message-list">
-          {conversationId && conversations.find(c => c.id === conversationId)?.messages?.map(msg => (
-            <div key={msg.id} className={`message-item ${msg.senderType}`}>
-              <div className="message-content">
-                <p>{msg.message}</p>
-                <span className="message-time">{new Date(msg.timestamp).toLocaleTimeString()}</span>
+          {loading ? (
+            <p>Loading messages...</p>
+          ) : messages.length === 0 ? (
+            <p>No messages yet. Start a conversation!</p>
+          ) : (
+            messages.map(msg => (
+              <div key={msg._id} className={`message-item ${msg.senderRole}`}>
+                <div className="message-content">
+                  <div className="message-header">
+                    <strong>{msg.sender.name}</strong>
+                    <span className="message-time">{new Date(msg.createdAt).toLocaleTimeString()}</span>
+                  </div>
+                  <p>{msg.content}</p>
+                </div>
               </div>
-            </div>
-          )) || <p>No messages yet. Start a conversation!</p>}
+            ))
+          )}
         </div>
         
         <div className="message-input-area">
@@ -69,8 +84,8 @@ const StudentMessageCenter = ({ isOpen, onClose }) => {
             placeholder="Type your message..."
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
           />
-          <button onClick={handleSendMessage} className="btn primary">
-            <i className="fas fa-paper-plane"></i>
+          <button onClick={handleSendMessage} className="btn primary" disabled={loading}>
+            {loading ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-paper-plane"></i>}
           </button>
         </div>
       </div>

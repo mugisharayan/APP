@@ -1,20 +1,58 @@
 import React, { useState, useEffect } from 'react';
-import { useMessages } from '../../contexts/MessageContext';
+import custodianService from '../../service/custodian.service';
 
 const CustodianMessageCenter = ({ isOpen, onClose }) => {
-  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [selectedStudent, setSelectedStudent] = useState(null);
   const [newMessage, setNewMessage] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState('all');
+  const [loading, setLoading] = useState(false);
 
-  const { conversations, sendMessage, markAsRead } = useMessages();
+  useEffect(() => {
+    if (isOpen) {
+      loadMessages();
+    }
+  }, [isOpen]);
 
-  const messages = selectedConversation ? selectedConversation.messages || [] : [];
+  const loadMessages = async () => {
+    try {
+      const response = await custodianService.getMessages();
+      const msgs = response.data || [];
+      setMessages(msgs);
+      
+      // Extract unique students
+      const uniqueStudents = msgs.reduce((acc, msg) => {
+        if (msg.senderRole === 'student' && !acc.find(s => s._id === msg.sender._id)) {
+          acc.push(msg.sender);
+        }
+        return acc;
+      }, []);
+      setStudents(uniqueStudents);
+    } catch (error) {
+      console.error('Failed to load messages:', error);
+    }
+  };
 
-  const handleSendMessage = () => {
-    if (newMessage.trim() && selectedConversation) {
-      sendMessage(selectedConversation.id, newMessage.trim(), 'custodian');
+  const getConversationMessages = () => {
+    if (!selectedStudent) return [];
+    return messages.filter(msg => 
+      (msg.sender._id === selectedStudent._id) || 
+      (msg.recipient._id === selectedStudent._id)
+    ).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  };
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !selectedStudent) return;
+    
+    try {
+      setLoading(true);
+      await custodianService.sendMessage(selectedStudent._id, newMessage.trim());
       setNewMessage('');
+      await loadMessages();
+    } catch (error) {
+      console.error('Failed to send message:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -39,10 +77,10 @@ const CustodianMessageCenter = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="message-center-overlay">
-      <div className="message-center-container">
+    <div className="modal-overlay is-visible" onClick={(e) => e.target.className.includes('modal-overlay') && onClose()}>
+      <div className="modal-content message-center-modal" style={{ maxWidth: '800px', width: '90vw', height: '600px', display: 'flex', flexDirection: 'row' }}>
         {/* Conversations Sidebar */}
-        <div className="conversations-sidebar">
+        <div className="conversations-sidebar" style={{ width: '300px', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
           <div className="conversations-header">
             <h4><i className="fas fa-comments"></i> Student Messages</h4>
             <button onClick={onClose} className="close-btn">
@@ -83,87 +121,54 @@ const CustodianMessageCenter = ({ isOpen, onClose }) => {
           </div>
 
           <div className="conversations-list">
-            {conversations
-              .filter(conv => {
-                if (filterType === 'unread') return conv.unread;
-                if (filterType === 'priority') return conv.priority === 'high';
-                return true;
-              })
-              .filter(conv => 
-                conv.student.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                conv.room.toLowerCase().includes(searchQuery.toLowerCase())
-              )
-              .map(conv => (
-                <div 
-                  key={conv.id}
-                  onClick={() => {
-                    setSelectedConversation(conv);
-                    markAsRead(conv.id);
-                  }}
-                  className={`conversation-item ${selectedConversation?.id === conv.id ? 'active' : ''}`}
-                >
-                  <div className="conversation-avatar">
-                    <img 
-                      src={`https://ui-avatars.com/api/?name=${conv.student}&background=0ea5e9&color=fff`}
-                      alt={conv.student}
-                    />
-                    {conv.unread && <div className="unread-indicator"></div>}
+            {students.map(student => (
+              <div 
+                key={student._id}
+                onClick={() => setSelectedStudent(student)}
+                className={`conversation-item ${selectedStudent?._id === student._id ? 'active' : ''}`}
+              >
+                <div className="conversation-avatar">
+                  <img 
+                    src={`https://ui-avatars.com/api/?name=${student.name}&background=0ea5e9&color=fff`}
+                    alt={student.name}
+                  />
+                </div>
+                <div className="conversation-info">
+                  <div className="conversation-header">
+                    <h5>{student.name}</h5>
                   </div>
-                  <div className="conversation-info">
-                    <div className="conversation-header">
-                      <h5>{conv.student}</h5>
-                      <div className="conversation-meta">
-                        <i 
-                          className={`fas ${getTypeIcon(conv.type)}`}
-                          style={{ color: getPriorityColor(conv.priority) }}
-                        ></i>
-                        <span className="time">{new Date(conv.lastMessageTime).toLocaleTimeString()}</span>
-                      </div>
-                    </div>
-                    <div className="conversation-preview">
-                      <span className="room-tag">Room {conv.room}</span>
-                      <p>{conv.lastMessage}</p>
-                    </div>
+                  <div className="conversation-preview">
+                    <p>{student.email}</p>
                   </div>
                 </div>
-              ))}
+              </div>
+            ))}
           </div>
         </div>
         
         {/* Chat Area */}
-        <div className="chat-area">
-          {selectedConversation ? (
+        <div className="chat-area" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          {selectedStudent ? (
             <>
               <div className="chat-header">
                 <div className="student-info">
                   <img 
-                    src={`https://ui-avatars.com/api/?name=${selectedConversation.student}&background=0ea5e9&color=fff`}
-                    alt={selectedConversation.student}
+                    src={`https://ui-avatars.com/api/?name=${selectedStudent.name}&background=0ea5e9&color=fff`}
+                    alt={selectedStudent.name}
                   />
                   <div>
-                    <h4>{selectedConversation.student}</h4>
-                    <span>Room {selectedConversation.room} • ID: {selectedConversation.studentId}</span>
+                    <h4>{selectedStudent.name}</h4>
+                    <span>{selectedStudent.email}</span>
                   </div>
-                </div>
-                <div className="chat-actions">
-                  <button className="action-btn" title="View Student Profile">
-                    <i className="fas fa-user"></i>
-                  </button>
-                  <button className="action-btn" title="Call Student">
-                    <i className="fas fa-phone"></i>
-                  </button>
-                  <button className="action-btn" title="Email Student">
-                    <i className="fas fa-envelope"></i>
-                  </button>
                 </div>
               </div>
               
               <div className="messages-container">
-                {messages.map(msg => (
-                  <div key={msg.id} className={`message ${msg.senderType === 'student' ? 'student' : 'custodian'}`}>
+                {getConversationMessages().map(msg => (
+                  <div key={msg._id} className={`message ${msg.senderRole}`}>
                     <div className="message-content">
-                      <p>{msg.message}</p>
-                      <span className="message-time">{new Date(msg.timestamp).toLocaleTimeString()}</span>
+                      <p>{msg.content}</p>
+                      <span className="message-time">{new Date(msg.createdAt).toLocaleTimeString()}</span>
                     </div>
                   </div>
                 ))}
@@ -199,9 +204,9 @@ const CustodianMessageCenter = ({ isOpen, onClose }) => {
                     <button 
                       className="send-btn" 
                       onClick={handleSendMessage}
-                      disabled={!newMessage.trim()}
+                      disabled={!newMessage.trim() || loading}
                     >
-                      <i className="fas fa-paper-plane"></i>
+                      {loading ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-paper-plane"></i>}
                     </button>
                   </div>
                 </div>

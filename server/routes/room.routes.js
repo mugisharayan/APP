@@ -85,41 +85,4 @@ router.delete('/:id', protect, async (req, res) => {
   }
 });
 
-// Get room statistics
-router.get('/stats', protect, async (req, res) => {
-  try {
-    const hostel = await Hostel.findOne({ custodian: req.user._id });
-    if (!hostel) {
-      return res.json({ success: true, data: { total: 0, occupied: 0, available: 0, maintenance: 0 } });
-    }
-
-    const stats = await Room.aggregate([
-      { $match: { hostel: hostel._id } },
-      {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 }
-        }
-      }
-    ]);
-
-    const total = await Room.countDocuments({ hostel: hostel._id });
-    const result = {
-      total,
-      occupied: 0,
-      available: 0,
-      maintenance: 0,
-      reserved: 0
-    };
-
-    stats.forEach(stat => {
-      result[stat._id.toLowerCase()] = stat.count;
-    });
-
-    res.json({ success: true, data: result });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
 export default router;

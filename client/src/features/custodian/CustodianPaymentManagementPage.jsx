@@ -43,6 +43,8 @@ const CustodianPaymentManagementPage = () => {
   const [loading, setLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   
+  const [paymentMethodStats, setPaymentMethodStats] = useState({ mobileMoney: 0, creditCard: 0, bankTransfer: 0, total: 0 });
+
   // Load pending payments from database
   useEffect(() => {
     loadPendingPayments();
@@ -51,16 +53,40 @@ const CustodianPaymentManagementPage = () => {
   const loadPendingPayments = async () => {
     try {
       setLoading(true);
-      const response = await apiService.custodian.getPendingPayments();
-      setPendingPayments(response.data || []);
+      const response = await apiService.custodian.getPayments();
+      const allPayments = response.data.data || [];
+      
+      // Calculate payment method statistics from all payments
+      const methodStats = {
+        mobileMoney: allPayments.filter(p => p.paymentMethod === 'Mobile Money').length,
+        creditCard: allPayments.filter(p => p.paymentMethod === 'Credit Card').length,
+        bankTransfer: allPayments.filter(p => p.paymentMethod === 'Bank Transfer').length,
+        total: allPayments.length
+      };
+      setPaymentMethodStats(methodStats);
+      
+      // Filter for pending payments only
+      const pending = allPayments.filter(payment => payment.status === 'Pending');
+      
+      // Transform data to match UI expectations
+      const transformedPayments = pending.map(payment => ({
+        id: payment._id,
+        studentName: payment.student?.name || 'Unknown Student',
+        studentId: payment.student?.email?.split('@')[0] || 'N/A',
+        avatar: payment.student?.profilePicture || 'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+        amount: payment.amount?.toLocaleString() || '0',
+        method: payment.paymentMethod || 'Unknown',
+        date: new Date(payment.createdAt).toLocaleString(),
+        status: payment.status,
+        selected: false,
+        transactionId: payment.transactionId
+      }));
+      
+      setPendingPayments(transformedPayments);
       setLastUpdated(new Date());
     } catch (error) {
       console.error('Failed to load pending payments:', error);
-      // Fallback to sample data if API fails
-      setPendingPayments([
-        { id: 1, studentName: 'John Doe', studentId: '22/U/12345', avatar: 'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', amount: '850,000', method: 'Mobile Money', date: '2024-07-28 10:30 AM', status: 'Pending', selected: false },
-        { id: 2, studentName: 'Aisha Bello', studentId: '22/U/98765', avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', amount: '850,000', method: 'Mobile Money', date: '2024-07-27 02:11 PM', status: 'Flagged', selected: false }
-      ]);
+      setPendingPayments([]);
     } finally {
       setLoading(false);
     }
@@ -71,54 +97,67 @@ const CustodianPaymentManagementPage = () => {
     return JSON.parse(localStorage.getItem('paymentHistory') || '[]');
   });
 
-  const handleApprovePayment = async (id) => {
+  const handleApprovePayment = async (paymentId) => {
     try {
-    setPendingPayments(prev => prev.filter(p => p.id !== id));
-    const approvedPayment = pendingPayments.find(p => p.id === id);
-    if (approvedPayment) {
-      const historyEntry = { ...approvedPayment, status: 'Approved', dateVerified: new Date().toLocaleDateString('en-GB'), refundStatus: 'N/A' };
-      setPaymentHistory(prev => {
-        const updated = [historyEntry, ...prev];
-        localStorage.setItem('paymentHistory', JSON.stringify(updated));
-        return updated;
-      });
-      
-      // Add approved student to pending assignments
-      const pendingStudent = {
-        id: Date.now(),
-        name: approvedPayment.studentName,
-        studentId: approvedPayment.studentId,
-        email: `${approvedPayment.studentId.toLowerCase().replace('/', '')}@university.edu`,
-        paidOn: new Date().toLocaleDateString('en-GB'),
-        avatar: approvedPayment.avatar,
-        preferences: 'Single room, Any floor',
-        priority: 'high',
-        paymentAmount: approvedPayment.amount
-      };
-      
-      // Store in localStorage to pass to room assignment page
-      const existingPending = JSON.parse(localStorage.getItem('pendingAssignments') || '[]');
-      localStorage.setItem('pendingAssignments', JSON.stringify([...existingPending, pendingStudent]));
-      
-      // Redirect to room assignment page
-      navigate('/custodian-room-assignment');
-    }
+      const response = await apiService.custodian.approvePayment(paymentId);
+      if (response.data.success) {
+        // Remove from pending payments
+        setPendingPayments(prev => prev.filter(p => p.id !== paymentId));
+        
+        // Add to payment history
+        const approvedPayment = pendingPayments.find(p => p.id === paymentId);
+        if (approvedPayment) {
+          const historyEntry = { 
+            ...approvedPayment, 
+            status: 'Approved', 
+            dateVerified: new Date().toLocaleDateString('en-GB'), 
+            refundStatus: 'N/A' 
+          };
+          setPaymentHistory(prev => {
+            const updated = [historyEntry, ...prev];
+            localStorage.setItem('paymentHistory', JSON.stringify(updated));
+            return updated;
+          });
+        }
+        
+        alert('Payment approved successfully!');
+        loadPendingPayments(); // Reload payments
+      }
     } catch (error) {
       console.error('Failed to approve payment:', error);
+      alert('Failed to approve payment: ' + error.message);
     }
   };
 
-  const handleRejectPayment = (id) => {
-    setPendingPayments(prev => prev.filter(p => p.id !== id));
-    const rejectedPayment = pendingPayments.find(p => p.id === id);
-    if (rejectedPayment) {
-      const historyEntry = { ...rejectedPayment, status: 'Rejected', dateVerified: new Date().toLocaleDateString('en-GB'), refundStatus: 'Pending' };
-      setPaymentHistory(prev => {
-        const updated = [historyEntry, ...prev];
-        localStorage.setItem('paymentHistory', JSON.stringify(updated));
-        return updated;
-      });
-      // showToast(`Payment for ${rejectedPayment.studentName} rejected.`);
+  const handleRejectPayment = async (paymentId) => {
+    try {
+      const response = await apiService.custodian.rejectPayment(paymentId);
+      if (response.data.success) {
+        // Remove from pending payments
+        setPendingPayments(prev => prev.filter(p => p.id !== paymentId));
+        
+        // Add to payment history
+        const rejectedPayment = pendingPayments.find(p => p.id === paymentId);
+        if (rejectedPayment) {
+          const historyEntry = { 
+            ...rejectedPayment, 
+            status: 'Rejected', 
+            dateVerified: new Date().toLocaleDateString('en-GB'), 
+            refundStatus: 'Pending' 
+          };
+          setPaymentHistory(prev => {
+            const updated = [historyEntry, ...prev];
+            localStorage.setItem('paymentHistory', JSON.stringify(updated));
+            return updated;
+          });
+        }
+        
+        alert('Payment rejected successfully!');
+        loadPendingPayments(); // Reload payments
+      }
+    } catch (error) {
+      console.error('Failed to reject payment:', error);
+      alert('Failed to reject payment: ' + error.message);
     }
   };
 
@@ -244,9 +283,9 @@ const CustodianPaymentManagementPage = () => {
                         <div className="method-info">
                           <span className="method-name">Mobile Money</span>
                           <div className="method-stats">
-                            <span className="percentage">65%</span>
+                            <span className="percentage">{paymentMethodStats.total > 0 ? Math.round((paymentMethodStats.mobileMoney / paymentMethodStats.total) * 100) : 0}%</span>
                             <div className="progress-bar">
-                              <div className="progress" style={{width: '65%'}}></div>
+                              <div className="progress" style={{width: `${paymentMethodStats.total > 0 ? (paymentMethodStats.mobileMoney / paymentMethodStats.total) * 100 : 0}%`}}></div>
                             </div>
                           </div>
                         </div>
@@ -256,9 +295,9 @@ const CustodianPaymentManagementPage = () => {
                         <div className="method-info">
                           <span className="method-name">Credit Card</span>
                           <div className="method-stats">
-                            <span className="percentage">25%</span>
+                            <span className="percentage">{paymentMethodStats.total > 0 ? Math.round((paymentMethodStats.creditCard / paymentMethodStats.total) * 100) : 0}%</span>
                             <div className="progress-bar">
-                              <div className="progress" style={{width: '25%'}}></div>
+                              <div className="progress" style={{width: `${paymentMethodStats.total > 0 ? (paymentMethodStats.creditCard / paymentMethodStats.total) * 100 : 0}%`}}></div>
                             </div>
                           </div>
                         </div>
@@ -268,9 +307,9 @@ const CustodianPaymentManagementPage = () => {
                         <div className="method-info">
                           <span className="method-name">Bank Transfer</span>
                           <div className="method-stats">
-                            <span className="percentage">10%</span>
+                            <span className="percentage">{paymentMethodStats.total > 0 ? Math.round((paymentMethodStats.bankTransfer / paymentMethodStats.total) * 100) : 0}%</span>
                             <div className="progress-bar">
-                              <div className="progress" style={{width: '10%'}}></div>
+                              <div className="progress" style={{width: `${paymentMethodStats.total > 0 ? (paymentMethodStats.bankTransfer / paymentMethodStats.total) * 100 : 0}%`}}></div>
                             </div>
                           </div>
                         </div>

@@ -1,13 +1,15 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../auth/AuthContext';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
 import RoomLevelManager from '../../components/hostel/RoomLevelManager';
-import { useRoomData } from '../../contexts/RoomDataContext';
+import { useCustodian } from '../../contexts/CustodianContext';
+import custodianService from '../../service/custodian.service';
 import '../../styles/modern-dashboard.css';
 import '../../styles/custodian-modern.css';
 import '../../styles/room-management-modern.css';
+import '../../styles/room-management-database.css';
 
 const CustodianRoomManagementPage = () => {
   const navigate = useNavigate();
@@ -20,6 +22,7 @@ const CustodianRoomManagementPage = () => {
   const [currentFilter, setCurrentFilter] = useState('all');
   const [newRoom, setNewRoom] = useState({ id: '', roomType: 'Single', hotel: 'University Hotel A', block: 'A', floor: '1' });
   const [pendingRooms, setPendingRooms] = useState([]);
+  const [seeding, setSeeding] = useState(false);
 
   const custodianProfile = {
     fullName: userProfile?.name || 'Custodian',
@@ -27,27 +30,28 @@ const CustodianRoomManagementPage = () => {
     profilePicture: userProfile?.profilePicture || 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
   };
 
-  const { rooms, setRooms, updateRoom, addRoom } = useRoomData();
+  const { rooms, loadRooms, createRoom, updateRoom: updateRoomDB } = useCustodian();
+
+  // Load rooms on component mount
+  useEffect(() => {
+    loadRooms();
+  }, []);
 
   const handleRoomClick = (room) => {
     setSelectedRoom(room);
     setIsRoomActionModalOpen(true);
   };
 
-  const handleForceAction = (newStatus) => {
+  const handleForceAction = async (newStatus) => {
     if (!selectedRoom) return;
 
-    const updatedRoom = { ...selectedRoom, status: newStatus };
-    
-    if (newStatus === 'Maintenance') {
-      updatedRoom.maintenanceStatus = 'Pending';
-      updatedRoom.maintenanceDate = new Date().toISOString();
-      updatedRoom.maintenanceDescription = 'Maintenance required';
+    try {
+      const updatedRoom = await updateRoomDB(selectedRoom._id, { status: newStatus });
+      setSelectedRoom(updatedRoom);
+      setIsRoomActionModalOpen(false);
+    } catch (error) {
+      alert('Failed to update room status: ' + error.message);
     }
-
-    updateRoom(selectedRoom.id, updatedRoom);
-    setSelectedRoom(updatedRoom);
-    setIsRoomActionModalOpen(false);
   };
 
   const handleMaintenanceStatusUpdate = (newMaintenanceStatus) => {
@@ -83,38 +87,47 @@ const CustodianRoomManagementPage = () => {
     };
     
     const roomData = {
-      roomNumber: `${newRoom.floor}${newRoom.id.padStart(2, '0')}`,
+      roomNumber: `${newRoom.block}-${newRoom.floor}${newRoom.id.padStart(2, '0')}`,
       floor: parseInt(newRoom.floor),
       roomType: newRoom.roomType,
       capacity: capacity[newRoom.roomType] || 1,
       price: parseInt(newRoom.price) || 150000,
-      status: 'Available',
       amenities: ['WiFi', 'Study Desk']
     };
     
     try {
-      await addRoom(roomData);
+      await createRoom(roomData);
       alert('Room added successfully!');
-      setNewRoom({ id: '', roomType: 'Single', floor: '1', price: '' });
+      setNewRoom({ id: '', roomType: 'Single', hotel: 'University Hotel A', block: 'A', floor: '1', price: '' });
     } catch (error) {
       console.error('Failed to add room:', error);
       alert('Failed to add room: ' + error.message);
     }
   };
 
+  const handleSeedRooms = async () => {
+    try {
+      setSeeding(true);
+      await custodianService.seedRooms();
+      await loadRooms();
+      alert('Sample rooms created successfully!');
+    } catch (error) {
+      alert('Failed to seed rooms: ' + error.message);
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   const confirmRoomsToFloorPlan = async () => {
     try {
-      // Add all pending rooms to database
       for (const room of pendingRooms) {
-        await addRoom(room);
+        await createRoom(room);
       }
       setPendingRooms([]);
       alert('All rooms added to floor plan successfully!');
     } catch (error) {
       console.error('Failed to add rooms:', error);
-      // Fallback to local state
-      setRooms(prev => [...prev, ...pendingRooms]);
-      setPendingRooms([]);
+      alert('Failed to add rooms: ' + error.message);
     }
   };
 
@@ -219,6 +232,20 @@ const CustodianRoomManagementPage = () => {
                   </div>
                   
                   <div className="add-room-form">
+                    {rooms.length === 0 && (
+                      <div className="seed-rooms-section">
+                        <button
+                          className="seed-rooms-btn"
+                          onClick={handleSeedRooms}
+                          disabled={seeding}
+                        >
+                          <i className={`fas ${seeding ? 'fa-spinner fa-spin' : 'fa-seedling'}`}></i>
+                          {seeding ? 'Creating Sample Rooms...' : 'Create Sample Rooms'}
+                        </button>
+                        <p>Or add rooms manually below</p>
+                      </div>
+                    )}
+                    
                     <div className="form-row">
                       <div className="form-group">
                         <label>Floor</label>
@@ -322,41 +349,37 @@ const CustodianRoomManagementPage = () => {
                       <p>Click "Add Room" to start creating your floor plan</p>
                     </div>
                   ) : (
-                    // Group rooms by hotel and floor
+                    // Group rooms by floor
                     Object.entries(
                       filteredRooms.reduce((acc, room) => {
-                        const hotelKey = room.hotel || 'Unknown Hotel';
-                        const floorKey = `${room.block || 'Unknown'}-${room.floor || '1'}`;
-                        const key = `${hotelKey}|${floorKey}`;
-                        if (!acc[key]) acc[key] = [];
-                        acc[key].push(room);
+                        const floorKey = room.floor || 1;
+                        if (!acc[floorKey]) acc[floorKey] = [];
+                        acc[floorKey].push(room);
                         return acc;
                       }, {})
-                    ).map(([key, rooms]) => {
-                      const [hotel, floorInfo] = key.split('|');
-                      const [block, floor] = floorInfo.split('-');
+                    ).map(([floor, floorRooms]) => {
                       const floorName = floor === '1' ? 'Ground Floor' : floor === '2' ? 'First Floor' : `Floor ${floor}`;
                       
                       return (
-                        <div className="floor-section-modern" key={key}>
+                        <div className="floor-section-modern" key={floor}>
                           <div className="floor-header">
-                            <h3><i className="fas fa-building"></i> {hotel} - Block {block} - {floorName}</h3>
-                            <span className="room-count">{rooms.length} room{rooms.length > 1 ? 's' : ''}</span>
+                            <h3><i className="fas fa-building"></i> {floorName}</h3>
+                            <span className="room-count">{floorRooms.length} room{floorRooms.length > 1 ? 's' : ''}</span>
                           </div>
                           <div className="room-grid-modern">
-                            {rooms.map(room => (
+                            {floorRooms.map(room => (
                               <div
                                 className={`room-card-modern status-${room.status.toLowerCase().replace(/ /g, '-')}`}
-                                key={room.id}
+                                key={room._id}
                                 onClick={() => handleRoomClick(room)}
                               >
                                 <div className="room-header">
-                                  <span className="room-number">{room.id}</span>
+                                  <span className="room-number">{room.roomNumber}</span>
                                   <i className={`fas ${room.roomType === 'Single' ? 'fa-bed' : 'fa-users'} room-type-icon`}></i>
                                 </div>
                                 <div className="room-body">
                                   <div className="room-status">{room.status}</div>
-                                  <div className="room-occupancy">{room.occupancy}</div>
+                                  <div className="room-occupancy">{room.currentOccupants}/{room.capacity}</div>
                                 </div>
                                 <div className="room-footer">
                                   <span className="room-type">{room.roomType}</span>
@@ -389,10 +412,10 @@ const CustodianRoomManagementPage = () => {
             
             <div className="room-details-header">
               <div className="room-title-section">
-                <h3><i className="fas fa-door-open"></i> Room {selectedRoom.id}</h3>
+                <h3><i className="fas fa-door-open"></i> Room {selectedRoom.roomNumber}</h3>
                 <div className="room-meta">
                   <span className="room-type-badge">{selectedRoom.roomType}</span>
-                  <span className="room-location">{selectedRoom.hotel || 'Hotel'} - Block {selectedRoom.block || 'A'} - Floor {selectedRoom.floor || '1'}</span>
+                  <span className="room-location">Floor {selectedRoom.floor} • Capacity: {selectedRoom.capacity}</span>
                 </div>
               </div>
               <div className={`room-status-indicator status-${selectedRoom.status.toLowerCase().replace(/ /g, '-')}`}>
@@ -415,7 +438,11 @@ const CustodianRoomManagementPage = () => {
                     </div>
                     <div className="detail-row">
                       <span className="label">Occupancy:</span>
-                      <span className="value">{selectedRoom.occupancy}</span>
+                      <span className="value">{selectedRoom.currentOccupants}/{selectedRoom.capacity}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="label">Price:</span>
+                      <span className="value">UGX {selectedRoom.price?.toLocaleString()}</span>
                     </div>
                     <div className="detail-row">
                       <span className="label">Current Status:</span>
@@ -430,15 +457,21 @@ const CustodianRoomManagementPage = () => {
                     <h4>Occupant Details</h4>
                   </div>
                   <div className="info-details">
-                    {selectedRoom.occupant === 'None' ? (
+                    {selectedRoom.currentOccupants === 0 ? (
                       <div className="empty-occupant">
                         <i className="fas fa-bed"></i>
-                        <span>No current occupant</span>
+                        <span>No current occupants</span>
                       </div>
                     ) : (
                       <div className="occupant-info">
-                        <div className="occupant-name">{selectedRoom.occupant}</div>
-                        <div className="occupant-gender">Gender: {selectedRoom.occupantGender || 'Not specified'}</div>
+                        <div className="occupant-count">{selectedRoom.currentOccupants} occupant{selectedRoom.currentOccupants > 1 ? 's' : ''}</div>
+                        {selectedRoom.assignedStudents && selectedRoom.assignedStudents.length > 0 && (
+                          <div className="assigned-students">
+                            {selectedRoom.assignedStudents.map((student, index) => (
+                              <div key={index} className="student-name">{student.name}</div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

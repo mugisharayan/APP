@@ -12,6 +12,8 @@ import favoriteRoutes from './routes/favorite.routes.js';
 import communicationRoutes from './routes/communication.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import custodianRoutes from './routes/custodian.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
+import messageRoutes from './routes/message.routes.js';
 import healthRoutes from './routes/health.routes.js';
 
 // Load environment variables
@@ -65,6 +67,8 @@ app.use('/api/favorites', favoriteRoutes);
 app.use('/api/communication', communicationRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/custodian', custodianRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/messages', messageRoutes);
 app.use('/api', healthRoutes);
 
 // Error handler

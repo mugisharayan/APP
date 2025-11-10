@@ -7,6 +7,11 @@ const maintenanceRequestSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    hostel: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Hostel',
+      required: false,
+    },
     category: {
       type: String,
       required: true,

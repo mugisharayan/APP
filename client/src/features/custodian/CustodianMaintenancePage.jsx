@@ -4,6 +4,7 @@ import { AuthContext } from '../auth/AuthContext';
 import { useRoomData } from '../../contexts/RoomDataContext';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
+import custodianService from '../../service/custodian.service';
 import '../../styles/modern-dashboard.css';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
@@ -22,41 +23,56 @@ const CustodianMaintenancePage = () => {
     profilePicture: userProfile?.profilePicture || 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
   };
 
-  // Generate maintenance tickets from rooms with maintenance status
-  const [columns, setColumns] = useState(() => {
-    const maintenanceRooms = rooms.filter(room => room.status === 'Maintenance');
-    const newRequests = maintenanceRooms
-      .filter(room => !room.maintenanceStatus || room.maintenanceStatus === 'Pending')
-      .map((room, index) => ({
-        id: `${room.id}-${index}`,
-        room: room.id,
-        issue: 'Maintenance Required',
-        priority: 'Medium',
-        description: room.maintenanceDescription || 'Room requires maintenance attention',
-        submittedBy: room.occupant !== 'None' ? room.occupant : 'System',
-        submittedOn: new Date().toLocaleDateString('en-GB')
-      }));
-    
-    return {
-      'new-requests': {
-        name: 'New Requests',
-        icon: 'fa-inbox',
-        items: newRequests
-      },
-      'in-progress': {
-        name: 'In Progress',
-        icon: 'fa-tasks',
-        items: []
-      },
-      'resolved': {
-        name: 'Resolved',
-        icon: 'fa-check-circle',
-        items: []
-      }
-    };
+  const [columns, setColumns] = useState({
+    'new-requests': {
+      name: 'New Requests',
+      icon: 'fa-inbox',
+      items: []
+    },
+    'in-progress': {
+      name: 'In Progress',
+      icon: 'fa-tasks',
+      items: []
+    },
+    'resolved': {
+      name: 'Resolved',
+      icon: 'fa-check-circle',
+      items: []
+    }
   });
 
-  const handleDragEnd = (result) => {
+  // Load maintenance requests from database
+  const loadMaintenanceRequests = async () => {
+    try {
+      const requests = await custodianService.getMaintenanceRequests();
+      
+      const newColumns = {
+        'new-requests': { ...columns['new-requests'], items: [] },
+        'in-progress': { ...columns['in-progress'], items: [] },
+        'resolved': { ...columns['resolved'], items: [] }
+      };
+      
+      requests.forEach(request => {
+        if (request.status === 'Pending') {
+          newColumns['new-requests'].items.push(request);
+        } else if (request.status === 'In Progress') {
+          newColumns['in-progress'].items.push(request);
+        } else if (request.status === 'Resolved') {
+          newColumns['resolved'].items.push(request);
+        }
+      });
+      
+      setColumns(newColumns);
+    } catch (error) {
+      console.error('Failed to load maintenance requests:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadMaintenanceRequests();
+  }, []);
+
+  const handleDragEnd = async (result) => {
     const { source, destination } = result;
     if (!destination) return;
 
@@ -74,7 +90,7 @@ const CustodianMaintenancePage = () => {
         }
       });
     } else {
-      // Moving from one column to another
+      // Moving from one column to another - update status in database
       const sourceColumn = columns[source.droppableId];
       const destColumn = columns[destination.droppableId];
       const sourceItems = [...sourceColumn.items];
@@ -82,17 +98,37 @@ const CustodianMaintenancePage = () => {
       const [removed] = sourceItems.splice(source.index, 1);
       destItems.splice(destination.index, 0, removed);
 
-      setColumns({
-        ...columns,
-        [source.droppableId]: {
-          ...sourceColumn,
-          items: sourceItems
-        },
-        [destination.droppableId]: {
-          ...destColumn,
-          items: destItems
+      // Map column ID to status
+      const statusMap = {
+        'new-requests': 'Pending',
+        'in-progress': 'In Progress',
+        'resolved': 'Resolved'
+      };
+
+      try {
+        await custodianService.updateMaintenanceStatus(removed.id, statusMap[destination.droppableId]);
+        
+        setColumns({
+          ...columns,
+          [source.droppableId]: {
+            ...sourceColumn,
+            items: sourceItems
+          },
+          [destination.droppableId]: {
+            ...destColumn,
+            items: destItems
+          }
+        });
+        
+        // Reload rooms data to reflect status changes
+        if (window.custodianContext?.loadRooms) {
+          window.custodianContext.loadRooms();
         }
-      });
+      } catch (error) {
+        console.error('Failed to update status:', error);
+        // Revert the change on error
+        loadMaintenanceRequests();
+      }
     }
   };
 
@@ -101,30 +137,45 @@ const CustodianMaintenancePage = () => {
     setIsUpdateStatusModalOpen(true);
   };
 
-  const handleUpdateStatus = (e) => {
+  const handleUpdateStatus = async (e) => {
     e.preventDefault();
     if (!activeTicket) return;
 
-    const newStatusValue = e.target.ticketStatus.value; // 'in-progress' or 'resolved'
+    const newStatusValue = e.target.ticketStatus.value;
+    const statusMap = {
+      'in-progress': 'In Progress',
+      'resolved': 'Resolved'
+    };
 
-    // Move ticket between states
-    const newColumns = { ...columns };
-    let sourceColId = null;
+    try {
+      await custodianService.updateMaintenanceStatus(activeTicket.id, statusMap[newStatusValue]);
+      
+      // Move ticket between states
+      const newColumns = { ...columns };
+      let sourceColId = null;
 
-    // Find and remove the ticket from its current column
-    for (const colId in newColumns) {
-      const itemIndex = newColumns[colId].items.findIndex(item => item.id === activeTicket.id);
-      if (itemIndex > -1) {
-        sourceColId = colId;
-        newColumns[colId].items.splice(itemIndex, 1);
-        break;
+      // Find and remove the ticket from its current column
+      for (const colId in newColumns) {
+        const itemIndex = newColumns[colId].items.findIndex(item => item.id === activeTicket.id);
+        if (itemIndex > -1) {
+          sourceColId = colId;
+          newColumns[colId].items.splice(itemIndex, 1);
+          break;
+        }
       }
-    }
 
-    // Add the ticket to the new column
-    if (sourceColId) {
-      newColumns[newStatusValue].items.unshift(activeTicket);
-      setColumns(newColumns);
+      // Add the ticket to the new column
+      if (sourceColId) {
+        newColumns[newStatusValue].items.unshift(activeTicket);
+        setColumns(newColumns);
+      }
+      
+      // Reload rooms data to reflect status changes
+      if (window.custodianContext?.loadRooms) {
+        window.custodianContext.loadRooms();
+      }
+    } catch (error) {
+      console.error('Failed to update status:', error);
     }
 
     setIsUpdateStatusModalOpen(false);

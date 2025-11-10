@@ -9,8 +9,13 @@ const createMaintenanceRequest = async (req, res) => {
   const { category, roomNumber, description } = req.body;
 
   try {
+    // Simple fallback: find first available hostel
+    const Hostel = (await import('../models/hostel.model.js')).default;
+    const hostel = await Hostel.findOne({});
+    
     const request = new MaintenanceRequest({
       student: req.user._id,
+      hostel: hostel?._id || null,
       category,
       roomNumber,
       description,

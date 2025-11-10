@@ -1,7 +1,7 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../auth/AuthContext';
-import { useRoomData } from '../../contexts/RoomDataContext';
+import { useCustodian } from '../../contexts/CustodianContext';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
 import '../../styles/modern-dashboard.css';
@@ -11,12 +11,13 @@ import '../../styles/students-modern.css';
 const CustodianStudentsPage = () => {
   const navigate = useNavigate();
   const { userProfile } = useContext(AuthContext);
-  const { rooms } = useRoomData();
+  const { rooms, loadRooms } = useCustodian();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
   const [isViewProfileModalOpen, setIsViewProfileModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [studentSearchTerm, setStudentSearchTerm] = useState('');
+  const [students, setStudents] = useState([]);
 
   const custodianProfile = {
     fullName: userProfile?.name || 'Custodian',
@@ -24,45 +25,37 @@ const CustodianStudentsPage = () => {
     profilePicture: userProfile?.profilePicture || 'https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
   };
 
-  // Generate student data based on occupied rooms
-  const [students, setStudents] = useState(() => {
-    const occupiedRooms = rooms.filter(room => room.status === 'Occupied');
-    const studentList = [];
-    
-    occupiedRooms.forEach((room, index) => {
-      if (room.student) {
-        // Single room with one student
-        studentList.push({
-          id: studentList.length + 1,
-          name: room.student.name,
-          studentId: `2100712${String(index + 1).padStart(3, '0')}`,
-          room: room.number,
-          status: 'Checked-in',
-          avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-          contact: room.student.phone,
-          email: room.student.email,
-          course: room.student.course
-        });
-      } else if (room.students) {
-        // Multiple students in shared room
-        room.students.forEach((student, studentIndex) => {
-          studentList.push({
-            id: studentList.length + 1,
-            name: student.name,
-            studentId: `2100712${String(index + 1)}${studentIndex}`,
-            room: room.number,
-            status: 'Checked-in',
-            avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-            contact: student.phone,
-            email: student.email,
-            course: student.course
+  // Load rooms and generate students from database
+  useEffect(() => {
+    loadRooms();
+  }, []);
+
+  // Generate students from database rooms
+  useEffect(() => {
+    if (rooms && rooms.length > 0) {
+      const studentList = [];
+      
+      rooms.forEach((room) => {
+        if (room.assignedStudents && room.assignedStudents.length > 0) {
+          room.assignedStudents.forEach((student, index) => {
+            studentList.push({
+              id: `${room._id}-${index}`,
+              name: student.name || 'Unknown Student',
+              studentId: student.email?.split('@')[0] || `STU${Date.now()}`,
+              room: room.roomNumber,
+              status: room.currentOccupants > 0 ? 'Checked-in' : 'Booked',
+              avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+              contact: student.phone || 'N/A',
+              email: student.email || 'N/A',
+              course: 'Computer Science'
+            });
           });
-        });
-      }
-    });
-    
-    return studentList;
-  });
+        }
+      });
+      
+      setStudents(studentList);
+    }
+  }, [rooms]);
 
   const filteredStudents = students.filter(student =>
     student.name.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||

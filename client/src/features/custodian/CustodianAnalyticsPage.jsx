@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../auth/AuthContext';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
-import { useRoomData } from '../../contexts/RoomDataContext';
+
 import { useCustodian } from '../../contexts/CustodianContext';
 import '../../styles/modern-dashboard.css';
 import '../../styles/analytics-modern.css';
@@ -30,35 +30,55 @@ const CustodianAnalyticsPage = () => {
   const { userProfile } = useContext(AuthContext);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [dateRange, setDateRange] = useState('All Time');
-  const { rooms, getRoomStats, getRoomTypeStats, getMaintenanceStats } = useRoomData();
-  const { hostelData, analytics, loadDashboardData } = useCustodian();
-  const [roomStats, setRoomStats] = useState({ total: 0, available: 0, occupied: 0, booked: 0, maintenance: 0, partiallyOccupied: 0, occupancyRate: 0 });
+  const { rooms, roomStats, analytics, loadDashboardData, loadRooms } = useCustodian();
   const [roomTypeStats, setRoomTypeStats] = useState({ single: 0, double: 0 });
   const [maintenanceStats, setMaintenanceStats] = useState({ pending: 0, inProgress: 0, resolved: 0, total: 0 });
+  const [paymentMethodStats, setPaymentMethodStats] = useState({ mobileMoney: 0, bankTransfer: 0, creditCard: 0 });
 
   useEffect(() => {
     loadDashboardData();
+    loadRooms();
+    loadPaymentStats();
+  }, []);
+
+  const loadPaymentStats = async () => {
     try {
-      if (hostelData && hostelData.rooms) {
-        const dbRoomStats = {
-          total: hostelData.rooms.length,
-          available: hostelData.rooms.filter(r => r.status === 'available').length,
-          occupied: hostelData.rooms.filter(r => r.status === 'occupied').length,
-          booked: hostelData.rooms.filter(r => r.status === 'booked').length,
-          maintenance: hostelData.rooms.filter(r => r.status === 'maintenance').length,
-          partiallyOccupied: hostelData.rooms.filter(r => r.status === 'partially_occupied').length,
-          occupancyRate: analytics?.occupancyRate || 0
+      const { useCustodian } = await import('../../contexts/CustodianContext');
+      const custodianService = (await import('../../service/custodian.service')).default;
+      const payments = await custodianService.getPayments();
+      
+      if (payments && payments.length > 0) {
+        const methodStats = {
+          mobileMoney: payments.filter(p => p.paymentMethod === 'Mobile Money').length,
+          bankTransfer: payments.filter(p => p.paymentMethod === 'Bank Transfer').length,
+          creditCard: payments.filter(p => p.paymentMethod === 'Credit Card').length
         };
-        setRoomStats(dbRoomStats);
-      } else {
-        setRoomStats(getRoomStats());
+        setPaymentMethodStats(methodStats);
       }
-      setRoomTypeStats(getRoomTypeStats());
-      setMaintenanceStats(getMaintenanceStats());
     } catch (error) {
-      console.error('Error updating stats:', error);
+      console.error('Failed to load payment stats:', error);
     }
-  }, [rooms, hostelData, analytics, getRoomStats, getRoomTypeStats, getMaintenanceStats, loadDashboardData]);
+  };
+
+  useEffect(() => {
+    if (rooms && rooms.length > 0) {
+      // Calculate room type stats from database
+      const typeStats = {
+        single: rooms.filter(r => r.roomType === 'Single').length,
+        double: rooms.filter(r => r.roomType === 'Double').length
+      };
+      setRoomTypeStats(typeStats);
+
+      // Calculate maintenance stats from database
+      const maintStats = {
+        pending: rooms.filter(r => r.status === 'Maintenance').length,
+        inProgress: 0,
+        resolved: 0,
+        total: rooms.filter(r => r.status === 'Maintenance').length
+      };
+      setMaintenanceStats(maintStats);
+    }
+  }, [rooms]);
 
   const custodianProfile = {
     fullName: userProfile?.name || 'Custodian',
@@ -79,10 +99,15 @@ const CustodianAnalyticsPage = () => {
   };
 
   const roomStatusData = {
-    labels: ['Available', 'Occupied', 'Booked', 'Maintenance', 'Partially Occupied'],
+    labels: ['Available', 'Booked', 'Partially Booked', 'Maintenance'],
     datasets: [{
-      data: [roomStats.available || 0, roomStats.occupied || 0, roomStats.booked || 0, roomStats.maintenance || 0, roomStats.partiallyOccupied || 0],
-      backgroundColor: ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6'],
+      data: [
+        roomStats?.available || 0,
+        roomStats?.occupied || 0,
+        rooms?.filter(r => r.status === 'Partially Booked').length || 0,
+        roomStats?.maintenance || 0
+      ],
+      backgroundColor: ['#10B981', '#3B82F6', '#8B5CF6', '#EF4444'],
       borderWidth: 0
     }]
   };
@@ -97,10 +122,14 @@ const CustodianAnalyticsPage = () => {
   };
 
   const paymentMethodData = {
-    labels: ['Mobile Money', 'Bank Transfer', 'Credit Card', 'Cash'],
+    labels: ['Mobile Money', 'Bank Transfer', 'Credit Card'],
     datasets: [{
-      data: [45, 25, 20, 10],
-      backgroundColor: ['#10B981', '#3B82F6', '#F59E0B', '#8B5CF6'],
+      data: [
+        paymentMethodStats.mobileMoney || 0,
+        paymentMethodStats.bankTransfer || 0,
+        paymentMethodStats.creditCard || 0
+      ],
+      backgroundColor: ['#10B981', '#3B82F6', '#F59E0B'],
       borderWidth: 0
     }]
   };
@@ -183,7 +212,7 @@ const CustodianAnalyticsPage = () => {
                   <div className="stat-card-modern green">
                     <div className="stat-icon"><i className="fa-solid fa-check-circle"></i></div>
                     <div className="stat-info">
-                      <h3>{roomStats.available}</h3>
+                      <h3>{roomStats?.available || 0}</h3>
                       <p>Available Rooms</p>
                       <span className="stat-trend positive">Ready for booking</span>
                     </div>
@@ -191,15 +220,15 @@ const CustodianAnalyticsPage = () => {
                   <div className="stat-card-modern blue">
                     <div className="stat-icon"><i className="fa-solid fa-users"></i></div>
                     <div className="stat-info">
-                      <h3>{roomStats.occupied + roomStats.partiallyOccupied}</h3>
+                      <h3>{roomStats?.occupied || 0}</h3>
                       <p>Occupied Rooms</p>
-                      <span className="stat-trend positive">{roomStats.occupancyRate}% occupancy</span>
+                      <span className="stat-trend positive">{roomStats?.occupancyRate || 0}% occupancy</span>
                     </div>
                   </div>
                   <div className="stat-card-modern orange">
                     <div className="stat-icon"><i className="fa-solid fa-calendar-check"></i></div>
                     <div className="stat-info">
-                      <h3>{roomStats.booked}</h3>
+                      <h3>{rooms?.filter(r => r.status === 'Booked').length || 0}</h3>
                       <p>Booked Rooms</p>
                       <span className="stat-trend positive">Pending check-in</span>
                     </div>
@@ -207,7 +236,7 @@ const CustodianAnalyticsPage = () => {
                   <div className="stat-card-modern purple">
                     <div className="stat-icon"><i className="fa-solid fa-tools"></i></div>
                     <div className="stat-info">
-                      <h3>{roomStats.maintenance}</h3>
+                      <h3>{roomStats?.maintenance || 0}</h3>
                       <p>Under Maintenance</p>
                       <span className="stat-trend negative">Needs attention</span>
                     </div>
@@ -223,11 +252,11 @@ const CustodianAnalyticsPage = () => {
                     </div>
                     <div className="overview-stats">
                       <div className="overview-stat">
-                        <span className="stat-number">{roomStats.total}</span>
+                        <span className="stat-number">{roomStats?.total || 0}</span>
                         <span className="stat-label">Total Rooms</span>
                       </div>
                       <div className="overview-stat">
-                        <span className="stat-number">{roomStats.occupancyRate}%</span>
+                        <span className="stat-number">{roomStats?.occupancyRate || 0}%</span>
                         <span className="stat-label">Occupancy Rate</span>
                       </div>
                     </div>
@@ -269,19 +298,19 @@ const CustodianAnalyticsPage = () => {
                 </div>
 
                 {/* Room Insights */}
-                {roomStats.total > 0 && (
+                {(roomStats?.total || 0) > 0 && (
                   <div className="insights-section">
                     <div className="section-header">
                       <h3><i className="fas fa-lightbulb"></i> Room Insights</h3>
                       <p>Based on your current room data</p>
                     </div>
                     <div className="insights-grid">
-                      {roomStats.occupancyRate > 80 && (
+                      {(roomStats?.occupancyRate || 0) > 80 && (
                         <div className="insight-card high-occupancy">
                           <i className="fas fa-chart-line"></i>
                           <div className="insight-content">
                             <h4>High Occupancy</h4>
-                            <p>Your occupancy rate is {roomStats.occupancyRate}%. Consider adding more rooms.</p>
+                            <p>Your occupancy rate is {roomStats?.occupancyRate || 0}%. Consider adding more rooms.</p>
                           </div>
                         </div>
                       )}
@@ -294,12 +323,12 @@ const CustodianAnalyticsPage = () => {
                           </div>
                         </div>
                       )}
-                      {roomStats.available > roomStats.occupied && (
+                      {(roomStats?.available || 0) > (roomStats?.occupied || 0) && (
                         <div className="insight-card availability">
                           <i className="fas fa-check-circle"></i>
                           <div className="insight-content">
                             <h4>Good Availability</h4>
-                            <p>{roomStats.available} rooms available for new bookings.</p>
+                            <p>{roomStats?.available || 0} rooms available for new bookings.</p>
                           </div>
                         </div>
                       )}
@@ -308,7 +337,7 @@ const CustodianAnalyticsPage = () => {
                 )}
 
                 {/* Charts Section */}
-                {roomStats.total > 0 ? (
+                {(roomStats?.total || 0) > 0 ? (
                   <div className="charts-grid-modern">
                     <div className="chart-card">
                       <div className="chart-header">
