@@ -6,6 +6,7 @@ import DashboardSidebar from '../dashboard/DashboardSidebar';
 import RoomLevelManager from '../../components/hostel/RoomLevelManager';
 import { useCustodian } from '../../contexts/CustodianContext';
 import custodianService from '../../service/custodian.service';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import '../../styles/modern-dashboard.css';
 import '../../styles/custodian-modern.css';
 import '../../styles/room-management-modern.css';
@@ -23,6 +24,8 @@ const CustodianRoomManagementPage = () => {
   const [newRoom, setNewRoom] = useState({ id: '', roomType: 'Single', hotel: 'University Hotel A', block: 'A', floor: '1' });
   const [pendingRooms, setPendingRooms] = useState([]);
   const [seeding, setSeeding] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const custodianProfile = {
     fullName: userProfile?.name || 'Custodian',
@@ -34,7 +37,15 @@ const CustodianRoomManagementPage = () => {
 
   // Load rooms on component mount
   useEffect(() => {
-    loadRooms();
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        await loadRooms();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
   }, []);
 
   const handleRoomClick = (room) => {
@@ -45,12 +56,15 @@ const CustodianRoomManagementPage = () => {
   const handleForceAction = async (newStatus) => {
     if (!selectedRoom) return;
 
+    setIsUpdating(true);
     try {
       const updatedRoom = await updateRoomDB(selectedRoom._id, { status: newStatus });
       setSelectedRoom(updatedRoom);
       setIsRoomActionModalOpen(false);
     } catch (error) {
       alert('Failed to update room status: ' + error.message);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -95,6 +109,7 @@ const CustodianRoomManagementPage = () => {
       amenities: ['WiFi', 'Study Desk']
     };
     
+    setIsUpdating(true);
     try {
       await createRoom(roomData);
       alert('Room added successfully!');
@@ -102,6 +117,8 @@ const CustodianRoomManagementPage = () => {
     } catch (error) {
       console.error('Failed to add room:', error);
       alert('Failed to add room: ' + error.message);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -187,6 +204,9 @@ const CustodianRoomManagementPage = () => {
               onLogout={() => setIsLogoutModalOpen(true)}
             />
             <div className="dashboard-content">
+              {isLoading ? (
+                <LoadingSpinner size="large" text="Loading rooms..." />
+              ) : (
               <div className="modern-dashboard-container">
                 {/* Room Stats */}
                 <div className="stats-grid-modern">
@@ -291,8 +311,9 @@ const CustodianRoomManagementPage = () => {
                       </div>
                       
                       <div className="form-actions">
-                        <button className="add-room-btn" onClick={handleAddRoom} disabled={!newRoom.id.trim()}>
-                          <i className="fas fa-plus"></i> Add Room
+                        <button className="add-room-btn" onClick={handleAddRoom} disabled={!newRoom.id.trim() || isUpdating}>
+                          <i className={`fas ${isUpdating ? 'fa-spinner fa-spin' : 'fa-plus'}`}></i> 
+                          {isUpdating ? 'Adding...' : 'Add Room'}
                         </button>
                       </div>
                     </div>
@@ -393,6 +414,7 @@ const CustodianRoomManagementPage = () => {
                   )}
                 </div>
               </div>
+              )}
             </div>
         </div>
       </div>

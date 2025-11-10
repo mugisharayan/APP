@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../auth/AuthContext';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
-
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { useCustodian } from '../../contexts/CustodianContext';
 import '../../styles/modern-dashboard.css';
 import '../../styles/analytics-modern.css';
@@ -34,11 +34,22 @@ const CustodianAnalyticsPage = () => {
   const [roomTypeStats, setRoomTypeStats] = useState({ single: 0, double: 0 });
   const [maintenanceStats, setMaintenanceStats] = useState({ pending: 0, inProgress: 0, resolved: 0, total: 0 });
   const [paymentMethodStats, setPaymentMethodStats] = useState({ mobileMoney: 0, bankTransfer: 0, creditCard: 0 });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadDashboardData();
-    loadRooms();
-    loadPaymentStats();
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        await Promise.all([
+          loadDashboardData(),
+          loadRooms(),
+          loadPaymentStats()
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
   }, []);
 
   const loadPaymentStats = async () => {
@@ -200,6 +211,10 @@ const CustodianAnalyticsPage = () => {
             />
             {/* Main Content */}
             <div className="dashboard-content">
+              {isLoading ? (
+                <LoadingSpinner size="large" text="Loading analytics..." />
+              ) : (
+              <>
               <div className="header-actions" style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h2 style={{ margin: 0, color: '#2d3748' }}>Room Analytics Dashboard</h2>
                 <button className="btn outline small" onClick={generatePDFReport} style={{ padding: '0.5rem 1rem', border: '1px solid #e2e8f0', borderRadius: '8px', background: 'white', cursor: 'pointer' }}>
@@ -379,6 +394,8 @@ const CustodianAnalyticsPage = () => {
                   </div>
                 )}
               </div>
+              </>
+              )}
           </div>
         </div>
       </div>

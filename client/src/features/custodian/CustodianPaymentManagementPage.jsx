@@ -10,6 +10,7 @@ import { exportToCSV, formatPaymentData } from '../../utils/exportUtils';
 import PermissionGuard from '../../components/auth/PermissionGuard';
 import TwoFactorAuth from '../../components/auth/TwoFactorAuth';
 import { PERMISSIONS, ROLES } from '../../utils/permissions';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import '../../styles/modern-dashboard.css';
 import '../../styles/mobile-responsive.css';
 import '../../styles/custodian-modern.css';
@@ -51,8 +52,8 @@ const CustodianPaymentManagementPage = () => {
   }, []);
   
   const loadPendingPayments = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const response = await apiService.custodian.getPayments();
       const allPayments = response.data.data || [];
       
@@ -98,6 +99,7 @@ const CustodianPaymentManagementPage = () => {
   });
 
   const handleApprovePayment = async (paymentId) => {
+    setLoading(true);
     try {
       const response = await apiService.custodian.approvePayment(paymentId);
       if (response.data.success) {
@@ -126,10 +128,13 @@ const CustodianPaymentManagementPage = () => {
     } catch (error) {
       console.error('Failed to approve payment:', error);
       alert('Failed to approve payment: ' + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleRejectPayment = async (paymentId) => {
+    setLoading(true);
     try {
       const response = await apiService.custodian.rejectPayment(paymentId);
       if (response.data.success) {
@@ -158,6 +163,8 @@ const CustodianPaymentManagementPage = () => {
     } catch (error) {
       console.error('Failed to reject payment:', error);
       alert('Failed to reject payment: ' + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -269,6 +276,9 @@ const CustodianPaymentManagementPage = () => {
 
             {/* Main Content */}
             <div className="dashboard-content">
+              {loading ? (
+                <LoadingSpinner size="large" text="Loading payments..." />
+              ) : (
               <div className="modern-dashboard-container">
                 {/* Payment Overview Dashboard */}
                 <div className="payment-overview-grid">
@@ -515,6 +525,7 @@ const CustodianPaymentManagementPage = () => {
                 </div>
               </div>
               </div>
+              )}
             </div>
           </div>
         </div>

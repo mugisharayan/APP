@@ -8,6 +8,7 @@ import RoomAssignmentNotification from '../../components/notifications/RoomAssig
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
 import EmailService from '../../service/email.service';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import '../../styles/modern-dashboard.css';
 import '../../styles/room-assignment-modern.css';
 
@@ -65,6 +66,8 @@ const CustodianRoomAssignmentPage = () => {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [messageData, setMessageData] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAssigning, setIsAssigning] = useState(false);
 
   const custodianProfile = {
     fullName: userProfile?.name || 'Custodian',
@@ -101,8 +104,19 @@ const CustodianRoomAssignmentPage = () => {
 
   // Load pending assignments and history on mount
   useEffect(() => {
-    loadPendingAssignments();
-    loadAssignmentHistory();
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        await Promise.all([
+          loadPendingAssignments(),
+          loadAssignmentHistory(),
+          loadRooms()
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
   }, []);
 
   // Real assignment history from actual assignments
@@ -318,6 +332,7 @@ const CustodianRoomAssignmentPage = () => {
     // Find room details for email
     const roomDetails = getAllRooms().find(room => room.roomNumber === roomId);
     
+    setIsAssigning(true);
     try {
       // Assign room using database
       await custodianService.assignRoom(selectedStudent.paymentId, roomDetails._id);
@@ -393,6 +408,8 @@ const CustodianRoomAssignmentPage = () => {
       alert('❌ Failed to complete room assignment. Please try again.');
       setIsAssignRoomModalOpen(false);
       setSelectedStudent(null);
+    } finally {
+      setIsAssigning(false);
     }
   };
 
@@ -458,6 +475,9 @@ const CustodianRoomAssignmentPage = () => {
               onLogout={() => setIsLogoutModalOpen(true)}
             />
             <div className="dashboard-content">
+              {isLoading ? (
+                <LoadingSpinner size="large" text="Loading room assignments..." />
+              ) : (
               <div className="modern-dashboard-container">
                 {/* Room Assignment Overview Dashboard */}
                 <div className="assignment-overview-grid">
@@ -694,6 +714,7 @@ const CustodianRoomAssignmentPage = () => {
                   </div>
                 </div>
               </div>
+              )}
               
               {/* Notifications Display */}
               <div className="notifications-container">
@@ -854,12 +875,12 @@ const CustodianRoomAssignmentPage = () => {
               </div>
 
               <div className="form-actions-enhanced">
-                <button type="button" className="btn secondary" onClick={() => setIsAssignRoomModalOpen(false)}>
+                <button type="button" className="btn secondary" onClick={() => setIsAssignRoomModalOpen(false)} disabled={isAssigning}>
                   Cancel
                 </button>
-                <button type="submit" className="btn primary">
-                  <i className="fas fa-check"></i>
-                  Approve & Assign Room
+                <button type="submit" className="btn primary" disabled={isAssigning}>
+                  <i className={`fas ${isAssigning ? 'fa-spinner fa-spin' : 'fa-check'}`}></i>
+                  {isAssigning ? 'Assigning...' : 'Approve & Assign Room'}
                 </button>
               </div>
             </form>

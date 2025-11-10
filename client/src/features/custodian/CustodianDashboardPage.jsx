@@ -14,6 +14,7 @@ import IntegrationPanel from '../../components/integrations/IntegrationPanel';
 import { AuthContext } from '../auth/AuthContext';
 import { useCustodian } from '../../contexts/CustodianContext';
 import HostelCreationModal from '../../components/custodian/HostelCreationModal';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import '../../styles/modern-dashboard.css';
 import '../../styles/mobile-responsive.css';
 import '../../styles/minimalist-dashboard.css';
@@ -38,10 +39,12 @@ const CustodianDashboardPage = () => {
   const [isRoomManagerOpen, setIsRoomManagerOpen] = useState(false);
   const [isIntegrationPanelOpen, setIsIntegrationPanelOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
+  const [isLoading, setIsLoading] = useState(true);
 
   // Check if custodian has hostel on mount - ONLY ONCE
   useEffect(() => {
     const checkHostelStatus = async () => {
+      setIsLoading(true);
       try {
         const response = await loadDashboardData();
         if (response && response.hostel) {
@@ -52,6 +55,8 @@ const CustodianDashboardPage = () => {
       } catch (error) {
         console.error('Error loading dashboard data:', error);
         setHasHostel(false);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -70,15 +75,11 @@ const CustodianDashboardPage = () => {
     document.body.classList.toggle('dark-theme', darkMode);
   }, [darkMode]);
 
-  if (loading || !userProfile) {
+  if (loading || !userProfile || isLoading) {
     return (
       <main className="dashboard-page">
         <div className="container">
-          <div className="dashboard-panel active" style={{ textAlign: 'center', padding: '50px' }}>
-            <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '48px', color: '#0ea5e9', marginBottom: '20px' }}></i>
-            <h2>Loading Dashboard...</h2>
-            <p className="muted">Please wait while we fetch your data.</p>
-          </div>
+          <LoadingSpinner size="large" text="Loading Dashboard..." />
         </div>
       </main>
     );

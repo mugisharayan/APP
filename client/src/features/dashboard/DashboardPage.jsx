@@ -18,6 +18,7 @@ import dashboardService from '../../service/dashboard.service';
 import receiptService from '../../service/receipt.service';
 import maintenanceService from '../../service/maintenance.service';
 import communicationService from '../../service/communication.service';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import '../../styles/student-communication.css';
 
 const DashboardPage = ({ onOpenReviewModal }) => {
@@ -67,11 +68,7 @@ const DashboardPage = ({ onOpenReviewModal }) => {
     return (
       <main className="dashboard-page">
         <div className="container">
-          <div className="dashboard-panel active" style={{ textAlign: 'center', padding: '50px' }}>
-            <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '48px', color: '#0ea5e9', marginBottom: '20px' }}></i>
-            <h2>Loading Dashboard...</h2>
-            <p className="muted">Please wait while we fetch your data.</p>
-          </div>
+          <LoadingSpinner size="large" text="Loading Dashboard..." />
         </div>
       </main>
     );

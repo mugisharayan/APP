@@ -5,6 +5,7 @@ import { useRoomData } from '../../contexts/RoomDataContext';
 import LogoutConfirmModal from '../../components/modals/LogoutConfirmModal';
 import DashboardSidebar from '../dashboard/DashboardSidebar';
 import custodianService from '../../service/custodian.service';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import '../../styles/modern-dashboard.css';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
@@ -16,6 +17,8 @@ const CustodianMaintenancePage = () => {
   const [isCreateTicketModalOpen, setIsCreateTicketModalOpen] = useState(false);
   const [isUpdateStatusModalOpen, setIsUpdateStatusModalOpen] = useState(false);
   const [activeTicket, setActiveTicket] = useState(null); // The ticket being updated
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const custodianProfile = {
     fullName: userProfile?.name || 'Custodian',
@@ -43,6 +46,7 @@ const CustodianMaintenancePage = () => {
 
   // Load maintenance requests from database
   const loadMaintenanceRequests = async () => {
+    setIsLoading(true);
     try {
       const requests = await custodianService.getMaintenanceRequests();
       
@@ -65,6 +69,8 @@ const CustodianMaintenancePage = () => {
       setColumns(newColumns);
     } catch (error) {
       console.error('Failed to load maintenance requests:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -147,6 +153,7 @@ const CustodianMaintenancePage = () => {
       'resolved': 'Resolved'
     };
 
+    setIsUpdating(true);
     try {
       await custodianService.updateMaintenanceStatus(activeTicket.id, statusMap[newStatusValue]);
       
@@ -176,6 +183,8 @@ const CustodianMaintenancePage = () => {
       }
     } catch (error) {
       console.error('Failed to update status:', error);
+    } finally {
+      setIsUpdating(false);
     }
 
     setIsUpdateStatusModalOpen(false);
@@ -258,7 +267,9 @@ const CustodianMaintenancePage = () => {
 
             {/* Main Content */}
             <div className="dashboard-content">
-
+              {isLoading ? (
+                <LoadingSpinner size="large" text="Loading maintenance requests..." />
+              ) : (
             <div className="dashboard-section">
               <div className="section-header">
                 <h3>Ticket Board</h3>
@@ -293,6 +304,7 @@ const CustodianMaintenancePage = () => {
                 </div>
               </DragDropContext>
             </div>
+              )}
           </div>
         </div>
       </div>
@@ -349,7 +361,10 @@ const CustodianMaintenancePage = () => {
                 <textarea id="statusNotes" name="statusNotes" rows="3" placeholder="e.g., Plumber has been contacted."></textarea>
               </div>
               <div className="form-actions" style={{ marginTop: '20px' }}>
-                <button type="submit" className="btn primary full-width">Update Status</button>
+                <button type="submit" className="btn primary full-width" disabled={isUpdating}>
+                  <i className={`fas ${isUpdating ? 'fa-spinner fa-spin' : 'fa-check'}`}></i>
+                  {isUpdating ? 'Updating...' : 'Update Status'}
+                </button>
               </div>
             </form>
           </div>
