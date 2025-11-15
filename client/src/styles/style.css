@@ -116,13 +116,13 @@ body{
   color: white;
 }
 .site-header.scrolled .icon-btn {
-  border-color: rgba(255, 255, 255, 0.4);
-  color: white;
+  border-color: #00bfff;
+  color: #00bfff;
 }
 .site-header.scrolled .icon-btn:hover {
-  background: white;
-  color: #0ea5e9;
-  border-color: white;
+  background: #00bfff;
+  color: white;
+  border-color: #00bfff;
 }
 .site-header.scrolled .nav-toggle {
   color: white;
@@ -153,8 +153,8 @@ body{
 .main-nav a{margin:0 10px;color:#fff;text-decoration:none;font-weight:600}
 .actions{display:flex;align-items:center;gap:10px}
 .btn{padding:8px 16px;border-radius:8px;border:0;cursor:pointer;font-weight:600;text-decoration:none;transition: all 0.3s ease; white-space: nowrap;}
-.btn.primary{background:var(--primary-color);color:#fff}
-.btn.primary:hover{background:var(--primary-dark)}
+.btn.primary{background:var(--primary-color);color:#fff;box-shadow: 0 4px 12px rgba(0, 191, 255, 0.3);}
+.btn.primary:hover{background:var(--primary-dark);transform: translateY(-2px);box-shadow: 0 6px 16px rgba(0, 191, 255, 0.4);}
 .btn.outline{
   background:transparent;
   border: 2px solid var(--primary-color);
@@ -167,6 +167,8 @@ body{
 .btn.outline:hover{
   background: var(--primary-color);
   color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 191, 255, 0.3);
 }
 .icon-btn {
   background: transparent;
@@ -185,7 +187,7 @@ body{
 .nav-toggle{display:none;background:transparent;border:0;color:#fff;font-size:20px}
 
 /* Hero */
-.hero{position: relative; padding: 120px 0 80px;color:#fff; overflow: hidden;}
+.hero{position: relative; padding: 0 0 80px;color:#fff; overflow: hidden; margin-top: 0;}
 .hero::before {
   content: '';
   position: absolute;
@@ -203,7 +205,7 @@ body{
   transition: opacity 1.5s ease-in-out;
 }
 .hero-slide.active { opacity: 1; }
-.hero-grid{position: relative; z-index: 2; text-align: center;}
+.hero-grid{position: relative; z-index: 2; text-align: center; padding-top: 120px;}
 .hero-left .eyebrow{font-weight:600;color:var(--bg-tint); letter-spacing: 1px; text-transform: uppercase;}
 .hero-left h1{font-family: 'Cormorant Garamond', serif; font-size:64px;line-height:1.1;margin:12px 0; color: #fff; font-weight: 300;}
 .hero-left h1 .bold { font-weight: 700; }

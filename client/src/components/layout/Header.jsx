@@ -31,7 +31,7 @@ const Header = ({ onOpenAuthModal, onOpenFavorites, onOpenDashboardChoice }) => 
           <NavLink to="/" onClick={toggleNav}>Home</NavLink>
           <NavLink to="/about" onClick={toggleNav}>About</NavLink>
           <NavLink to="/hostels" onClick={toggleNav}>Hostels</NavLink>
-          <a href="/#faq" onClick={toggleNav}>FAQs</a>
+          <NavLink to="/faq" onClick={toggleNav}>FAQs</NavLink>
           <a href="/#contact" onClick={toggleNav}>Contact</a>
         </nav>
         <div className="actions">
@@ -61,7 +61,6 @@ const Header = ({ onOpenAuthModal, onOpenFavorites, onOpenDashboardChoice }) => 
                   <span className="notification-badge" style={{ top: '-5px', right: '-8px', width: '18px', height: '18px', fontSize: '11px' }}>{favorites.length}</span>
                 )}
               </button>
-              <button className="icon-btn" onClick={onOpenDashboardChoice} aria-label="Choose your dashboard"><i className="fa-solid fa-table-columns"></i></button>
             </>
           )}
           

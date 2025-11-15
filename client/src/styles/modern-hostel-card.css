@@ -3,10 +3,10 @@
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
+  border-radius: 16px;
   overflow: hidden;
   width: 100%;
-  max-width: 340px;
+  max-width: 280px;
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.1),
     0 2px 8px rgba(0, 0, 0, 0.05);
@@ -40,9 +40,9 @@
 /* Image Container */
 .hostel-image-container {
   position: relative;
-  height: 180px;
+  height: 140px;
   overflow: hidden;
-  border-radius: 16px 16px 0 0;
+  border-radius: 12px 12px 0 0;
 }
 
 .hostel-image {
@@ -123,10 +123,10 @@
 
 /* Content */
 .hostel-content {
-  padding: 20px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .hostel-header {
@@ -137,7 +137,7 @@
 }
 
 .hostel-name {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   color: #1e293b;
   margin: 0;
@@ -167,41 +167,54 @@
   font-size: 12px;
 }
 
-/* Amenities */
-.amenities-grid {
-  display: flex;
+/* Amenities Cards */
+.amenities-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-start;
+  margin: 8px 0;
 }
 
-.amenity-item {
-  width: 36px;
-  height: 36px;
+.amenity-card {
   background: linear-gradient(135deg, #f8fafc, #e2e8f0);
-  border-radius: 12px;
+  border: 1px solid rgba(14, 165, 233, 0.1);
+  border-radius: 8px;
+  padding: 6px 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(14, 165, 233, 0.1);
   transition: all 0.3s ease;
-  position: relative;
+  min-height: 28px;
 }
 
-.amenity-item:hover {
+.amenity-card:hover {
   background: linear-gradient(135deg, #0ea5e9, #06b6d4);
-  transform: translateY(-2px) scale(1.1);
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.2);
 }
 
-.amenity-item i {
-  font-size: 14px;
-  color: #7dd3fc;
+.amenity-text {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-align: center;
+  line-height: 1.2;
   transition: color 0.3s ease;
+  text-transform: capitalize;
 }
 
-.amenity-item:hover i {
+.amenity-card:hover .amenity-text {
   color: white;
+}
+
+.amenity-card.more-amenities {
+  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+.amenity-card.more-amenities .amenity-text {
+  color: white;
+  font-weight: 700;
 }
 
 /* Room and Rating Info */
@@ -269,14 +282,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
-  padding: 14px;
+  padding: 10px;
   background: linear-gradient(135deg, #0ea5e9, #06b6d4);
   color: white;
   text-decoration: none;
-  border-radius: 16px;
-  font-size: 14px;
+  border-radius: 12px;
+  font-size: 13px;
   font-weight: 600;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -329,12 +342,16 @@
     gap: 12px;
   }
   
-  .amenities-grid {
+  .amenities-cards {
     gap: 6px;
   }
   
-  .amenity-item {
-    width: 32px;
-    height: 32px;
+  .amenity-card {
+    padding: 4px 8px;
+    min-height: 24px;
+  }
+  
+  .amenity-text {
+    font-size: 10px;
   }
 }

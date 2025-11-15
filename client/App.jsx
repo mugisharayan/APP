@@ -24,6 +24,7 @@ import ProtectedRoute from './src/features/auth/ProtectedRoute';
 // Import feature pages
 import HomePage from './src/features/home/HomePage';
 import AboutPage from './src/features/about/AboutPage';
+import FAQPage from './src/features/faq/FAQPage';
 import HostelsPage from './src/features/hostels/HostelsPage';
 import HostelDetailPage from './src/features/hostels/HostelDetailPage';
 import BookingPage from './src/features/booking/BookingPage';
@@ -78,6 +79,7 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/faq" element={<FAQPage />} />
           <Route path="/hostels" element={<HostelsPage />} />
           <Route path="/hostel/:hostelId" element={<HostelDetailPage onOpenAuthModal={() => {
             setAuthRedirectTo('booking');

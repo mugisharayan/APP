@@ -1,34 +1,42 @@
-import React, { useContext } from 'react';
+import React, { useContext, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../auth/AuthContext';
+import { logger } from '../../utils/logger';
+import { handleError } from '../../utils/errorHandler';
 import '../../styles/modern-hostel-card.css';
 
-const HostelCard = ({ hostelId, hostel }) => {
+const HostelCard = React.memo(({ hostelId, hostel }) => {
   const { isFavorited, toggleFavorite } = useContext(AuthContext);
   const isFav = isFavorited(hostelId);
 
-  // Get the lowest price from rooms array
-  const lowestPrice = hostel.rooms && hostel.rooms.length > 0
-    ? Math.min(...hostel.rooms.map(room => room.price))
-    : 0;
+  // Memoize expensive calculations
+  const lowestPrice = useMemo(() => {
+    if (!hostel.rooms?.length) return 0;
+    return Math.min(...hostel.rooms.map(room => room.price || 0));
+  }, [hostel.rooms]);
 
-  // Get default image if no images provided
   const defaultImage = 'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&dpr=1';
-  const hostelImage = hostel.images && hostel.images[0] ? hostel.images[0] : defaultImage;
+  const hostelImage = useMemo(() => 
+    hostel.images?.[0] || defaultImage, 
+    [hostel.images, defaultImage]
+  );
 
-  const handleImageError = (e) => {
+  const handleImageError = useCallback((e) => {
     e.target.src = defaultImage;
-  };
+    logger.warn('Image failed to load', { hostelId, originalSrc: e.target.src });
+  }, [defaultImage, hostelId]);
 
-  const handleFavoriteClick = async (e) => {
+  const handleFavoriteClick = useCallback(async (e) => {
     e.preventDefault();
     e.stopPropagation();
     try {
       await toggleFavorite(hostelId);
+      logger.info('Favorite toggled', { hostelId, isFavorited: !isFav });
     } catch (error) {
-      console.error('Failed to toggle favorite:', error);
+      const { message } = handleError(error, 'Toggle favorite failed');
+      // Could show toast notification here
     }
-  };
+  }, [toggleFavorite, hostelId, isFav]);
 
   return (
     <div className="modern-hostel-card">
@@ -69,20 +77,19 @@ const HostelCard = ({ hostelId, hostel }) => {
           </div>
         </div>
 
-        <div className="amenities-grid">
-          {hostel.amenities && hostel.amenities.slice(0, 6).map((amenity, index) => {
+        <div className="amenities-cards">
+          {hostel.amenities?.slice(0, 4).map((amenity, index) => {
             const amenityName = typeof amenity === 'string' ? amenity : amenity.name;
-            const amenityIcon = typeof amenity === 'string' ? 'fa-check' : (amenity.icon || 'fa-check');
             
             return (
-              <div key={index} className="amenity-item" title={amenityName}>
-                <i className={`fas ${amenityIcon}`}></i>
+              <div key={`${hostelId}-amenity-${index}`} className="amenity-card">
+                <span className="amenity-text">{amenityName}</span>
               </div>
             );
           })}
-          {hostel.amenities && hostel.amenities.length > 6 && (
-            <div className="amenity-item" title={`${hostel.amenities.length - 6} more amenities`}>
-              <i className="fas fa-plus"></i>
+          {hostel.amenities?.length > 4 && (
+            <div className="amenity-card more-amenities">
+              <span className="amenity-text">+{hostel.amenities.length - 4} more</span>
             </div>
           )}
         </div>
@@ -101,7 +108,7 @@ const HostelCard = ({ hostelId, hostel }) => {
         <div className="rating-info">
           <div className="rating-stars">
             {[...Array(5)].map((_, i) => (
-              <i key={i} className={i < Math.round(hostel.averageRating || 0) ? 'fas fa-star' : 'far fa-star'}></i>
+              <i key={`${hostelId}-star-${i}`} className={i < Math.round(hostel.averageRating || 0) ? 'fas fa-star' : 'far fa-star'}></i>
             ))}
           </div>
           <span className="rating-text">{(hostel.averageRating || 0).toFixed(1)} ({hostel.reviewCount || 0})</span>
@@ -116,6 +123,8 @@ const HostelCard = ({ hostelId, hostel }) => {
       </div>
     </div>
   );
-};
+});
+
+HostelCard.displayName = 'HostelCard';
 
 export default HostelCard;

@@ -15,6 +15,9 @@ import custodianRoutes from './routes/custodian.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import messageRoutes from './routes/message.routes.js';
 import healthRoutes from './routes/health.routes.js';
+import { globalErrorHandler } from './utils/errorHandler.js';
+import requestLogger from './middleware/requestLogger.js';
+import logger from './utils/logger.js';
 
 // Load environment variables
 dotenv.config();
@@ -23,6 +26,9 @@ dotenv.config();
 connectDB();
 
 const app = express();
+
+// Request logging middleware
+app.use(requestLogger);
 
 // Middleware
 app.use(cors({
@@ -45,13 +51,16 @@ app.get('/api/test', (req, res) => {
 // Debug endpoint to check bookings
 app.get('/api/debug/bookings', async (req, res) => {
   try {
+    logger.info('Debug endpoint accessed: /api/debug/bookings');
     const Booking = (await import('./models/booking.model.js')).default;
     const allBookings = await Booking.find({}).populate('student', 'name email');
+    logger.info('Bookings retrieved successfully', { count: allBookings.length });
     res.json({
       total: allBookings.length,
       bookings: allBookings
     });
   } catch (error) {
+    logger.error('Error in debug bookings endpoint:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -71,17 +80,27 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api', healthRoutes);
 
-// Error handler
-app.use((err, req, res, next) => {
-  const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
-  res.status(statusCode).json({
-    message: err.message,
-    stack: process.env.NODE_ENV === 'production' ? null : err.stack,
-  });
+// Global error handler
+app.use(globalErrorHandler);
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err, promise) => {
+  logger.error('Unhandled Promise Rejection:', err);
+  process.exit(1);
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  logger.error('Uncaught Exception:', err);
+  process.exit(1);
 });
 
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  logger.info(`Server is running on port ${PORT}`, {
+    environment: process.env.NODE_ENV || 'development',
+    port: PORT,
+    timestamp: new Date().toISOString()
+  });
 });

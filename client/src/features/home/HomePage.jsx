@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import HostelCard from '../hostels/HostelCard';
 import { apiService } from '../../service/api.service';
 import { useIntersectionObserver } from '../../hooks/useIntersectionObserver';
+import '../../styles/modern-contact.css';
+import '../../styles/modern-testimonials.css';
 
 const HomePage = () => {
   // State for slideshow
@@ -67,7 +69,6 @@ const HomePage = () => {
   const [testimonialIndex, setTestimonialIndex] = useState(0);
   const testimonials = [
     { quote: "Booking through this site was so easy! I found a great single room at Nana and didn't have to move around town. Highly recommend!", author: "Akule Robert", role: "Student", avatar: "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" },
-    { quote: "As a first-year, I was worried about finding a safe place. The verified listings gave me peace of mind. I'm happy with my choice.", author: "Mugisha Rayan", role: "Student", avatar: "https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" },
     { quote: "The detailed information and photos were super helpful. What you see is what you get. Made my decision so much easier!", author: "Martha Trisha", role: "Student", avatar: "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" },
     { quote: "I love that I could compare prices and amenities all in one place. Saved me a ton of time and I found a hostel within my budget.", author: "Aine Evans", role: "Student", avatar: "https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" },
   ];
@@ -111,6 +112,11 @@ const HomePage = () => {
     // showToast('Message sent successfully!');
     alert('Thank you for your message! We will get back to you shortly.');
     setContactForm({ name: '', email: '', message: '' }); // Reset form
+  };
+
+  const handleChatClick = () => {
+    // In a real app, this would open a chat widget
+    alert('Chat feature coming soon! For now, please use the contact form or call us directly.');
   };
 
   // Refs for scroll animations using our new hook
@@ -206,16 +212,16 @@ const HomePage = () => {
           </div>
           <div ref={dealCardRef} className={`deal-card animate-on-scroll ${isDealCardVisible ? 'is-visible' : ''}`} style={{ transitionDelay: '100ms' }}>
             <h4>FEATURED HOSTEL</h4>
-            <h2>OLYMPIA HOSTEL</h2>
-            <div className="price">From UGX 1.2M / SEM</div>
-            <p className="muted">Limited spots available for the upcoming semester!</p>
+            <h2>AKULE HOSTEL</h2>
+            <div className="price">From UGX 800K / SEM</div>
+            <p className="muted">Premium accommodation with modern amenities!</p>
             <div className="countdown" id="countdown">
               <div><span id="days">{countdown.days}</span><small>Days</small></div>
               <div><span id="hours">{countdown.hours}</span><small>Hours</small></div>
               <div><span id="minutes">{countdown.minutes}</span><small>Minutes</small></div>
               <div><span id="seconds">{countdown.seconds}</span><small>Seconds</small></div>
             </div>
-            <Link to="/hostel/olympia-hostel" className="btn primary">View Details</Link>
+            <Link to="/hostel/akule-hostel" className="btn primary">View Details</Link>
           </div>
         </div>
       </section>
@@ -286,34 +292,68 @@ const HomePage = () => {
       </section>
 
       {/* TESTIMONIALS */}
-      <section ref={testimonialsRef} className={`testimonials animate-on-scroll ${isTestimonialsVisible ? 'is-visible' : ''}`}>
+      <section ref={testimonialsRef} className={`modern-testimonials animate-on-scroll ${isTestimonialsVisible ? 'is-visible' : ''}`}>
+        <div className="testimonials-background">
+          <div className="floating-quotes">
+            <i className="fas fa-quote-left quote-1"></i>
+            <i className="fas fa-quote-right quote-2"></i>
+            <i className="fas fa-star star-1"></i>
+            <i className="fas fa-star star-2"></i>
+            <i className="fas fa-star star-3"></i>
+          </div>
+        </div>
+        
         <div className="container">
-          <h3>What <span className="accent">Students Say</span></h3>
-          <p className="muted">Real stories from students who found their perfect home with us.</p>
-          <div className="testimonial-stack-wrapper">
-            <div className="testimonial-slider" style={{ transform: `translateX(-${testimonialIndex * 100 / testimonials.length}%)` }}>
-              {testimonials.map((testimonial, index) => (
-                <div className="testimonial-card" key={index}>
+          <div className="testimonials-header">
+            <h3>What <span className="accent">Students Say</span></h3>
+            <p className="muted">Real experiences from students who found their perfect home with us</p>
+          </div>
+          
+          <div className="testimonials-grid">
+            {testimonials.map((testimonial, index) => (
+              <div 
+                key={index} 
+                className={`testimonial-card-modern ${index === testimonialIndex ? 'active' : ''}`}
+                style={{ animationDelay: `${index * 0.2}s` }}
+              >
+                <div className="quote-icon">
+                  <i className="fas fa-quote-left"></i>
+                </div>
+                <div className="testimonial-content">
                   <p>"{testimonial.quote}"</p>
-                  <div className="author">
-                    <img src={testimonial.avatar} alt={`Happy customer ${testimonial.author}`} />
-                    <div>
-                      <strong>{testimonial.author}</strong>
-                      <small className="muted">{testimonial.role}</small>
-                    </div>
+                  <div className="rating">
+                    {[...Array(5)].map((_, i) => (
+                      <i key={i} className="fas fa-star"></i>
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
+                <div className="author-info">
+                  <img src={testimonial.avatar} alt={testimonial.author} />
+                  <div className="author-details">
+                    <h5>{testimonial.author}</h5>
+                    <span>{testimonial.role}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="testimonial-nav">
-            <button className="nav-arrow prev" onClick={handlePrevTestimonial}><i className="fas fa-chevron-left"></i></button>
-            <div className="nav-dots">
+          
+          <div className="testimonials-controls">
+            <button className="control-btn prev" onClick={handlePrevTestimonial}>
+              <i className="fas fa-chevron-left"></i>
+            </button>
+            <div className="testimonial-indicators">
               {testimonials.map((_, index) => (
-                <button key={index} className={`dot ${index === testimonialIndex ? 'active' : ''}`} onClick={() => goToTestimonial(index)}></button>
+                <button 
+                  key={index} 
+                  className={`indicator ${index === testimonialIndex ? 'active' : ''}`}
+                  onClick={() => goToTestimonial(index)}
+                ></button>
               ))}
             </div>
-            <button className="nav-arrow next" onClick={handleNextTestimonial}><i className="fas fa-chevron-right"></i></button>
+            <button className="control-btn next" onClick={handleNextTestimonial}>
+              <i className="fas fa-chevron-right"></i>
+            </button>
           </div>
         </div>
       </section>
@@ -327,7 +367,7 @@ const HomePage = () => {
             <div className="post-overlay">
               <h4>How do I book a room?</h4>
               <p className="muted">Find your desired hostel, select a room type, and click 'Book Now' to proceed with payment.</p>
-              <Link to="#" className="btn outline small">Read More</Link>
+              <Link to="/faq" className="btn outline small">Read More</Link>
             </div>
           </article>
           <article className={`post animate-on-scroll ${isFaqVisible ? 'is-visible' : ''}`} style={{ transitionDelay: '100ms' }}>
@@ -335,7 +375,7 @@ const HomePage = () => {
             <div className="post-overlay">
               <h4>Is my payment secure?</h4>
               <p className="muted">Yes, we use industry-standard encryption to protect your payment information.</p>
-              <Link to="#" className="btn outline small">Read More</Link>
+              <Link to="/faq" className="btn outline small">Read More</Link>
             </div>
           </article>
           <article className={`post animate-on-scroll ${isFaqVisible ? 'is-visible' : ''}`} style={{ transitionDelay: '200ms' }}>
@@ -343,40 +383,78 @@ const HomePage = () => {
             <div className="post-overlay">
               <h4>What happens after I book?</h4>
               <p className="muted">You will receive an instant booking confirmation via email with all the details.</p>
-              <Link to="#" className="btn outline small">Read More</Link>
+              <Link to="/faq" className="btn outline small">Read More</Link>
             </div>
           </article>
         </div>
       </section>
 
       {/* CONTACT SECTION */}
-      <section ref={contactRef} id="contact" className={`contact-section animate-on-scroll ${isContactVisible ? 'is-visible' : ''}`}>
+      <section ref={contactRef} id="contact" className={`compact-contact-section animate-on-scroll ${isContactVisible ? 'is-visible' : ''}`}>
         <div className="container">
+          <div className="contact-header">
+            <h3>Get in <span className="accent">Touch</span></h3>
+            <p>Questions about hostels or bookings? We're here to help.</p>
+          </div>
+          
           <div className="contact-grid">
             <div className="contact-info">
-              <h3>Have Questions? <span className="accent">Get in Touch!</span></h3>
-              <p className="muted">We're here to help with any questions about hostels, bookings, or our platform. Reach out and we'll get back to you shortly.</p>
-              <div className="info-item">
-                <i className="fa-solid fa-location-dot"></i>
-                <div>
-                  <strong>Our Office</strong>
-                  <p>Makerere University, Kampala, Uganda</p>
+              <div className="info-cards">
+                <div className="info-card">
+                  <i className="fas fa-phone"></i>
+                  <div>
+                    <h5>Call Us</h5>
+                    <a href="tel:+256700000000">+256 700 000 000</a>
+                  </div>
                 </div>
-              </div>
-              <div className="info-item">
-                <i className="fa-solid fa-envelope"></i>
-                <div>
-                  <strong>Email Us</strong>
-                  <p>info@bookmyhostel.com</p>
+                <div className="info-card">
+                  <i className="fas fa-envelope"></i>
+                  <div>
+                    <h5>Email</h5>
+                    <a href="mailto:info@bookmyhostel.com">info@bookmyhostel.com</a>
+                  </div>
+                </div>
+                <div className="info-card">
+                  <i className="fas fa-map-marker-alt"></i>
+                  <div>
+                    <h5>Location</h5>
+                    <p>Makerere University, Kampala</p>
+                  </div>
                 </div>
               </div>
             </div>
+            
             <div className="contact-form">
               <form onSubmit={handleContactSubmit}>
-                <input type="text" name="name" placeholder="Your Name" required value={contactForm.name} onChange={handleContactChange} />
-                <input type="email" name="email" placeholder="Your Email" required value={contactForm.email} onChange={handleContactChange} />
-                <textarea name="message" placeholder="Your Message..." rows="5" required value={contactForm.message} onChange={handleContactChange}></textarea>
-                <button type="submit" className="btn primary full-width">Send Message</button>
+                <div className="form-row">
+                  <input 
+                    type="text" 
+                    name="name" 
+                    placeholder="Your Name" 
+                    required 
+                    value={contactForm.name} 
+                    onChange={handleContactChange} 
+                  />
+                  <input 
+                    type="email" 
+                    name="email" 
+                    placeholder="Your Email" 
+                    required 
+                    value={contactForm.email} 
+                    onChange={handleContactChange} 
+                  />
+                </div>
+                <textarea 
+                  name="message" 
+                  placeholder="Your Message..." 
+                  rows="4" 
+                  required 
+                  value={contactForm.message} 
+                  onChange={handleContactChange}
+                ></textarea>
+                <button type="submit" className="btn primary full-width">
+                  Send Message <i className="fas fa-paper-plane"></i>
+                </button>
               </form>
             </div>
           </div>

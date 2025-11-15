@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { logger } from '../utils/logger';
+import { handleError } from '../utils/errorHandler';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
@@ -16,7 +18,7 @@ axios.interceptors.request.use((config) => {
         config.headers.Authorization = `Bearer ${userData.token}`;
       }
     } catch (error) {
-      console.error('Invalid auth data in localStorage:', error);
+      logger.error('Invalid auth data in localStorage', error);
       localStorage.removeItem('auth');
     }
   }
@@ -26,15 +28,31 @@ axios.interceptors.request.use((config) => {
 // Response interceptor for error handling
 let isRedirecting = false;
 axios.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Handle new API response format
+    if (response.data?.status === 'success') {
+      return {
+        ...response,
+        data: response.data.data || response.data
+      };
+    }
+    return response;
+  },
   (error) => {
+    const { message } = handleError(error, 'API request failed');
+    
     if (error.response?.status === 401 && !isRedirecting) {
       isRedirecting = true;
-      console.log('401 Unauthorized - clearing auth and redirecting');
+      logger.warn('401 Unauthorized - clearing auth and redirecting');
       localStorage.removeItem('auth');
       window.location.replace('/');
     }
-    return Promise.reject(error);
+    
+    // Return a more user-friendly error
+    return Promise.reject({
+      ...error,
+      message: message
+    });
   }
 );
 

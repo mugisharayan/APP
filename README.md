@@ -5,7 +5,7 @@ A modern web application for Makerere University students to browse, compare, an
 ## Features
 
 ### For Students
-- 🏠 Browse 40+ verified hostels in the Kikoni area
+- 🏠 Browse  verified hostels in the Kikoni area
 - 🔍 Advanced filtering (location, price, amenities)
 - ⭐ Save favorite hostels
 - 📅 Book rooms with date range selection
@@ -137,7 +137,7 @@ hostel-booking-system/
 ├── package.json               # Root package (delegates to client/)
 ├── eslint.config.js          # ESLint configuration
 ├── README.md                 # This file
-└── CLAUDE.md                 # Developer guide for Claude Code
+
 ```
 
 ## Getting Started
