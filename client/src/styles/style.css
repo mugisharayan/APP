@@ -1217,15 +1217,28 @@ input[type=range]::-webkit-slider-thumb {
 
 /* Footer */
 .site-footer{
-  background-color: var(--primary-color); /* Light blue background */
-  color: #fff; /* White text color for better contrast */
-  padding: 60px 0 0;
+  position: relative;
+  background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 50%, #0891b2 100%);
+  color: #fff;
+  padding: 80px 0 40px;
+  margin-top: 100px;
+}
+
+.site-footer::before {
+  content: '';
+  position: absolute;
+  top: -100px;
+  left: 0;
+  width: 100%;
+  height: 100px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z' opacity='.25' fill='%230ea5e9'%3E%3C/path%3E%3Cpath d='M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z' opacity='.5' fill='%230ea5e9'%3E%3C/path%3E%3Cpath d='M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z' fill='%230ea5e9'%3E%3C/path%3E%3C/svg%3E") no-repeat;
+  background-size: cover;
 }
 .footer-grid{
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr;
-  gap: 30px;
-  padding-bottom: 40px;
+  gap: 40px;
+  margin-bottom: 40px;
 }
 .footer-logo { 
   color: #fff; 
@@ -1243,31 +1256,59 @@ input[type=range]::-webkit-slider-thumb {
 .footer-logo .logo-highlight {
   color: #fbbf24;
 }
-.footer-grid h4 {
-  color: #fff;
-  font-family: 'Poppins', sans-serif;
+.site-footer h4 {
+  color: #fbbf24;
   font-size: 18px;
-  margin-bottom: 15px;
+  font-weight: 600;
+  margin-bottom: 20px;
 }
-.footer-grid ul { list-style: none; }
-.footer-grid li { margin-bottom: 10px; }
-.footer-grid a { color: #fff; text-decoration: none; transition: opacity 0.3s ease; }
-.footer-grid a:hover { opacity: 0.8; }
-.social-links { display: flex; gap: 15px; margin-top: 20px; }
+.site-footer ul {
+  list-style: none;
+  padding: 0;
+}
+
+.site-footer ul li {
+  margin-bottom: 10px;
+}
+
+.site-footer ul li a {
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.site-footer ul li a:hover {
+  color: #fbbf24;
+}
+.social-links {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+}
+
 .social-links a {
-  color: #fff;
-  background-color: transparent;
   width: 40px;
   height: 40px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  border: 1px solid #fff;
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  color: white;
+  text-decoration: none;
+  transition: all 0.3s ease;
 }
-.social-links a:hover { background-color: #fff; color: var(--primary-color); }
-.copyright{text-align:center;padding:20px 0;color:#fff; border-top: 1px solid rgba(255,255,255,0.2); margin-top: 20px;}
+
+.social-links a:hover {
+  background: #fbbf24;
+  transform: translateY(-3px);
+}
+.copyright {
+  text-align: center;
+  padding-top: 30px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.7);
+}
 
 /* Cart Overlay */
 .cart-overlay {
@@ -1986,6 +2027,99 @@ input[type=range]::-webkit-slider-thumb {
     line-height: 1.5;
     font-family: 'Lora', serif; /* Use the new Lora font */
     font-size: 17px; /* Slightly larger for better readability */
+}
+
+/* Wave Footer Styles */
+.site-footer {
+  position: relative;
+  background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 50%, #0891b2 100%);
+  color: white;
+  padding: 80px 0 40px;
+  margin-top: 100px;
+}
+
+.site-footer::before {
+  content: '';
+  position: absolute;
+  top: -100px;
+  left: 0;
+  width: 100%;
+  height: 100px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z' opacity='.25' fill='%230ea5e9'%3E%3C/path%3E%3Cpath d='M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z' opacity='.5' fill='%230ea5e9'%3E%3C/path%3E%3Cpath d='M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z' fill='%230ea5e9'%3E%3C/path%3E%3C/svg%3E") no-repeat;
+  background-size: cover;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 40px;
+  margin-bottom: 40px;
+}
+
+.footer-logo {
+  font-size: 24px;
+  font-weight: 800;
+  color: white;
+  text-decoration: none;
+  margin-bottom: 15px;
+  display: inline-block;
+}
+
+.site-footer h4 {
+  color: #fbbf24;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.site-footer ul {
+  list-style: none;
+  padding: 0;
+}
+
+.site-footer ul li {
+  margin-bottom: 10px;
+}
+
+.site-footer ul li a {
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.site-footer ul li a:hover {
+  color: #fbbf24;
+}
+
+.social-links {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.social-links a {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.social-links a:hover {
+  background: #fbbf24;
+  transform: translateY(-3px);
+}
+
+.copyright {
+  text-align: center;
+  padding-top: 30px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.7);
 }
 .amenity-list {
     display: grid;
